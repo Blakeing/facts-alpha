@@ -1,34 +1,7 @@
 
+
 > @facts/web@0.0.0 lint /Users/blakeing/Code/facts-alpha/apps/web
 > oxlint && eslint . --fix
 
-
-  ! eslint(no-console): Unexpected console statement.
-    ,-[src/app/providers/router.ts:21:7]
- 20 |        
- 21 |       console.error('Dynamic import error, reloading page did not fix it', err)
-    :       ^^^^^^^^^^^^^
- 22 |     } else {
-    `----
-  help: Delete this console statement.
-
-  ! eslint(no-console): Unexpected console statement.
-    ,-[src/app/providers/router.ts:24:7]
- 23 |        
- 24 |       console.log('Reloading page to fix dynamic import error')
-    :       ^^^^^^^^^^^
- 25 |       localStorage.setItem('vuetify:dynamic-reload', 'true')
-    `----
-  help: Delete this console statement.
-
-  ! eslint(no-console): Unexpected console statement.
-    ,-[src/app/providers/router.ts:30:5]
- 29 |      
- 30 |     console.error(err)
-    :     ^^^^^^^^^^^^^
- 31 |   }
-    `----
-  help: Delete this console statement.
-
-Found 3 warnings and 0 errors.
-Finished in 46ms on 31 files using 10 threads.
+Found 0 warnings and 0 errors.
+Finished in 50ms on 31 files using 10 threads.
