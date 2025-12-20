@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
-    "lint": "eslint . --fix"
+    "lint": "oxlint && eslint . --fix",
+    "lint:ox": "oxlint",
+    "lint:es": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@fontsource/roboto": "5.2.7",
@@ -25,8 +29,11 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
     "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-config-vuetify": "^4.2.0",
     "npm-run-all2": "^8.0.4",
+    "oxlint": "^1.34.0",
+    "prettier": "^3.7.4",
     "sass-embedded": "^1.92.1",
     "typescript": "~5.9.2",
     "unplugin-auto-import": "^20.1.0",

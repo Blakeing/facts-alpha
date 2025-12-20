@@ -42,12 +42,21 @@ importers:
       eslint:
         specifier: ^9.35.0
         version: 9.39.2
+      eslint-config-prettier:
+        specifier: ^10.1.8
+        version: 10.1.8(eslint@9.39.2)
       eslint-config-vuetify:
         specifier: ^4.2.0
         version: 4.3.3(eslint@9.39.2)(typescript@5.9.3)
       npm-run-all2:
         specifier: ^8.0.4
         version: 8.0.4
+      oxlint:
+        specifier: ^1.34.0
+        version: 1.34.0
+      prettier:
+        specifier: ^3.7.4
+        version: 3.7.4
       sass-embedded:
         specifier: ^1.92.1
         version: 1.97.1
@@ -365,6 +374,46 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@oxlint/darwin-arm64@1.34.0':
+    resolution: {integrity: sha512-euz3Dtp5/UE9axFkQnllOWp3gOwoqaxfZPUUwiW8HBelqhI9PRMVIfQ/akmwl+G5XixQZIgXkXQ5SJxnb1+Qww==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@oxlint/darwin-x64@1.34.0':
+    resolution: {integrity: sha512-XpmNviE5KOnHkhmQPwJJIBs+mJkr0qItTZBN4dz+O3p9gWN+gCqi3CBP71RiVahZw4qAEQSgY4wro+z0kx+erg==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@oxlint/linux-arm64-gnu@1.34.0':
+    resolution: {integrity: sha512-aCPdoEUGsJGF9y88vDYoaugG4IEGwSBa+usyuAvEVl3vTfuTmE0RDQEC1Z+WnJ3J/cIEpbgKOzS12VwbzFicjg==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@oxlint/linux-arm64-musl@1.34.0':
+    resolution: {integrity: sha512-cMo72LQBFmdnVLRKLAHD94ZUBq5Z+aA9Y+RKzkjhCmJuef5ZAfKC24TJD/6c5LxGYzkwwmyySoQAHq5B69i3PQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@oxlint/linux-x64-gnu@1.34.0':
+    resolution: {integrity: sha512-+9xFhhkqgNIysEh+uHvcba8v4UtL1YzxuyDS2wTLdWrkGvIllCx5WjJItt3K/AhwatciksgNEXSo2Hh4fcQRog==}
+    cpu: [x64]
+    os: [linux]
+
+  '@oxlint/linux-x64-musl@1.34.0':
+    resolution: {integrity: sha512-qa7TL2DfEDdMeSP5UiU5JMs6D2PW7ZJAQ0WZYTgqDV8BlZ6nMkIYVBVIk3QPxIfkyxvfJVbG1RB3PkSWDcfwpA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@oxlint/win32-arm64@1.34.0':
+    resolution: {integrity: sha512-mSJumUveg1S3DiOgvsrVNAGuvenBbbC/zsfT1qhltT+GLhJ7RPBK2I/jz0fTdE+I7M9/as8yc0XJ/eY23y2amA==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@oxlint/win32-x64@1.34.0':
+    resolution: {integrity: sha512-izsDDt5WY4FSISCkPRLUYQD1aRaaEJkPLtEZe3DlioSUdUVAdvVbE+BGllFqR16DWfTTwO/6K4jDeooxQzTMjw==}
+    cpu: [x64]
+    os: [win32]
 
   '@parcel/watcher-android-arm64@2.5.1':
     resolution: {integrity: sha512-KF8+j9nNbUN8vzOFDpRMsaKBHZ/mcjEjMToVMJOhTozkDonQFFrRcfdLWn6yWKCmJKmdVxSgHiYvTCef4/qcBA==}
@@ -949,6 +998,12 @@ packages:
     peerDependencies:
       eslint: ^9.5.0
 
+  eslint-config-prettier@10.1.8:
+    resolution: {integrity: sha512-82GZUjRS0p/jganf6q1rEO25VSoHH0hKPCTrgillPjdI/3bgBhAE1QzHrHTizjpRvy6pGAvKjDJtk2pF9NDq8w==}
+    hasBin: true
+    peerDependencies:
+      eslint: '>=7.0.0'
+
   eslint-config-vuetify@4.3.3:
     resolution: {integrity: sha512-6vtMOm1spEyNfSE7St+iAuyJk+1CN1MotEOLPPfFSePdiwTVk4lai3Qw8eYdp0F5s9FKBdyQlhI2d1aA1u0ANg==}
     hasBin: true
@@ -1382,6 +1437,16 @@ packages:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
 
+  oxlint@1.34.0:
+    resolution: {integrity: sha512-Ni0N8wAiKlgaYkI/Yz4VrutfVIZgd2shDtS+loQxyBTwO8YUAnk3+g7OQ1cyI/aatHiFwvFNfV/uvZyHUtyPpA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      oxlint-tsgolint: '>=0.9.2'
+    peerDependenciesMeta:
+      oxlint-tsgolint:
+        optional: true
+
   p-limit@3.1.0:
     resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
     engines: {node: '>=10'}
@@ -1463,6 +1528,11 @@ packages:
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
+
+  prettier@3.7.4:
+    resolution: {integrity: sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==}
+    engines: {node: '>=14'}
+    hasBin: true
 
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
@@ -2174,6 +2244,30 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
+  '@oxlint/darwin-arm64@1.34.0':
+    optional: true
+
+  '@oxlint/darwin-x64@1.34.0':
+    optional: true
+
+  '@oxlint/linux-arm64-gnu@1.34.0':
+    optional: true
+
+  '@oxlint/linux-arm64-musl@1.34.0':
+    optional: true
+
+  '@oxlint/linux-x64-gnu@1.34.0':
+    optional: true
+
+  '@oxlint/linux-x64-musl@1.34.0':
+    optional: true
+
+  '@oxlint/win32-arm64@1.34.0':
+    optional: true
+
+  '@oxlint/win32-x64@1.34.0':
+    optional: true
+
   '@parcel/watcher-android-arm64@2.5.1':
     optional: true
 
@@ -2749,6 +2843,10 @@ snapshots:
       '@eslint/compat': 1.4.1(eslint@9.39.2)
       eslint: 9.39.2
 
+  eslint-config-prettier@10.1.8(eslint@9.39.2):
+    dependencies:
+      eslint: 9.39.2
+
   eslint-config-vuetify@4.3.3(eslint@9.39.2)(typescript@5.9.3):
     dependencies:
       '@clack/prompts': 0.11.0
@@ -3217,6 +3315,17 @@ snapshots:
       type-check: 0.4.0
       word-wrap: 1.2.5
 
+  oxlint@1.34.0:
+    optionalDependencies:
+      '@oxlint/darwin-arm64': 1.34.0
+      '@oxlint/darwin-x64': 1.34.0
+      '@oxlint/linux-arm64-gnu': 1.34.0
+      '@oxlint/linux-arm64-musl': 1.34.0
+      '@oxlint/linux-x64-gnu': 1.34.0
+      '@oxlint/linux-x64-musl': 1.34.0
+      '@oxlint/win32-arm64': 1.34.0
+      '@oxlint/win32-x64': 1.34.0
+
   p-limit@3.1.0:
     dependencies:
       yocto-queue: 0.1.0
@@ -3286,6 +3395,8 @@ snapshots:
       source-map-js: 1.2.1
 
   prelude-ls@1.2.1: {}
+
+  prettier@3.7.4: {}
 
   punycode@2.3.1: {}
 

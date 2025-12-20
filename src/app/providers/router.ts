@@ -1,11 +1,10 @@
 /**
- * router/index.ts
+ * app/providers/router.ts
  *
- * Automatic routes for `./src/pages/*.vue`
+ * Vue Router configuration with auto-generated routes
  */
 
 import { setupLayouts } from 'virtual:generated-layouts'
-// Composables
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes } from 'vue-router/auto-routes'
 
