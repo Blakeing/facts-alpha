@@ -1,0 +1,6 @@
+
+> @facts/ui@0.0.0 lint /Users/blakeing/Code/facts-alpha/packages/ui
+> oxlint
+
+Found 0 warnings and 0 errors.
+Finished in 3ms on 3 files with 90 rules using 10 threads.
