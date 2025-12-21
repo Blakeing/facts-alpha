@@ -1,5 +1,17 @@
 <template>
+  <!-- Case Edit View -->
   <div v-if="caseItem">
+    <div class="mb-4">
+      <FButton
+        intent="ghost"
+        prepend-icon="mdi-arrow-left"
+        size="small"
+        @click="handleBack"
+      >
+        Back to Case
+      </FButton>
+    </div>
+
     <PageHeader
       :subtitle="`Editing ${caseItem.caseNumber}`"
       title="Edit Case"
@@ -83,5 +95,9 @@
     } else {
       router.push('/cases')
     }
+  }
+
+  function handleBack() {
+    handleCancel()
   }
 </script>

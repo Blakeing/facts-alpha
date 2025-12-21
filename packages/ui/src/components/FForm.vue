@@ -63,7 +63,7 @@
 <script lang="ts" setup>
   import { toTypedSchema } from '@vee-validate/zod'
   import { useForm } from 'vee-validate'
-  import { computed, provide } from 'vue'
+  import { computed, provide, toRef, watch } from 'vue'
   import type { ZodType } from 'zod'
 
   const props = withDefaults(
@@ -94,6 +94,23 @@
     initialValues: props.initialValues,
     validateOnMount: props.validateOnMount,
   })
+
+  // Watch for initialValues changes (e.g., when editing and data loads after mount)
+  // Reset form when initialValues prop changes from undefined to defined values
+  const initialValuesRef = toRef(props, 'initialValues')
+  let hasInitialized = !!props.initialValues
+
+  watch(
+    initialValuesRef,
+    (newValues) => {
+      // Only reset if we haven't had real values yet (prevents resetting on every change)
+      if (newValues && !hasInitialized) {
+        form.resetForm({ values: newValues })
+        hasInitialized = true
+      }
+    },
+    { deep: true },
+  )
 
   // Provide form context to child components
   provide(FORM_CONTEXT_KEY, form)

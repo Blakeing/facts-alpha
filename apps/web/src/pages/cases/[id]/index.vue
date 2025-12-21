@@ -1,4 +1,5 @@
 <template>
+  <!-- Case Detail View -->
   <div v-if="caseItem">
     <!-- Header -->
     <div class="d-flex align-center justify-space-between mb-6">

@@ -4,7 +4,6 @@
       subtitle="Create a new funeral case"
       title="New Case"
     />
-
     <CaseForm
       :loading="isSubmitting"
       @cancel="handleCancel"
