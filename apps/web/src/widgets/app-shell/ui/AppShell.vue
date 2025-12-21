@@ -17,13 +17,6 @@
       <!-- Brand Header -->
       <v-list nav>
         <v-list-item>
-          <template #prepend>
-            <v-avatar
-              class="justify-start"
-              icon="mdi-home"
-            />
-          </template>
-
           <template v-if="!rail">
             <v-list-item-title class="text-subtitle-2 font-weight-bold">
               Funeral Home ERP

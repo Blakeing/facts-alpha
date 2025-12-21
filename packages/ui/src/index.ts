@@ -13,6 +13,13 @@ export * from './tokens'
 // Composables
 // =============================================================================
 export { useTokens } from './composables'
+export { useFieldBinding, useFieldBindings, useTypedForm } from './composables'
+export type {
+  FieldBinding,
+  FieldBindingOptions,
+  TypedFormOptions,
+  TypedFormReturn,
+} from './composables'
 
 // =============================================================================
 // Components

@@ -18,4 +18,3 @@
   "include": ["src/**/*", "src/**/*.vue"],
   "exclude": ["node_modules", "dist"]
 }
-

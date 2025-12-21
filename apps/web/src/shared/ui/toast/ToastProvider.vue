@@ -20,19 +20,18 @@
 </template>
 
 <script lang="ts" setup>
-/**
- * ToastProvider - Global toast notification display
- *
- * Add this component once in App.vue to enable toast notifications.
- */
-import { useToastStore } from './toastStore'
+  /**
+   * ToastProvider - Global toast notification display
+   *
+   * Add this component once in App.vue to enable toast notifications.
+   */
+  import { useToastStore } from './toastStore'
 
-const store = useToastStore()
+  const store = useToastStore()
 
-function handleClose(value: boolean) {
-  if (!value) {
-    store.onClose()
+  function handleClose(value: boolean) {
+    if (!value) {
+      store.onClose()
+    }
   }
-}
 </script>
-

@@ -55,4 +55,3 @@ export const componentSpacing = {
 
 export type SpacingToken = keyof typeof spacing
 export type VuetifySpacing = keyof typeof vuetifySpacing
-

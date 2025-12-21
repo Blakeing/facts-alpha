@@ -111,4 +111,3 @@ export const textStyles = {
 export type FontSize = keyof typeof fontSize
 export type FontWeight = keyof typeof fontWeight
 export type TextStyle = keyof typeof textStyles
-

@@ -81,7 +81,7 @@ export const mockCases: Case[] = [
       middleName: 'James',
       dateOfBirth: '1952-11-08',
       dateOfDeath: '2024-12-17',
-      placeOfDeath: 'St. Mary\'s Hospital',
+      placeOfDeath: "St. Mary's Hospital",
       ssn: '***-**-1234',
     },
     nextOfKin: {
@@ -161,4 +161,3 @@ export const mockCases: Case[] = [
     updatedAt: '2024-12-01T09:00:00Z',
   },
 ]
-

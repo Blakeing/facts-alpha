@@ -75,4 +75,3 @@ export const useToastStore = defineStore('toast', () => {
     clear,
   }
 })
-

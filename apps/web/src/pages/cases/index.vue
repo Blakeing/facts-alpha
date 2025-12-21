@@ -1,6 +1,9 @@
 <template>
   <div>
-    <PageHeader subtitle="Manage funeral cases and services" title="Cases">
+    <PageHeader
+      subtitle="Manage funeral cases and services"
+      title="Cases"
+    >
       <template #actions>
         <FButton
           intent="primary"
@@ -22,7 +25,11 @@
         @click="selectedStatus = selectedStatus === status.value ? null : status.value"
       >
         {{ status.label }}
-        <span v-if="status.count > 0" class="ml-1">({{ status.count }})</span>
+        <span
+          v-if="status.count > 0"
+          class="ml-1"
+          >({{ status.count }})</span
+        >
       </v-chip>
     </div>
 
@@ -79,62 +86,86 @@
 </template>
 
 <script lang="ts" setup>
-import { FButton, type FColumn, FDataTable, FTextField, PageHeader } from '@facts/ui'
-import { formatDate } from '@facts/utils'
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useCaseStore } from '@/entities/case'
-import { type Case, type CaseStatus } from '@/entities/case/model/case'
-import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
+  import type { Case, CaseStatus } from '@/entities/case/model/case'
+  import { FButton, type FColumn, FDataTable, FTextField, PageHeader } from '@facts/ui'
+  import { formatDate } from '@facts/utils'
+  import { computed, ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useCaseStore } from '@/entities/case'
+  import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
 
-const router = useRouter()
-const caseStore = useCaseStore()
+  const router = useRouter()
+  const caseStore = useCaseStore()
 
-const search = ref('')
-const selectedStatus = ref<CaseStatus | null>(null)
+  const search = ref('')
+  const selectedStatus = ref<CaseStatus | null>(null)
 
-const columns: FColumn[] = [
-  { key: 'caseNumber', title: 'Case #', sortable: true, width: 120 },
-  { key: 'decedentName', title: 'Decedent', sortable: true },
-  { key: 'status', title: 'Status', sortable: true, width: 140 },
-  { key: 'dateOfDeath', title: 'Date of Death', sortable: true, width: 140 },
-  { key: 'nextOfKin', title: 'Next of Kin' },
-]
+  const columns: FColumn[] = [
+    { key: 'caseNumber', title: 'Case #', sortable: true, width: 120 },
+    { key: 'decedentName', title: 'Decedent', sortable: true },
+    { key: 'status', title: 'Status', sortable: true, width: 140 },
+    { key: 'dateOfDeath', title: 'Date of Death', sortable: true, width: 140 },
+    { key: 'nextOfKin', title: 'Next of Kin' },
+  ]
 
-const statusFilters = computed(() => [
-  { value: 'pending' as CaseStatus, label: 'Pending', color: 'warning', count: caseStore.casesByStatus.pending.length },
-  { value: 'active' as CaseStatus, label: 'Active', color: 'primary', count: caseStore.casesByStatus.active.length },
-  { value: 'in_progress' as CaseStatus, label: 'In Progress', color: 'info', count: caseStore.casesByStatus.in_progress.length },
-  { value: 'completed' as CaseStatus, label: 'Completed', color: 'success', count: caseStore.casesByStatus.completed.length },
-  { value: 'archived' as CaseStatus, label: 'Archived', color: 'grey', count: caseStore.casesByStatus.archived.length },
-])
+  const statusFilters = computed(() => [
+    {
+      value: 'pending' as CaseStatus,
+      label: 'Pending',
+      color: 'warning',
+      count: caseStore.casesByStatus.pending.length,
+    },
+    {
+      value: 'active' as CaseStatus,
+      label: 'Active',
+      color: 'primary',
+      count: caseStore.casesByStatus.active.length,
+    },
+    {
+      value: 'in_progress' as CaseStatus,
+      label: 'In Progress',
+      color: 'info',
+      count: caseStore.casesByStatus.in_progress.length,
+    },
+    {
+      value: 'completed' as CaseStatus,
+      label: 'Completed',
+      color: 'success',
+      count: caseStore.casesByStatus.completed.length,
+    },
+    {
+      value: 'archived' as CaseStatus,
+      label: 'Archived',
+      color: 'grey',
+      count: caseStore.casesByStatus.archived.length,
+    },
+  ])
 
-const filteredCases = computed(() => {
-  let result = caseStore.cases
+  const filteredCases = computed(() => {
+    let result = caseStore.cases
 
-  // Filter by status
-  if (selectedStatus.value) {
-    result = result.filter((c) => c.status === selectedStatus.value)
+    // Filter by status
+    if (selectedStatus.value) {
+      result = result.filter((c) => c.status === selectedStatus.value)
+    }
+
+    // Filter by search
+    if (search.value) {
+      const searchLower = search.value.toLowerCase()
+      result = result.filter(
+        (c) =>
+          c.caseNumber.toLowerCase().includes(searchLower) ||
+          c.decedent.firstName.toLowerCase().includes(searchLower) ||
+          c.decedent.lastName.toLowerCase().includes(searchLower) ||
+          c.nextOfKin.firstName.toLowerCase().includes(searchLower) ||
+          c.nextOfKin.lastName.toLowerCase().includes(searchLower),
+      )
+    }
+
+    return result
+  })
+
+  function handleRowClick(_event: Event, { item }: { item: Case }) {
+    router.push(`/cases/${item.id}`)
   }
-
-  // Filter by search
-  if (search.value) {
-    const searchLower = search.value.toLowerCase()
-    result = result.filter(
-      (c) =>
-        c.caseNumber.toLowerCase().includes(searchLower) ||
-        c.decedent.firstName.toLowerCase().includes(searchLower) ||
-        c.decedent.lastName.toLowerCase().includes(searchLower) ||
-        c.nextOfKin.firstName.toLowerCase().includes(searchLower) ||
-        c.nextOfKin.lastName.toLowerCase().includes(searchLower),
-    )
-  }
-
-  return result
-})
-
-function handleRowClick(_event: Event, { item }: { item: Case }) {
-  router.push(`/cases/${item.id}`)
-}
 </script>
-

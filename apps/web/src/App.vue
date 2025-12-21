@@ -6,5 +6,5 @@
 </template>
 
 <script lang="ts" setup>
-import { ToastProvider } from '@/shared/ui'
+  import { ToastProvider } from '@/shared/ui'
 </script>

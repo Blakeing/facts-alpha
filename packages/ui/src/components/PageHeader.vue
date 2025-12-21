@@ -21,13 +21,12 @@
 </template>
 
 <script lang="ts" setup>
-export interface PageHeaderProps {
-  title: string
-  subtitle?: string
-}
+  export interface PageHeaderProps {
+    title: string
+    subtitle?: string
+  }
 
-withDefaults(defineProps<PageHeaderProps>(), {
-  subtitle: undefined,
-})
+  withDefaults(defineProps<PageHeaderProps>(), {
+    subtitle: undefined,
+  })
 </script>
-

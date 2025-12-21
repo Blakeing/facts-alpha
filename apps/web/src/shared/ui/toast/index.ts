@@ -7,4 +7,3 @@
 export { default as ToastProvider } from './ToastProvider.vue'
 export { type Toast, type ToastColor, type ToastOptions, useToastStore } from './toastStore'
 export { useToast } from './useToast'
-

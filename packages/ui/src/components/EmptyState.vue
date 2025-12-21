@@ -28,19 +28,18 @@
 </template>
 
 <script lang="ts" setup>
-export interface EmptyStateProps {
-  title: string
-  subtitle?: string
-  icon?: string
-  iconColor?: string
-  class?: string
-}
+  export interface EmptyStateProps {
+    title: string
+    subtitle?: string
+    icon?: string
+    iconColor?: string
+    class?: string
+  }
 
-const props = withDefaults(defineProps<EmptyStateProps>(), {
-  icon: 'mdi-inbox-outline',
-  iconColor: 'grey',
-  subtitle: undefined,
-  class: undefined,
-})
+  const props = withDefaults(defineProps<EmptyStateProps>(), {
+    icon: 'mdi-inbox-outline',
+    iconColor: 'grey',
+    subtitle: undefined,
+    class: undefined,
+  })
 </script>
-
