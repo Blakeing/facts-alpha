@@ -22,6 +22,7 @@ declare module 'vue-router/auto-routes' {
     '/cases/': RouteRecordInfo<'/cases/', '/cases', Record<never, never>, Record<never, never>>,
     '/cases/[id]': RouteRecordInfo<'/cases/[id]', '/cases/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     '/cases/create': RouteRecordInfo<'/cases/create', '/cases/create', Record<never, never>, Record<never, never>>,
+    '/components': RouteRecordInfo<'/components', '/components', Record<never, never>, Record<never, never>>,
   }
 
   /**
@@ -49,6 +50,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/cases/create.vue': {
       routes: '/cases/create'
+      views: never
+    }
+    'src/pages/components.vue': {
+      routes: '/components'
       views: never
     }
   }

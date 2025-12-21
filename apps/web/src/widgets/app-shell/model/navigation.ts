@@ -19,6 +19,7 @@ export const navigation: NavigationItem[] = [
 ]
 
 export const secondaryNavigation: NavigationItem[] = [
+  { title: 'Components', icon: 'mdi-palette-outline', to: '/components' },
   { title: 'Settings', icon: 'mdi-cog-outline', to: '/settings', disabled: true },
   { title: 'Help', icon: 'mdi-help-circle-outline', to: '/help', disabled: true },
 ]

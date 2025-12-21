@@ -1,82 +1,207 @@
-# Vuetify (Default)
+# Facts Alpha - Funeral Home ERP
 
-This is the official scaffolding tool for Vuetify, designed to give you a head start in building your new Vuetify application. It sets up a base template with all the necessary configurations and standard directory structure, enabling you to begin development without the hassle of setting up the project from scratch.
+A modern, scalable funeral home ERP system built with Vue 3, Vuetify 3, and Feature-Sliced Design architecture.
 
-## ❗️ Important Links
+## Tech Stack
 
-- 📄 [Docs](https://vuetifyjs.com/)
-- 🚨 [Issues](https://issues.vuetifyjs.com/)
-- 🏬 [Store](https://store.vuetifyjs.com/)
-- 🎮 [Playground](https://play.vuetifyjs.com/)
-- 💬 [Discord](https://community.vuetifyjs.com)
+- **Framework**: Vue 3 (Composition API, `<script setup>`)
+- **UI Library**: Vuetify 3 with MD3 Blueprint
+- **Build Tool**: Vite 7
+- **Monorepo**: Turborepo + pnpm workspaces
+- **State Management**: Pinia
+- **Routing**: Vue Router (file-based with unplugin-vue-router)
+- **Linting**: Oxlint (fast) + ESLint (Vue/Vuetify rules)
+- **Formatting**: Prettier
+- **TypeScript**: 5.9
 
-## 💿 Install
+## Project Structure
 
-Set up your project using your preferred package manager. Use the corresponding command to install the dependencies:
-
-| Package Manager                                           | Command        |
-| --------------------------------------------------------- | -------------- |
-| [yarn](https://yarnpkg.com/getting-started)               | `yarn install` |
-| [npm](https://docs.npmjs.com/cli/v7/commands/npm-install) | `npm install`  |
-| [pnpm](https://pnpm.io/installation)                      | `pnpm install` |
-| [bun](https://bun.sh/#getting-started)                    | `bun install`  |
-
-After completing the installation, your environment is ready for Vuetify development.
-
-## ✨ Features
-
-- 🖼️ **Optimized Front-End Stack**: Leverage the latest Vue 3 and Vuetify 3 for a modern, reactive UI development experience. [Vue 3](https://v3.vuejs.org/) | [Vuetify 3](https://vuetifyjs.com/en/)
-- 🗃️ **State Management**: Integrated with [Pinia](https://pinia.vuejs.org/), the intuitive, modular state management solution for Vue.
-- 🚦 **Routing and Layouts**: Utilizes Vue Router for SPA navigation and vite-plugin-vue-layouts-next for organizing Vue file layouts. [Vue Router](https://router.vuejs.org/) | [vite-plugin-vue-layouts-next](https://github.com/loicduong/vite-plugin-vue-layouts-next)
-- 💻 **Enhanced Development Experience**: Benefit from TypeScript's static type checking and the ESLint plugin suite for Vue, ensuring code quality and consistency. [TypeScript](https://www.typescriptlang.org/) | [ESLint Plugin Vue](https://eslint.vuejs.org/)
-- ⚡ **Next-Gen Tooling**: Powered by Vite, experience fast cold starts and instant HMR (Hot Module Replacement). [Vite](https://vitejs.dev/)
-- 🧩 **Automated Component Importing**: Streamline your workflow with unplugin-vue-components, automatically importing components as you use them. [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)
-- 🛠️ **Strongly-Typed Vue**: Use vue-tsc for type-checking your Vue components, and enjoy a robust development experience. [vue-tsc](https://github.com/johnsoncodehk/volar/tree/master/packages/vue-tsc)
-
-These features are curated to provide a seamless development experience from setup to deployment, ensuring that your Vuetify application is both powerful and maintainable.
-
-## 💡 Usage
-
-This section covers how to start the development server and build your project for production.
-
-### Starting the Development Server
-
-To start the development server with hot-reload, run the following command. The server will be accessible at [http://localhost:3000](http://localhost:3000):
-
-```bash
-yarn dev
+```
+facts-alpha/
+├── apps/
+│   └── web/                    # Main Vue application
+│       └── src/
+│           ├── app/            # FSD: App layer (providers, global config)
+│           ├── pages/          # FSD: Pages layer (file-based routing)
+│           ├── widgets/        # FSD: Widgets layer (composite UI blocks)
+│           ├── features/       # FSD: Features layer (user interactions)
+│           ├── entities/       # FSD: Entities layer (business entities)
+│           └── shared/         # FSD: Shared layer (utilities, API)
+├── packages/
+│   ├── ui/                     # @facts/ui - Design system components
+│   │   └── src/
+│   │       ├── components/     # Wrapper components (FButton, FCard, etc.)
+│   │       ├── tokens/         # Design tokens (colors, spacing, typography)
+│   │       └── composables/    # Vue composables
+│   └── utils/                  # @facts/utils - Shared utilities
+└── turbo.json                  # Turborepo configuration
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+## Architecture: Feature-Sliced Design (FSD)
 
-> Add NODE_OPTIONS='--no-warnings' to suppress the JSON import warnings that happen as part of the Vuetify import mapping. If you are on Node [v21.3.0](https://nodejs.org/en/blog/release/v21.3.0) or higher, you can change this to NODE_OPTIONS='--disable-warning=5401'. If you don't mind the warning, you can remove this from your package.json dev script.
+The application follows [Feature-Sliced Design](https://feature-sliced.design/) methodology:
 
-### Building for Production
+### Layers (top to bottom, imports flow downward only)
 
-To build your project for production, use:
+1. **app/** - Application initialization, providers, global styles
+2. **pages/** - Route-level components (file-based routing)
+3. **widgets/** - Large composite UI blocks (AppShell, etc.)
+4. **features/** - User interaction logic (CaseForm, etc.)
+5. **entities/** - Business entities (Case, Tenant)
+6. **shared/** - Reusable utilities, API clients, UI primitives
 
-```bash
-yarn build
+### Segments within each slice
+
+- `ui/` - Vue components
+- `model/` - Business logic, stores, types
+- `api/` - API calls (if needed)
+- `lib/` - Utility functions
+- `config/` - Constants, configuration
+
+## Design System (`@facts/ui`)
+
+### Design Tokens
+
+Located in `packages/ui/src/tokens/`:
+
+- **colors.ts** - M3 tonal palettes, light/dark color schemes, semantic colors
+- **spacing.ts** - Spacing scale (4px base unit)
+- **typography.ts** - Font families, sizes, weights
+
+### Wrapper Components
+
+Vuetify components with simplified APIs and consistent defaults:
+
+| Component | Wraps | Purpose |
+|-----------|-------|---------|
+| `FButton` | `v-btn` | Intent-based buttons (primary, secondary, tonal, danger, ghost, text) |
+| `FTextField` | `v-text-field` | Text input with compact density |
+| `FTextarea` | `v-textarea` | Multiline text with auto-grow |
+| `FSelect` | `v-select` | Dropdown with options array API |
+| `FCard` | `v-card` | Cards with variant support (elevated, filled, outlined) |
+| `FDialog` | `v-dialog` | Modal dialogs with preset widths |
+| `FDataTable` | `v-data-table` | Tables with simplified column definitions |
+| `FCheckbox` | `v-checkbox` | Single checkbox |
+| `FCheckboxGroup` | `v-checkbox` | Multiple checkboxes with options array |
+| `FSwitch` | `v-switch` | Toggle switch |
+| `FRadioGroup` | `v-radio-group` | Radio buttons with options array |
+| `FDatePicker` | `v-date-input` | Date selection |
+
+### Usage
+
+```vue
+<script setup>
+import { FButton, FTextField, FCard } from '@facts/ui'
+</script>
+
+<template>
+  <FCard title="Example" variant="outlined">
+    <FTextField label="Name" v-model="name" />
+    <template #actions>
+      <FButton intent="primary">Save</FButton>
+    </template>
+  </FCard>
+</template>
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+## Vuetify Configuration
 
-Once the build process is completed, your application will be ready for deployment in a production environment.
+Located in `apps/web/src/app/providers/vuetify.ts`:
 
-## 💪 Support Vuetify Development
+- Uses **MD3 Blueprint** for Material Design 3 defaults
+- Light theme only (dark mode stripped for simplicity)
+- Custom brand colors applied via `lightScheme` from `@facts/ui`
+- Compact density defaults for ERP aesthetic
 
-This project is built with [Vuetify](https://vuetifyjs.com/en/), a UI Library with a comprehensive collection of Vue components. Vuetify is an MIT licensed Open Source project that has been made possible due to the generous contributions by our [sponsors and backers](https://vuetifyjs.com/introduction/sponsors-and-backers/). If you are interested in supporting this project, please consider:
+## Current Implementation Status
 
-- [Requesting Enterprise Support](https://support.vuetifyjs.com/)
-- [Sponsoring John on Github](https://github.com/users/johnleider/sponsorship)
-- [Sponsoring Kael on Github](https://github.com/users/kaelwd/sponsorship)
-- [Supporting the team on Open Collective](https://opencollective.com/vuetify)
-- [Becoming a sponsor on Patreon](https://www.patreon.com/vuetify)
-- [Becoming a subscriber on Tidelift](https://tidelift.com/subscription/npm/vuetify)
-- [Making a one-time donation with Paypal](https://paypal.me/vuetify)
+### Completed
 
-## 📑 License
+- [x] Monorepo setup (Turborepo + pnpm)
+- [x] FSD folder structure
+- [x] Design tokens (colors, spacing, typography)
+- [x] Wrapper component library (14 components)
+- [x] Application shell with collapsible sidebar (rail mode)
+- [x] Vuetify MD3 blueprint integration
+- [x] Case Management module:
+  - [x] Case list page with filtering and search
+  - [x] Case detail page
+  - [x] Case create/edit form
+  - [x] Case entity (types, store, mock data)
+- [x] Linting/formatting setup (Oxlint, ESLint, Prettier)
+- [x] VSCode configuration
 
-[MIT](http://opensource.org/licenses/MIT)
+### Pending
 
-Copyright (c) 2016-present Vuetify, LLC
+- [ ] Authentication/Authorization
+- [ ] API integration (backend)
+- [ ] Additional modules (Calendar, Contacts, Settings)
+- [ ] Multi-tenant support (entity exists, not implemented)
+- [ ] Dark mode (removed for now, tokens ready)
+
+## Development
+
+### Prerequisites
+
+- Node.js 22+
+- pnpm 10+
+
+### Commands
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Lint (Oxlint + ESLint)
+pnpm lint
+
+# Format code
+pnpm format
+
+# Type check
+pnpm type-check
+```
+
+### Development Server
+
+The app runs at `http://localhost:3000` by default.
+
+## Key Files Reference
+
+| File | Purpose |
+|------|---------|
+| `apps/web/src/app/providers/vuetify.ts` | Vuetify configuration, theme, defaults |
+| `apps/web/src/styles/settings.scss` | SASS overrides, global styles |
+| `apps/web/src/widgets/app-shell/ui/AppShell.vue` | Main layout with sidebar |
+| `packages/ui/src/tokens/colors.ts` | M3 color system |
+| `packages/ui/src/index.ts` | UI package exports |
+
+## Conventions
+
+### Imports
+
+- Use `@facts/ui` for design system components
+- Use `@facts/utils` for shared utilities
+- Use `@/` alias for app-internal imports
+
+### Component Naming
+
+- FSD slices: PascalCase (e.g., `CaseForm`)
+- UI components: `F` prefix (e.g., `FButton`, `FCard`)
+- Pages: kebab-case files (e.g., `[id].vue`)
+
+### State Management
+
+- Use Pinia stores for entity state
+- Stores live in `entities/*/model/` or `features/*/model/`
+- Composables for reusable reactive logic
+
+## Browser Support
+
+Modern browsers only (ES2022+). No IE11 support.
