@@ -5,9 +5,9 @@
  */
 
 import type { Case, CaseStatus } from './case'
-import { mockCases } from './mockData'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { mockCases } from './mockData'
 
 export const useCaseStore = defineStore('case', () => {
   // Initialize with mock data for development

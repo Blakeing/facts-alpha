@@ -4,32 +4,46 @@
 > oxlint && eslint . --fix
 
 
-  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-console.html\[38;2;244;191;117;1meslint(no-console)[0m]8;;\: [38;2;244;191;117;1mUnexpected console statement.[0m
-    ╭─[[38;2;92;157;255;1msrc/app/providers/router.ts[0m:20:7]
- [2m19[0m │     if (localStorage.getItem('vuetify:dynamic-reload')) {
- [2m20[0m │       console.error('Dynamic import error, reloading page did not fix it', err)
-    · [38;2;246;87;248m      ─────────────[0m
- [2m21[0m │     } else {
-    ╰────
-[38;2;106;159;181m  help: [0mDelete this console statement.
+  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-unused-vars.html\[38;2;244;191;117;1meslint(no-unused-vars)[0m]8;;\: [38;2;244;191;117;1mType 'Decedent' is imported but never used.[0m
+   ╭─[[38;2;92;157;255;1msrc/features/case-form/model/useCaseForm.ts[0m:8:21]
+ [2m7[0m │ import { ref, computed } from 'vue'
+ [2m8[0m │ import type { Case, Decedent, NextOfKin, CaseStatus, ServiceType } from '@/entities/case'
+   · [38;2;246;87;248m                    ────┬───[0m
+   ·                         [38;2;246;87;248m╰── [38;2;246;87;248m'Decedent' is imported here[0m[0m
+ [2m9[0m │ 
+   ╰────
+[38;2;106;159;181m  help: [0mConsider removing this import.
 
-  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-console.html\[38;2;244;191;117;1meslint(no-console)[0m]8;;\: [38;2;244;191;117;1mUnexpected console statement.[0m
-    ╭─[[38;2;92;157;255;1msrc/app/providers/router.ts[0m:22:7]
- [2m21[0m │     } else {
- [2m22[0m │       console.log('Reloading page to fix dynamic import error')
-    · [38;2;246;87;248m      ───────────[0m
- [2m23[0m │       localStorage.setItem('vuetify:dynamic-reload', 'true')
-    ╰────
-[38;2;106;159;181m  help: [0mDelete this console statement.
+  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-unused-vars.html\[38;2;244;191;117;1meslint(no-unused-vars)[0m]8;;\: [38;2;244;191;117;1mType 'NextOfKin' is imported but never used.[0m
+   ╭─[[38;2;92;157;255;1msrc/features/case-form/model/useCaseForm.ts[0m:8:31]
+ [2m7[0m │ import { ref, computed } from 'vue'
+ [2m8[0m │ import type { Case, Decedent, NextOfKin, CaseStatus, ServiceType } from '@/entities/case'
+   · [38;2;246;87;248m                              ────┬────[0m
+   ·                                   [38;2;246;87;248m╰── [38;2;246;87;248m'NextOfKin' is imported here[0m[0m
+ [2m9[0m │ 
+   ╰────
+[38;2;106;159;181m  help: [0mConsider removing this import.
 
-  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-console.html\[38;2;244;191;117;1meslint(no-console)[0m]8;;\: [38;2;244;191;117;1mUnexpected console statement.[0m
-    ╭─[[38;2;92;157;255;1msrc/app/providers/router.ts[0m:27:5]
- [2m26[0m │   } else {
- [2m27[0m │     console.error(err)
-    · [38;2;246;87;248m    ─────────────[0m
- [2m28[0m │   }
+  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-unused-vars.html\[38;2;244;191;117;1meslint(no-unused-vars)[0m]8;;\: [38;2;244;191;117;1mVariable 'now' is declared but never used. Unused variables should start with a '_'.[0m
+    ╭─[[38;2;92;157;255;1msrc/features/case-form/model/useCaseForm.ts[0m:73:11]
+ [2m72[0m │   function toCase(tenantId: string, caseId?: string): Omit<Case, 'createdAt' | 'updatedAt'> {
+ [2m73[0m │     const now = new Date().toISOString()
+    · [38;2;246;87;248m          ─┬─[0m
+    ·            [38;2;246;87;248m╰── [38;2;246;87;248m'now' is declared here[0m[0m
+ [2m74[0m │     const d = formData.value.decedent
     ╰────
-[38;2;106;159;181m  help: [0mDelete this console statement.
+[38;2;106;159;181m  help: [0mConsider removing this declaration.
 
 Found 3 warnings and 0 errors.
-Finished in 55ms on 31 files using 10 threads.
+Finished in 77ms on 45 files using 10 threads.
+[0m[0m
+[0m[4m/Users/blakeing/Code/facts-alpha/apps/web/src/features/case-form/model/useCaseForm.ts[24m[0m
+[0m   [2m7:33[22m  [33mwarning[39m  'Decedent' is defined but never used. Allowed unused vars must match /^_/u      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m7:43[22m  [33mwarning[39m  'NextOfKin' is defined but never used. Allowed unused vars must match /^_/u     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m73:11[22m  [33mwarning[39m  'now' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/blakeing/Code/facts-alpha/apps/web/src/pages/cases/index.vue[24m[0m
+[0m  [2m87:38[22m  [33mwarning[39m  'getStatusColor' is defined but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[33m[1m✖ 4 problems (0 errors, 4 warnings)[22m[39m[0m
+[0m[33m[1m[22m[39m[0m

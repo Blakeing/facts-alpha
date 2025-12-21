@@ -4,8 +4,8 @@
  * Composable for case form state and validation
  */
 
-import { ref, computed } from 'vue'
-import type { Case, Decedent, NextOfKin, CaseStatus, ServiceType } from '@/entities/case'
+import type { Case, CaseStatus, ServiceType } from '@/entities/case'
+import { computed, ref } from 'vue'
 
 export interface CaseFormData {
   // Decedent
@@ -70,7 +70,6 @@ export function useCaseForm(existingCase?: Case) {
   }
 
   function toCase(tenantId: string, caseId?: string): Omit<Case, 'createdAt' | 'updatedAt'> {
-    const now = new Date().toISOString()
     const d = formData.value.decedent
     const n = formData.value.nextOfKin
 
@@ -186,12 +185,12 @@ function caseToFormData(c: Case): CaseFormData {
 }
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 15)
+  return Math.random().toString(36).slice(2, 15)
 }
 
 function generateCaseNumber(): string {
   const year = new Date().getFullYear()
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+  const random = Math.floor(Math.random() * 10_000).toString().padStart(4, '0')
   return `${year}-${random}`
 }
 

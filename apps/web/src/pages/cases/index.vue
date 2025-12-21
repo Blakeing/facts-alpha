@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHeader title="Cases" subtitle="Manage funeral cases and services">
+    <PageHeader subtitle="Manage funeral cases and services" title="Cases">
       <template #actions>
         <FButton
           intent="primary"
@@ -29,21 +29,21 @@
     <!-- Search -->
     <FTextField
       v-model="search"
+      class="mb-4"
+      clearable
       placeholder="Search by name, case number..."
       prepend-inner-icon="mdi-magnify"
-      clearable
-      class="mb-4"
       style="max-width: 400px"
     />
 
     <!-- Data Table -->
     <FDataTable
-      :items="filteredCases"
       :columns="columns"
-      :loading="caseStore.isLoading"
-      empty-title="No cases found"
-      empty-subtitle="Create your first case to get started."
       empty-icon="mdi-folder-open-outline"
+      empty-subtitle="Create your first case to get started."
+      empty-title="No cases found"
+      :items="filteredCases"
+      :loading="caseStore.isLoading"
       @click:row="handleRowClick"
     >
       <template #item.decedentName="{ item }">
@@ -79,12 +79,12 @@
 </template>
 
 <script lang="ts" setup>
+import { FButton, type FColumn, FDataTable, FTextField, PageHeader } from '@facts/ui'
+import { formatDate } from '@facts/utils'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { FButton, FTextField, FDataTable, PageHeader, type FColumn } from '@facts/ui'
-import { formatDate } from '@facts/utils'
 import { useCaseStore } from '@/entities/case'
-import { getStatusColor, type CaseStatus, type Case } from '@/entities/case/model/case'
+import { type Case, type CaseStatus } from '@/entities/case/model/case'
 import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
 
 const router = useRouter()

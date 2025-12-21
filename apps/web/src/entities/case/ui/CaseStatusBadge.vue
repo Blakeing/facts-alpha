@@ -1,9 +1,9 @@
 <template>
   <v-chip
     :color="color"
-    :variant="variant"
-    size="small"
     label
+    size="small"
+    :variant="variant"
   >
     {{ label }}
   </v-chip>
@@ -11,7 +11,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { getStatusColor, getStatusLabel, type CaseStatus } from '../model/case'
+import { type CaseStatus, getStatusColor, getStatusLabel } from '../model/case'
 
 export interface CaseStatusBadgeProps {
   status: CaseStatus

@@ -4,7 +4,7 @@
  * Case entity - funeral case management
  */
 
-export type { Case, CaseStatus, Decedent, NextOfKin, CaseService, ServiceType } from './model/case'
+export type { Case, CaseService, CaseStatus, Decedent, NextOfKin, ServiceType } from './model/case'
 export { getStatusColor, getStatusLabel } from './model/case'
 export { useCaseStore } from './model/caseStore'
 export { default as CaseCard } from './ui/CaseCard.vue'

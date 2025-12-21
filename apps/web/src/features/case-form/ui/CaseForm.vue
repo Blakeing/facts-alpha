@@ -1,7 +1,7 @@
 <template>
   <v-form ref="formRef" @submit.prevent="handleSubmit">
     <!-- Decedent Information -->
-    <FCard title="Decedent Information" class="mb-6">
+    <FCard class="mb-6" title="Decedent Information">
       <v-row>
         <v-col cols="12" md="4">
           <FTextField
@@ -55,18 +55,18 @@
             placeholder="XXX-XX-XXXX"
           />
         </v-col>
-        <v-col cols="12" md="4" class="d-flex align-center">
+        <v-col class="d-flex align-center" cols="12" md="4">
           <FSwitch
             v-model="formData.decedent.veteranStatus"
-            label="Veteran"
             color="primary"
+            label="Veteran"
           />
         </v-col>
       </v-row>
     </FCard>
 
     <!-- Next of Kin -->
-    <FCard title="Next of Kin" class="mb-6">
+    <FCard class="mb-6" title="Next of Kin">
       <v-row>
         <v-col cols="12" md="4">
           <FTextField
@@ -86,7 +86,7 @@
           <FSelect
             v-model="formData.nextOfKin.relationship"
             label="Relationship"
-            :items="relationshipOptions"
+            :options="relationshipOptions"
             :rules="[rules.required]"
           />
         </v-col>
@@ -97,8 +97,8 @@
           <FTextField
             v-model="formData.nextOfKin.phone"
             label="Phone"
-            type="tel"
             :rules="[rules.required]"
+            type="tel"
           />
         </v-col>
         <v-col cols="12" md="6">
@@ -130,7 +130,7 @@
           <FSelect
             v-model="formData.nextOfKin.address.state"
             label="State"
-            :items="stateOptions"
+            :options="stateOptions"
           />
         </v-col>
         <v-col cols="12" md="4">
@@ -143,28 +143,28 @@
     </FCard>
 
     <!-- Services -->
-    <FCard title="Services" class="mb-6">
+    <FCard class="mb-6" title="Services">
       <FCheckboxGroup
         v-model="formData.services"
-        :options="serviceOptions"
-        inline
         class="mb-4"
+        inline
+        :options="serviceOptions"
       />
 
       <FTextarea
         v-model="formData.notes"
+        auto-grow
         label="Notes"
         :rows="4"
-        auto-grow
       />
     </FCard>
 
     <!-- Case Status -->
-    <FCard title="Case Status" class="mb-6">
+    <FCard class="mb-6" title="Case Status">
       <FRadioGroup
         v-model="formData.status"
-        :options="statusOptions"
         inline
+        :options="statusOptions"
       />
     </FCard>
 
@@ -174,10 +174,10 @@
         Cancel
       </FButton>
       <FButton
-        intent="primary"
-        type="submit"
-        :loading="loading"
         :disabled="!isValid"
+        intent="primary"
+        :loading="loading"
+        type="submit"
       >
         {{ isEditing ? 'Save Changes' : 'Create Case' }}
       </FButton>
@@ -186,19 +186,19 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import type { Case } from '@/entities/case'
 import {
   FButton,
   FCard,
-  FTextField,
-  FTextarea,
-  FSelect,
-  FDatePicker,
-  FSwitch,
   FCheckboxGroup,
+  FDatePicker,
   FRadioGroup,
+  FSelect,
+  FSwitch,
+  FTextarea,
+  FTextField,
 } from '@facts/ui'
-import type { Case } from '@/entities/case'
+import { ref } from 'vue'
 import { useCaseForm } from '../model/useCaseForm'
 
 const props = defineProps<{
@@ -231,7 +231,7 @@ const relationshipOptions = [
   'Friend',
   'Legal Representative',
   'Other',
-]
+].map((item) => ({ title: item, value: item }))
 
 const serviceOptions = [
   { value: 'visitation', label: 'Visitation' },
@@ -255,7 +255,7 @@ const stateOptions = [
   'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
   'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
-]
+].map((abbr) => ({ title: abbr, value: abbr }))
 
 async function handleSubmit() {
   const tenantId = 'default' // TODO: Get from tenant store

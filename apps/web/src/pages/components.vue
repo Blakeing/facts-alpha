@@ -13,7 +13,7 @@
     <!-- Buttons Section -->
     <section class="mb-8">
       <h2 class="text-h5 font-weight-medium mb-4">Buttons</h2>
-      <FCard title="FButton" subtitle="Intent-based button component">
+      <FCard subtitle="Intent-based button component" title="FButton">
         <div class="d-flex flex-wrap ga-3 mb-4">
           <FButton intent="primary">Primary</FButton>
           <FButton intent="secondary">Secondary</FButton>
@@ -28,7 +28,7 @@
         <h4 class="text-subtitle-2 font-weight-medium mb-3">With Icons</h4>
         <div class="d-flex flex-wrap ga-3 mb-4">
           <FButton intent="primary" prepend-icon="mdi-plus">New Item</FButton>
-          <FButton intent="secondary" append-icon="mdi-arrow-right">Continue</FButton>
+          <FButton append-icon="mdi-arrow-right" intent="secondary">Continue</FButton>
           <FButton intent="danger" prepend-icon="mdi-delete">Delete</FButton>
         </div>
 
@@ -48,8 +48,8 @@
         <h4 class="text-subtitle-2 font-weight-medium mb-3">States</h4>
         <div class="d-flex flex-wrap ga-3">
           <FButton intent="primary" loading>Loading</FButton>
-          <FButton intent="primary" disabled>Disabled</FButton>
-          <FButton intent="primary" block>Block Width</FButton>
+          <FButton disabled intent="primary">Disabled</FButton>
+          <FButton block intent="primary">Block Width</FButton>
         </div>
       </FCard>
     </section>
@@ -60,7 +60,7 @@
 
       <div class="d-flex flex-column ga-4">
         <!-- Text Field -->
-        <FCard title="FTextField" subtitle="Text input with validation support">
+        <FCard subtitle="Text input with validation support" title="FTextField">
           <v-row>
             <v-col cols="12" md="6">
               <FTextField
@@ -80,22 +80,22 @@
             <v-col cols="12" md="6">
               <FTextField
                 label="With Icon"
-                prepend-inner-icon="mdi-magnify"
                 placeholder="Search..."
+                prepend-inner-icon="mdi-magnify"
               />
             </v-col>
             <v-col cols="12" md="6">
               <FTextField
                 label="Password"
-                type="password"
                 placeholder="Enter password..."
+                type="password"
               />
             </v-col>
           </v-row>
         </FCard>
 
         <!-- Textarea -->
-        <FCard title="FTextarea" subtitle="Multiline text input with auto-grow">
+        <FCard subtitle="Multiline text input with auto-grow" title="FTextarea">
           <v-row>
             <v-col cols="12" md="6">
               <FTextarea
@@ -106,17 +106,17 @@
             </v-col>
             <v-col cols="12" md="6">
               <FTextarea
-                label="Fixed Rows"
-                :rows="4"
                 :auto-grow="false"
+                label="Fixed Rows"
                 placeholder="Fixed height..."
+                :rows="4"
               />
             </v-col>
           </v-row>
         </FCard>
 
         <!-- Select -->
-        <FCard title="FSelect" subtitle="Dropdown selection with options array API">
+        <FCard subtitle="Dropdown selection with options array API" title="FSelect">
           <v-row>
             <v-col cols="12" md="6">
               <FSelect
@@ -129,10 +129,10 @@
             <v-col cols="12" md="6">
               <FSelect
                 v-model="multiSelectValue"
-                label="Multiple"
-                :options="selectOptions"
-                multiple
                 chips
+                label="Multiple"
+                multiple
+                :options="selectOptions"
                 placeholder="Select multiple..."
               />
             </v-col>
@@ -140,7 +140,7 @@
         </FCard>
 
         <!-- Date Picker -->
-        <FCard title="FDatePicker" subtitle="Date selection input">
+        <FCard subtitle="Date selection input" title="FDatePicker">
           <v-row>
             <v-col cols="12" md="6">
               <FDatePicker
@@ -165,13 +165,13 @@
 
       <div class="d-flex flex-column ga-4">
         <!-- Checkbox -->
-        <FCard title="FCheckbox & FCheckboxGroup" subtitle="Single and grouped checkboxes">
+        <FCard subtitle="Single and grouped checkboxes" title="FCheckbox & FCheckboxGroup">
           <v-row>
             <v-col cols="12" md="6">
               <h4 class="text-subtitle-2 font-weight-medium mb-3">Single Checkbox</h4>
               <FCheckbox v-model="checkboxValue" label="I agree to the terms" />
-              <FCheckbox label="Disabled" disabled />
-              <FCheckbox label="Checked disabled" :model-value="true" disabled />
+              <FCheckbox disabled label="Disabled" />
+              <FCheckbox disabled label="Checked disabled" :model-value="true" />
             </v-col>
             <v-col cols="12" md="6">
               <h4 class="text-subtitle-2 font-weight-medium mb-3">Checkbox Group</h4>
@@ -185,16 +185,16 @@
         </FCard>
 
         <!-- Switch -->
-        <FCard title="FSwitch" subtitle="Toggle switch for boolean values">
+        <FCard subtitle="Toggle switch for boolean values" title="FSwitch">
           <div class="d-flex flex-column ga-2">
             <FSwitch v-model="switchValue" label="Enable notifications" />
-            <FSwitch label="Dark mode (disabled)" disabled />
-            <FSwitch v-model="switchInset" label="Inset variant" inset />
+            <FSwitch disabled label="Dark mode (disabled)" />
+            <FSwitch v-model="switchInset" inset label="Inset variant" />
           </div>
         </FCard>
 
         <!-- Radio Group -->
-        <FCard title="FRadioGroup" subtitle="Radio button group with options array">
+        <FCard subtitle="Radio button group with options array" title="FRadioGroup">
           <v-row>
             <v-col cols="12" md="6">
               <FRadioGroup
@@ -206,9 +206,9 @@
             <v-col cols="12" md="6">
               <FRadioGroup
                 v-model="radioInlineValue"
+                inline
                 label="Inline layout"
                 :options="radioOptions"
-                inline
               />
             </v-col>
           </v-row>
@@ -220,12 +220,12 @@
     <section class="mb-8">
       <h2 class="text-h5 font-weight-medium mb-4">Layout</h2>
 
-      <FCard title="FCard" subtitle="Card component with variant support">
+      <FCard subtitle="Card component with variant support" title="FCard">
         <v-row>
           <v-col cols="12" md="4">
             <FCard
-              title="Outlined"
               subtitle="Default variant"
+              title="Outlined"
               variant="outlined"
             >
               <p class="text-body-2">Card content goes here</p>
@@ -236,8 +236,8 @@
           </v-col>
           <v-col cols="12" md="4">
             <FCard
-              title="Filled"
               subtitle="Surface variant background"
+              title="Filled"
               variant="filled"
             >
               <p class="text-body-2">Card content goes here</p>
@@ -248,8 +248,8 @@
           </v-col>
           <v-col cols="12" md="4">
             <FCard
-              title="Elevated"
               subtitle="With shadow"
+              title="Elevated"
               variant="elevated"
             >
               <p class="text-body-2">Card content goes here</p>
@@ -268,7 +268,7 @@
 
       <div class="d-flex flex-column ga-4">
         <!-- Dialog -->
-        <FCard title="FDialog" subtitle="Modal dialog with preset widths">
+        <FCard subtitle="Modal dialog with preset widths" title="FDialog">
           <div class="d-flex flex-wrap ga-3">
             <FButton intent="primary" @click="dialogSm = true">Small Dialog</FButton>
             <FButton intent="secondary" @click="dialogMd = true">Medium Dialog</FButton>
@@ -301,7 +301,7 @@
         </FCard>
 
         <!-- Data Table -->
-        <FCard title="FDataTable" subtitle="Data table with simplified column definitions">
+        <FCard subtitle="Data table with simplified column definitions" title="FDataTable">
           <FDataTable
             :columns="tableColumns"
             :items="tableItems"
@@ -327,7 +327,7 @@
     <section class="mb-8">
       <h2 class="text-h5 font-weight-medium mb-4">Validation</h2>
 
-      <FCard title="Form Validation" subtitle="Using @facts/utils validators">
+      <FCard subtitle="Using @facts/utils validators" title="Form Validation">
         <v-form ref="validationForm" @submit.prevent="handleValidationSubmit">
           <v-row>
             <v-col cols="12" md="6">
@@ -355,8 +355,8 @@
               <FTextField
                 v-model="validationAge"
                 label="Age"
-                type="number"
                 :rules="[required, min(18), max(120)]"
+                type="number"
               />
             </v-col>
           </v-row>
@@ -371,31 +371,31 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
 import {
   FButton,
-  FTextField,
-  FTextarea,
-  FSelect,
-  FDatePicker,
+  FCard,
   FCheckbox,
   FCheckboxGroup,
-  FSwitch,
-  FRadioGroup,
-  FCard,
-  FDialog,
   FDataTable,
+  FDatePicker,
+  FDialog,
+  FRadioGroup,
+  FSelect,
+  FSwitch,
+  FTextarea,
+  FTextField,
 } from '@facts/ui'
 import {
-  required,
   email,
-  phone,
-  minLength,
+  max,
   maxLength,
   min,
-  max,
+  minLength,
   pastDate,
+  phone,
+  required,
 } from '@facts/utils'
+import { ref } from 'vue'
 
 // Form Inputs
 const textFieldValue = ref('')

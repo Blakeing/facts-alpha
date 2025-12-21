@@ -4,4 +4,4 @@
  * Features layer - reused implementations of product features
  */
 
-export { CaseForm, CaseDeleteDialog, useCaseForm } from './case-form'
+export { CaseDeleteDialog, CaseForm, useCaseForm } from './case-form'

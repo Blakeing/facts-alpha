@@ -1,27 +1,29 @@
 <template>
   <div>
     <PageHeader
-      title="New Case"
       subtitle="Create a new funeral case"
+      title="New Case"
     />
 
     <CaseForm
       :loading="isSubmitting"
-      @submit="handleSubmit"
       @cancel="handleCancel"
+      @submit="handleSubmit"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { PageHeader } from '@facts/ui'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { PageHeader } from '@facts/ui'
-import { useCaseStore, type Case } from '@/entities/case'
+import { type Case, useCaseStore } from '@/entities/case'
 import { CaseForm } from '@/features/case-form'
+import { useToast } from '@/shared/ui'
 
 const router = useRouter()
 const caseStore = useCaseStore()
+const toast = useToast()
 
 const isSubmitting = ref(false)
 
@@ -37,7 +39,10 @@ async function handleSubmit(caseData: Omit<Case, 'createdAt' | 'updatedAt'>) {
     }
 
     caseStore.addCase(newCase)
+    toast.success('Case created successfully')
     router.push(`/cases/${newCase.id}`)
+  } catch {
+    toast.error('Failed to create case')
   } finally {
     isSubmitting.value = false
   }

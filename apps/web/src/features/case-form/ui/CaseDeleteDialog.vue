@@ -1,9 +1,9 @@
 <template>
   <FDialog
     v-model="model"
-    title="Delete Case"
-    size="sm"
     persistent
+    size="sm"
+    title="Delete Case"
   >
     <p class="text-body-1 mb-4">
       Are you sure you want to delete case <strong>{{ caseNumber }}</strong>?
@@ -12,8 +12,8 @@
       This action cannot be undone. All data associated with this case will be permanently removed.
     </p>
 
-    <template #actions="{ close }">
-      <FButton intent="secondary" @click="close">
+    <template #actions>
+      <FButton intent="secondary" @click="emit('update:modelValue', false)">
         Cancel
       </FButton>
       <FButton
@@ -28,8 +28,8 @@
 </template>
 
 <script lang="ts" setup>
+import { FButton, FDialog } from '@facts/ui'
 import { computed } from 'vue'
-import { FDialog, FButton } from '@facts/ui'
 
 const props = defineProps<{
   modelValue: boolean
