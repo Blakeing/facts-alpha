@@ -1,43 +1,64 @@
 <template>
-  <v-text-field
+  <v-date-input
     v-model="fieldValue"
-    type="date"
     :error-messages="fieldError"
-    :hide-details="hideDetails"
     v-bind="$attrs"
     @blur="handleBlur"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FDatePicker - Date input using native date type
+   * FDatePicker - Date input with calendar popup
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Thin wrapper around Vuetify's v-date-input with vee-validate integration.
+   * All v-date-input props are supported via v-bind="$attrs".
+   *
+   * @see https://vuetifyjs.com/en/components/date-inputs/
+   *
+   * @example
+   * // Standalone
+   * <FDatePicker v-model="date" label="Birth Date" />
+   *
+   * @example
+   * // Form-integrated (auto-binds to vee-validate)
+   * <FForm :schema="schema">
+   *   <FDatePicker name="birthDate" label="Birth Date" />
+   * </FForm>
+   *
+   * @example
+   * // With Vuetify props (all passed through)
+   * <FDatePicker
+   *   v-model="date"
+   *   label="Appointment"
+   *   :min="minDate"
+   *   :max="maxDate"
+   *   prepend-inner-icon="mdi-calendar"
+   *   hide-details="auto"
+   * />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   export interface FDatePickerProps {
     /** Field name for vee-validate form binding */
     name?: string
-    modelValue?: string | null
-    hideDetails?: boolean | 'auto'
+    /** Date value (Date object or ISO string) */
+    modelValue?: Date | string | null
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FDatePickerProps>(), {
     name: undefined,
     modelValue: null,
-    hideDetails: 'auto',
   })
 
-  const emit = defineEmits<{ 'update:modelValue': [value: string | null] }>()
+  const emit = defineEmits<{ 'update:modelValue': [value: Date | string | null] }>()
 
   // Form-integrated mode
   const nameRef = toRef(props, 'name')
-  const field = props.name ? useField<string | null>(nameRef as unknown as string) : null
+  const field = props.name ? useField<Date | string | null>(nameRef as unknown as string) : null
 
   const fieldValue = computed({
     get: () => (field ? field.value.value : props.modelValue),

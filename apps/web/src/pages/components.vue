@@ -221,7 +221,7 @@
 
         <!-- Date Picker -->
         <FCard
-          subtitle="Date selection input"
+          subtitle="Date selection with calendar popup"
           title="FDatePicker"
         >
           <v-row>
@@ -231,7 +231,7 @@
             >
               <FDatePicker
                 v-model="dateValue"
-                label="Date"
+                label="Birth Date"
               />
             </v-col>
             <v-col
@@ -240,10 +240,43 @@
             >
               <FDatePicker
                 v-model="dateValue2"
-                label="Another Date"
+                label="With Min/Max"
+                :max="maxDate"
+                :min="minDate"
               />
             </v-col>
           </v-row>
+        </FCard>
+
+        <!-- Date Range Picker -->
+        <FCard
+          subtitle="Select start and end dates for filtering"
+          title="FDateRangePicker"
+        >
+          <v-row>
+            <v-col
+              cols="12"
+              md="6"
+            >
+              <FDateRangePicker
+                v-model="dateRange"
+                label="Filter by Date"
+              />
+            </v-col>
+            <v-col
+              cols="12"
+              md="6"
+            >
+              <FDateRangePicker
+                v-model="dateRange2"
+                display-format="medium"
+                label="Report Period"
+              />
+            </v-col>
+          </v-row>
+          <div class="mt-4 text-body-2 text-medium-emphasis">
+            Selected range: {{ dateRangeDisplay }}
+          </div>
         </FCard>
       </div>
     </section>
@@ -618,7 +651,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { z } from 'zod'
   import {
     FButton,
@@ -627,6 +660,7 @@
     FCheckboxGroup,
     FDataTable,
     FDatePicker,
+    FDateRangePicker,
     FDialog,
     FRadioGroup,
     FSelect,
@@ -645,8 +679,28 @@
   const textareaValue = ref('')
   const selectValue = ref(null)
   const multiSelectValue = ref([])
-  const dateValue = ref(null)
-  const dateValue2 = ref(null)
+
+  // Date Pickers
+  const dateValue = ref<Date | null>(null)
+  const dateValue2 = ref<Date | null>(null)
+  const minDate = new Date()
+  const maxDate = new Date(new Date().setMonth(new Date().getMonth() + 3))
+
+  // Date Range Pickers
+  const dateRange = ref<Date[]>([])
+  const dateRange2 = ref<Date[]>([])
+  const dateRangeDisplay = computed(() => {
+    if (dateRange.value.length === 0) return 'No dates selected'
+    const startDate = dateRange.value.at(0)
+    const endDate = dateRange.value.at(-1)
+    if (dateRange.value.length === 1 && startDate) {
+      return startDate.toLocaleDateString()
+    }
+    if (startDate && endDate) {
+      return `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`
+    }
+    return 'No dates selected'
+  })
 
   const selectOptions = [
     { title: 'Option 1', value: 'opt1' },

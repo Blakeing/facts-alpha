@@ -1,13 +1,12 @@
 <template>
-  <div
-    :class="['d-flex', inline ? 'flex-row flex-wrap ga-4' : 'flex-column']"
-    v-bind="$attrs"
-  >
+  <div v-bind="$attrs">
     <v-label
       v-if="label"
       class="mb-2"
-      >{{ label }}</v-label
     >
+      {{ label }}
+    </v-label>
+    <div :class="['d-flex', inline ? 'flex-row flex-wrap ga-4' : 'flex-column']">
     <v-checkbox
       v-for="option in options"
       :key="String(option.value)"
@@ -17,26 +16,36 @@
       :disabled="option.disabled"
       :color="option.color"
       :error-messages="fieldError"
-      :hide-details="hideDetails"
+        hide-details="auto"
       @blur="handleBlur"
     />
+    </div>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FCheckboxGroup - Multiple checkboxes with options array API
+   * FCheckboxGroup - Multiple checkboxes with vee-validate integration
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Provides options array API for checkbox groups.
+   * v-model is an array; each checkbox value is added/removed from it.
    *
-   * Mirrors Vuetify's checkbox array pattern where v-model is an array
-   * and each checkbox's value is added/removed from it.
+   * @example
+   * // Standalone
+   * <FCheckboxGroup
+   *   v-model="selectedTags"
+   *   label="Tags"
+   *   :options="[
+   *     { label: 'Urgent', value: 'urgent' },
+   *     { label: 'Featured', value: 'featured' }
+   *   ]"
+   *   inline
+   * />
+   *
+   * @example
+   * // Form-integrated
+   * <FCheckboxGroup name="permissions" :options="permissionOptions" />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   export type CheckboxOption = {
     label: string
     value: string | number
@@ -47,24 +56,30 @@
   export interface FCheckboxGroupProps {
     /** Field name for vee-validate form binding */
     name?: string
+    /** Selected values array */
     modelValue?: (string | number)[]
+    /** Group label */
     label?: string
+    /** Checkbox options */
     options: CheckboxOption[]
+    /** Display checkboxes horizontally */
     inline?: boolean
-    hideDetails?: boolean | 'auto'
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FCheckboxGroupProps>(), {
     name: undefined,
     modelValue: () => [],
     label: undefined,
     inline: false,
-    hideDetails: 'auto',
   })
 
   const emit = defineEmits<{ 'update:modelValue': [value: (string | number)[]] }>()
 
-  // Form-integrated mode
   const nameRef = toRef(props, 'name')
   const field = props.name ? useField<(string | number)[]>(nameRef as unknown as string) : null
 

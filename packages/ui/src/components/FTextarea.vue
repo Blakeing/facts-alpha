@@ -2,42 +2,45 @@
   <v-textarea
     v-model="fieldValue"
     :error-messages="fieldError"
-    :hide-details="hideDetails"
-    :auto-grow="autoGrow"
     v-bind="$attrs"
     @blur="handleBlur"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FTextarea - Wrapper for v-textarea
+   * FTextarea - Multiline text input with vee-validate integration
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Thin wrapper around v-textarea. All Vuetify props pass through via $attrs.
+   * @see https://vuetifyjs.com/en/components/textareas/
+   *
+   * @example
+   * // Standalone
+   * <FTextarea v-model="notes" label="Notes" />
+   *
+   * @example
+   * // Form-integrated
+   * <FTextarea name="description" label="Description" auto-grow />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   export interface FTextareaProps {
     /** Field name for vee-validate form binding */
     name?: string
+    /** Value for standalone v-model usage */
     modelValue?: string
-    hideDetails?: boolean | 'auto'
-    autoGrow?: boolean
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FTextareaProps>(), {
     name: undefined,
     modelValue: '',
-    hideDetails: 'auto',
-    autoGrow: true,
   })
 
   const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
-  // Form-integrated mode
   const nameRef = toRef(props, 'name')
   const field = props.name ? useField<string>(nameRef as unknown as string) : null
 

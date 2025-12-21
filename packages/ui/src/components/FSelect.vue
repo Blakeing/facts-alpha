@@ -3,23 +3,26 @@
     v-model="fieldValue"
     :items="options"
     :error-messages="fieldError"
-    :hide-details="hideDetails"
     v-bind="$attrs"
     @blur="handleBlur"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FSelect - Wrapper for v-select
+   * FSelect - Dropdown select with vee-validate integration
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Thin wrapper around v-select. All Vuetify props pass through via $attrs.
+   * @see https://vuetifyjs.com/en/components/selects/
+   *
+   * @example
+   * // Standalone
+   * <FSelect v-model="status" :options="statusOptions" label="Status" />
+   *
+   * @example
+   * // Form-integrated
+   * <FSelect name="role" :options="roleOptions" label="Role" />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   export type SelectOption = {
     title: string
     value: string | number
@@ -31,20 +34,24 @@
   export interface FSelectProps {
     /** Field name for vee-validate form binding */
     name?: string
+    /** Selected value */
     modelValue?: SelectValue
+    /** Select options */
     options: SelectOption[]
-    hideDetails?: boolean | 'auto'
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FSelectProps>(), {
     name: undefined,
     modelValue: null,
-    hideDetails: 'auto',
   })
 
   const emit = defineEmits<{ 'update:modelValue': [value: SelectValue] }>()
 
-  // Form-integrated mode
   const nameRef = toRef(props, 'name')
   const field = props.name ? useField<SelectValue>(nameRef as unknown as string) : null
 

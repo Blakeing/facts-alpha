@@ -1,10 +1,7 @@
 <template>
   <v-radio-group
     v-model="fieldValue"
-    :label="label"
-    :inline="inline"
     :error-messages="fieldError"
-    :hide-details="hideDetails"
     v-bind="$attrs"
     @blur="handleBlur"
   >
@@ -19,20 +16,30 @@
   </v-radio-group>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FRadioGroup - Radio group with options array API
+   * FRadioGroup - Radio button group with vee-validate integration
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Provides options array API for radio buttons.
+   * All v-radio-group props pass through via $attrs.
+   * @see https://vuetifyjs.com/en/components/radio-buttons/
    *
-   * Mirrors Vuetify's v-radio-group pattern. Attrs pass through to
-   * the group (e.g., color, density, rules).
+   * @example
+   * // Standalone
+   * <FRadioGroup
+   *   v-model="size"
+   *   label="Size"
+   *   :options="[
+   *     { label: 'Small', value: 'sm' },
+   *     { label: 'Medium', value: 'md' },
+   *     { label: 'Large', value: 'lg' }
+   *   ]"
+   * />
+   *
+   * @example
+   * // Form-integrated
+   * <FRadioGroup name="priority" :options="priorityOptions" inline />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   export type RadioOption = {
     label: string
     value: string | number
@@ -43,24 +50,24 @@
   export interface FRadioGroupProps {
     /** Field name for vee-validate form binding */
     name?: string
+    /** Selected value */
     modelValue?: string | number | null
-    label?: string
+    /** Radio options */
     options: RadioOption[]
-    inline?: boolean
-    hideDetails?: boolean | 'auto'
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FRadioGroupProps>(), {
     name: undefined,
     modelValue: null,
-    label: undefined,
-    inline: false,
-    hideDetails: 'auto',
   })
 
   const emit = defineEmits<{ 'update:modelValue': [value: string | number | null] }>()
 
-  // Form-integrated mode
   const nameRef = toRef(props, 'name')
   const field = props.name ? useField<string | number | null>(nameRef as unknown as string) : null
 

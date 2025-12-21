@@ -24,5 +24,8 @@
     "@types/node": "^22.9.0",
     "oxlint": "^1.34.0",
     "typescript": "~5.9.2"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0"
   }
 }

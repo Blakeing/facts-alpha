@@ -57,6 +57,9 @@ export type { FRadioGroupProps, RadioOption } from './components/FRadioGroup.vue
 export { default as FDatePicker } from './components/FDatePicker.vue'
 export type { FDatePickerProps } from './components/FDatePicker.vue'
 
+export { default as FDateRangePicker } from './components/FDateRangePicker.vue'
+export type { FDateRangePickerProps, DateRange } from './components/FDateRangePicker.vue'
+
 // Form Containers
 export { default as FForm, FORM_CONTEXT_KEY } from './components/FForm.vue'
 export type { FFormProps, FFormSlotProps } from './components/FForm.vue'
@@ -70,6 +73,21 @@ export type { FCardProps, CardVariant } from './components/FCard.vue'
 
 export { default as FDialog } from './components/FDialog.vue'
 export type { FDialogProps, DialogWidth } from './components/FDialog.vue'
+
+// Navigation & Menus
+export { default as FBreadcrumbs } from './components/FBreadcrumbs.vue'
+export type { FBreadcrumbsProps, BreadcrumbItem } from './components/FBreadcrumbs.vue'
+
+export { default as FMenu } from './components/FMenu.vue'
+export type { FMenuProps, MenuItem } from './components/FMenu.vue'
+
+// Feedback & Display
+export { default as FChip } from './components/FChip.vue'
+
+export { default as FAvatar } from './components/FAvatar.vue'
+export type { FAvatarProps } from './components/FAvatar.vue'
+
+export { default as FTooltip } from './components/FTooltip.vue'
 
 // Data Display
 export { default as FDataTable } from './components/FDataTable.vue'

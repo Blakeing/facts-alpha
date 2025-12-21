@@ -1,47 +1,48 @@
 <template>
   <v-checkbox
     v-model="fieldValue"
-    :indeterminate="indeterminate"
     :error-messages="fieldError"
-    :hide-details="hideDetails"
     v-bind="$attrs"
     @blur="handleBlur"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FCheckbox - Wrapper for v-checkbox
+   * FCheckbox - Checkbox with vee-validate integration
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Thin wrapper around v-checkbox. All Vuetify props pass through via $attrs.
+   * @see https://vuetifyjs.com/en/components/checkboxes/
    *
-   * Attrs pass through to v-checkbox (label, color, true-value, false-value, etc.)
+   * @example
+   * // Standalone
+   * <FCheckbox v-model="agreed" label="I agree to terms" />
+   *
+   * @example
+   * // Form-integrated
+   * <FCheckbox name="acceptTerms" label="Accept terms and conditions" />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   type CheckboxValue = boolean | string | number | null
 
   export interface FCheckboxProps {
     /** Field name for vee-validate form binding */
     name?: string
+    /** Checkbox value */
     modelValue?: CheckboxValue
-    indeterminate?: boolean
-    hideDetails?: boolean | 'auto'
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FCheckboxProps>(), {
     name: undefined,
     modelValue: false,
-    indeterminate: false,
-    hideDetails: 'auto',
   })
 
   const emit = defineEmits<{ 'update:modelValue': [value: CheckboxValue] }>()
 
-  // Form-integrated mode
   const nameRef = toRef(props, 'name')
   const field = props.name ? useField<CheckboxValue>(nameRef as unknown as string) : null
 

@@ -2,41 +2,47 @@
   <v-switch
     v-model="fieldValue"
     :error-messages="fieldError"
-    :hide-details="hideDetails"
     v-bind="$attrs"
     @blur="handleBlur"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FSwitch - Wrapper for v-switch
+   * FSwitch - Toggle switch with vee-validate integration
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Thin wrapper around v-switch. All Vuetify props pass through via $attrs.
+   * @see https://vuetifyjs.com/en/components/switches/
+   *
+   * @example
+   * // Standalone
+   * <FSwitch v-model="notifications" label="Enable notifications" />
+   *
+   * @example
+   * // Form-integrated
+   * <FSwitch name="settings.darkMode" label="Dark Mode" />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   type SwitchValue = boolean | string | number | null
 
   export interface FSwitchProps {
     /** Field name for vee-validate form binding */
     name?: string
+    /** Switch value */
     modelValue?: SwitchValue
-    hideDetails?: boolean | 'auto'
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FSwitchProps>(), {
     name: undefined,
     modelValue: false,
-    hideDetails: 'auto',
   })
 
   const emit = defineEmits<{ 'update:modelValue': [value: SwitchValue] }>()
 
-  // Form-integrated mode
   const nameRef = toRef(props, 'name')
   const field = props.name ? useField<SwitchValue>(nameRef as unknown as string) : null
 

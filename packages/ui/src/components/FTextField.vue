@@ -2,52 +2,48 @@
   <v-text-field
     v-model="fieldValue"
     :error-messages="fieldError"
-    :hide-details="hideDetails"
     v-bind="$attrs"
     @blur="handleBlur"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
   /**
-   * FTextField - Wrapper for v-text-field
+   * FTextField - Text input with vee-validate integration
    *
-   * Supports two modes:
-   * 1. Standalone: Use v-model for value binding
-   * 2. Form-integrated: Provide `name` prop to auto-bind to vee-validate form context
+   * Thin wrapper around v-text-field. All Vuetify props pass through via $attrs.
+   * @see https://vuetifyjs.com/en/components/text-fields/
    *
    * @example
-   * // Standalone mode
+   * // Standalone
    * <FTextField v-model="email" label="Email" />
    *
-   * // Form-integrated mode (within useTypedForm context)
+   * @example
+   * // Form-integrated (within FForm context)
    * <FTextField name="user.email" label="Email" />
    */
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
-
   export interface FTextFieldProps {
-    /** Field name for vee-validate form binding (enables form mode) */
+    /** Field name for vee-validate form binding */
     name?: string
     /** Value for standalone v-model usage */
     modelValue?: string | number
-    /** Control error message visibility */
-    hideDetails?: boolean | 'auto'
   }
+</script>
+
+<script lang="ts" setup>
+  import { useField } from 'vee-validate'
+  import { computed, toRef } from 'vue'
 
   const props = withDefaults(defineProps<FTextFieldProps>(), {
     name: undefined,
     modelValue: '',
-    hideDetails: 'auto',
   })
 
   const emit = defineEmits<{ 'update:modelValue': [value: string | number] }>()
 
-  // Form-integrated mode: use vee-validate's useField
   const nameRef = toRef(props, 'name')
   const field = props.name ? useField<string | number>(nameRef as unknown as string) : null
 
-  // Computed value that switches between vee-validate and v-model
   const fieldValue = computed({
     get: () => (field ? field.value.value : props.modelValue),
     set: (val) => {
@@ -59,10 +55,8 @@
     },
   })
 
-  // Error message from vee-validate (only in form mode)
   const fieldError = computed(() => field?.errorMessage.value)
 
-  // Blur handler for validation trigger
   function handleBlur(e: FocusEvent) {
     field?.handleBlur(e)
   }

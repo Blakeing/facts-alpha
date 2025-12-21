@@ -92,6 +92,7 @@
           <v-btn
             v-bind="props"
             class="ml-2"
+            icon
             variant="text"
           >
             <v-avatar

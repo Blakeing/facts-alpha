@@ -20,7 +20,7 @@ declare module 'vue-router/auto-routes' {
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/cases/': RouteRecordInfo<'/cases/', '/cases', Record<never, never>, Record<never, never>>,
-    '/cases/[id]': RouteRecordInfo<'/cases/[id]', '/cases/:id', { id: ParamValue<true> }, { id: ParamValue<false> }, '/cases/[id]/edit'>,
+    '/cases/[id]/': RouteRecordInfo<'/cases/[id]/', '/cases/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     '/cases/[id]/edit': RouteRecordInfo<'/cases/[id]/edit', '/cases/:id/edit', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     '/cases/create': RouteRecordInfo<'/cases/create', '/cases/create', Record<never, never>, Record<never, never>>,
     '/components': RouteRecordInfo<'/components', '/components', Record<never, never>, Record<never, never>>,
@@ -45,9 +45,9 @@ declare module 'vue-router/auto-routes' {
       routes: '/cases/'
       views: never
     }
-    'src/pages/cases/[id].vue': {
-      routes: '/cases/[id]' | '/cases/[id]/edit'
-      views: 'default'
+    'src/pages/cases/[id]/index.vue': {
+      routes: '/cases/[id]/'
+      views: never
     }
     'src/pages/cases/[id]/edit.vue': {
       routes: '/cases/[id]/edit'

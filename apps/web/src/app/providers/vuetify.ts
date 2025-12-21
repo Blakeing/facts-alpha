@@ -6,10 +6,12 @@
  *
  * @see https://vuetifyjs.com/en/features/blueprints/#material-design-3
  * @see https://m3.material.io/
+ * @see https://vuetifyjs.com/en/features/dates/
  */
 
 import { createVuetify } from 'vuetify'
 import { md3 } from 'vuetify/blueprints'
+import { VDateInput } from 'vuetify/labs/VDateInput'
 
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
@@ -31,6 +33,11 @@ export default createVuetify({
   // - Component defaults
   // - Motion/transitions
   blueprint: md3,
+
+  // Lab components (date input is still in labs)
+  components: {
+    VDateInput,
+  },
 
   theme: {
     themes: {
@@ -64,6 +71,10 @@ export default createVuetify({
       density: 'compact',
     },
     VList: {
+      density: 'compact',
+    },
+    VDateInput: {
+      variant: 'outlined',
       density: 'compact',
     },
   },
