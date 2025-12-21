@@ -13,12 +13,13 @@ export * from './tokens'
 // Composables
 // =============================================================================
 export { useTokens } from './composables'
-export { useFieldBinding, useFieldBindings, useTypedForm } from './composables'
+export { useFieldBinding, useFieldBindings, useTypedForm, useTypedFieldArray } from './composables'
 export type {
   FieldBinding,
   FieldBindingOptions,
   TypedFormOptions,
   TypedFormReturn,
+  TypedFieldArrayReturn,
 } from './composables'
 
 // =============================================================================
@@ -55,6 +56,13 @@ export type { FRadioGroupProps, RadioOption } from './components/FRadioGroup.vue
 // Form Controls - Date/Time
 export { default as FDatePicker } from './components/FDatePicker.vue'
 export type { FDatePickerProps } from './components/FDatePicker.vue'
+
+// Form Containers
+export { default as FForm, FORM_CONTEXT_KEY } from './components/FForm.vue'
+export type { FFormProps, FFormSlotProps } from './components/FForm.vue'
+
+export { default as FFieldArray } from './components/FFieldArray.vue'
+export type { FFieldArrayProps, FFieldArraySlotProps } from './components/FFieldArray.vue'
 
 // Containers
 export { default as FCard } from './components/FCard.vue'

@@ -19,7 +19,7 @@
 
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm, type FormContext } from 'vee-validate'
-import { computed, type ComputedRef } from 'vue'
+import { computed, type ComputedRef, type Ref } from 'vue'
 import type { z } from 'zod'
 
 export interface TypedFormOptions<TSchema extends z.ZodType> {
@@ -37,9 +37,15 @@ export interface TypedFormReturn<TSchema extends z.ZodType> {
   /** Form errors by field path */
   errors: FormContext<z.infer<TSchema>>['errors']
   /** Whether the form is currently submitting */
-  isSubmitting: FormContext<z.infer<TSchema>>['isSubmitting']
-  /** Whether the form has been modified */
+  isSubmitting: Ref<boolean>
+  /** Form metadata (valid, dirty, touched, etc.) */
   meta: FormContext<z.infer<TSchema>>['meta']
+  /** Whether the form is valid (readonly computed) */
+  isValid: ComputedRef<boolean>
+  /** Whether the form has been modified from initial values */
+  isDirty: ComputedRef<boolean>
+  /** Map of touched field paths */
+  touched: ComputedRef<Record<string, boolean>>
   /** Submit handler - pass your success callback and get back an event handler */
   handleSubmit: (
     onSuccess: (values: z.infer<TSchema>) => void | Promise<void>,
@@ -50,12 +56,14 @@ export interface TypedFormReturn<TSchema extends z.ZodType> {
   setFieldValue: FormContext<z.infer<TSchema>>['setFieldValue']
   /** Set multiple field values */
   setValues: FormContext<z.infer<TSchema>>['setValues']
+  /** Set field errors (useful for server-side validation) */
+  setErrors: FormContext<z.infer<TSchema>>['setErrors']
+  /** Set a specific field error */
+  setFieldError: FormContext<z.infer<TSchema>>['setFieldError']
   /** Validate the entire form */
   validate: FormContext<z.infer<TSchema>>['validate']
   /** Validate a specific field */
   validateField: FormContext<z.infer<TSchema>>['validateField']
-  /** Whether the form is valid (readonly computed) */
-  isValid: ComputedRef<boolean>
   /** The underlying vee-validate form context */
   formContext: FormContext<z.infer<TSchema>>
 }
@@ -88,18 +96,46 @@ export function useTypedForm<TSchema extends z.ZodType>(
   // Computed validity check
   const isValid = computed(() => form.meta.value.valid)
 
+  // Computed dirty check
+  const isDirty = computed(() => form.meta.value.dirty)
+
+  // Computed touched fields map
+  const touched = computed(() => {
+    const result: Record<string, boolean> = {}
+    const meta = form.meta.value
+    if (meta.touched && typeof meta.touched === 'object') {
+      // Flatten nested touched object
+      const extractTouched = (obj: Record<string, unknown>, prefix = '') => {
+        for (const [key, value] of Object.entries(obj)) {
+          const path = prefix ? `${prefix}.${key}` : key
+          if (typeof value === 'boolean') {
+            result[path] = value
+          } else if (typeof value === 'object' && value !== null) {
+            extractTouched(value as Record<string, unknown>, path)
+          }
+        }
+      }
+      extractTouched(meta.touched as Record<string, unknown>)
+    }
+    return result
+  })
+
   return {
     values: form.values,
     errors: form.errors,
     isSubmitting: form.isSubmitting,
     meta: form.meta,
+    isValid,
+    isDirty,
+    touched,
     handleSubmit,
     resetForm: form.resetForm,
     setFieldValue: form.setFieldValue,
     setValues: form.setValues,
+    setErrors: form.setErrors,
+    setFieldError: form.setFieldError,
     validate: form.validate,
     validateField: form.validateField,
-    isValid,
     formContext: form,
   }
 }
