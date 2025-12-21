@@ -13,7 +13,7 @@ export interface NavigationItem {
 
 export const navigation: NavigationItem[] = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
-  { title: 'Cases', icon: 'mdi-folder-open-outline', to: '/cases', disabled: true },
+  { title: 'Cases', icon: 'mdi-folder-open-outline', to: '/cases' },
   { title: 'Calendar', icon: 'mdi-calendar-outline', to: '/calendar', disabled: true },
   { title: 'Contacts', icon: 'mdi-account-group-outline', to: '/contacts', disabled: true },
 ]

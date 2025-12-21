@@ -88,7 +88,7 @@ const props = withDefaults(defineProps<FSelectProps<T>>(), {
   hint: undefined,
   persistentHint: false,
   variant: 'outlined',
-  density: 'comfortable',
+  density: 'compact',
   disabled: false,
   readonly: false,
   clearable: false,

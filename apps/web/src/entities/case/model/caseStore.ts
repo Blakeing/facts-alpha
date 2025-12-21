@@ -5,11 +5,13 @@
  */
 
 import type { Case, CaseStatus } from './case'
+import { mockCases } from './mockData'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 export const useCaseStore = defineStore('case', () => {
-  const cases = ref<Case[]>([])
+  // Initialize with mock data for development
+  const cases = ref<Case[]>(mockCases)
   const currentCase = ref<Case | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)

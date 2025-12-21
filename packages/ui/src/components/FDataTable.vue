@@ -106,7 +106,7 @@ const props = withDefaults(defineProps<FDataTableProps<T>>(), {
   itemValue: 'id',
   loading: false,
   hover: true,
-  density: 'comfortable',
+  density: 'compact',
   showSelect: false,
   returnObject: false,
   sortBy: () => [],

@@ -4,5 +4,4 @@
  * Features layer - reused implementations of product features
  */
 
-// Export features as they are created
-export const FEATURES_PLACEHOLDER = true
+export { CaseForm, CaseDeleteDialog, useCaseForm } from './case-form'

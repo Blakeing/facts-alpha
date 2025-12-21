@@ -1,26 +1,41 @@
+<!--
+  AppShell Component - Main Application Layout
+
+  @see https://vuetifyjs.com/en/components/navigation-drawers/
+  @see https://vuetifyjs.com/en/components/app-bars/
+-->
 <template>
   <v-layout>
-    <v-navigation-drawer v-model="drawer">
-      <v-list-item
-        class="pa-4"
-        :prepend-avatar="undefined"
-      >
-        <template #prepend>
-          <v-avatar
-            color="primary"
-            size="40"
-          >
-            <span class="text-button text-white">FH</span>
-          </v-avatar>
-        </template>
-        <v-list-item-title class="text-subtitle-1 font-weight-semibold">
-          Funeral Home ERP
-        </v-list-item-title>
-        <v-list-item-subtitle class="text-caption"> Case Management </v-list-item-subtitle>
-      </v-list-item>
+    <!-- Navigation Drawer with Rail Support -->
+    <v-navigation-drawer
+      v-model="drawer"
+      :permanent="$vuetify.display.lgAndUp"
+      :rail="rail"
+      :temporary="!$vuetify.display.lgAndUp"
+      @click="rail = false"
+    >
+      <!-- Brand Header -->
+      <v-list nav>
+        <v-list-item>
+          <template #prepend>
+            <v-avatar
+              class="justify-start"
+              icon="mdi-home"
+            />
+          </template>
+
+          <template v-if="!rail">
+            <v-list-item-title class="text-subtitle-2 font-weight-bold">
+              Funeral Home ERP
+            </v-list-item-title>
+            <v-list-item-subtitle class="text-caption"> Case Management </v-list-item-subtitle>
+          </template>
+        </v-list-item>
+      </v-list>
 
       <v-divider />
 
+      <!-- Primary Navigation -->
       <v-list
         density="compact"
         nav
@@ -28,6 +43,7 @@
         <v-list-item
           v-for="item in navigation"
           :key="item.title"
+          :active="isActive(item.to)"
           :disabled="item.disabled"
           :prepend-icon="item.icon"
           :title="item.title"
@@ -36,6 +52,7 @@
         />
       </v-list>
 
+      <!-- Bottom Section -->
       <template #append>
         <v-divider />
         <v-list
@@ -55,8 +72,18 @@
       </template>
     </v-navigation-drawer>
 
+    <!-- App Bar -->
     <v-app-bar flat>
-      <v-app-bar-nav-icon @click="drawer = !drawer" />
+      <v-app-bar-nav-icon
+        v-if="!$vuetify.display.lgAndUp"
+        @click="drawer = !drawer"
+      />
+      <v-btn
+        v-if="$vuetify.display.lgAndUp"
+        :icon="rail ? 'mdi-menu' : 'mdi-chevron-left'"
+        variant="text"
+        @click="rail = !rail"
+      />
       <v-toolbar-title>{{ currentTitle }}</v-toolbar-title>
       <v-spacer />
       <v-btn
@@ -67,25 +94,34 @@
         icon="mdi-bell-outline"
         variant="text"
       />
-      <v-menu>
+      <v-menu location="bottom end">
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            icon
+            class="ml-2"
+            variant="text"
           >
             <v-avatar
               color="primary"
               size="32"
             >
-              <span class="text-caption text-white">U</span>
+              <span class="text-on-primary">U</span>
             </v-avatar>
           </v-btn>
         </template>
-        <v-list density="compact">
+        <v-list
+          density="compact"
+          min-width="200"
+        >
           <v-list-item
             prepend-icon="mdi-account-outline"
             title="Profile"
           />
+          <v-list-item
+            prepend-icon="mdi-cog-outline"
+            title="Settings"
+          />
+          <v-divider class="my-1" />
           <v-list-item
             prepend-icon="mdi-logout"
             title="Sign out"
@@ -94,9 +130,10 @@
       </v-menu>
     </v-app-bar>
 
+    <!-- Main Content -->
     <v-main>
       <v-container
-        class="py-6"
+        class="pa-6"
         fluid
       >
         <slot />
@@ -112,10 +149,15 @@
 
   const route = useRoute()
   const drawer = ref(true)
+  const rail = ref(false)
+
+  function isActive(to: string) {
+    return route.path === to || route.path.startsWith(to + '/')
+  }
 
   const currentTitle = computed(() => {
     const allNav = [...navigation, ...secondaryNavigation]
-    const current = allNav.find((item) => item.to === route.path)
+    const current = allNav.find((item) => isActive(item.to))
     return current?.title ?? 'Dashboard'
   })
 </script>

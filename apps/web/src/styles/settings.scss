@@ -1,10 +1,96 @@
 /**
  * src/styles/settings.scss
  *
- * Configures SASS variables and Vuetify overwrites
+ * Vuetify SASS variable customizations (minimal)
  */
 
-// https://vuetifyjs.com/features/sass-variables/`
-// @use 'vuetify/settings' with (
-//   $color-pack: false
-// );
+@use 'vuetify/settings' with (
+  $body-font-family: 'Roboto',
+  $heading-font-family: 'Roboto'
+);
+
+// =============================================================================
+// ACCESSIBILITY
+// =============================================================================
+
+:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
+// =============================================================================
+// TEXT COLOR FIXES
+// These fix visibility issues with the M3 color system
+// =============================================================================
+
+// Card text
+.v-card-title {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+.v-card-subtitle {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+// List item text
+.v-list-item-title {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+.v-list-item-subtitle {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+// Form field labels
+.v-label {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+  opacity: 1 !important;
+}
+
+// Form field input text
+.v-field__input {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+// Text field outline visibility
+.v-field--variant-outlined .v-field__outline {
+  --v-field-border-opacity: 1;
+}
+
+.v-field--variant-outlined .v-field__outline__start,
+.v-field--variant-outlined .v-field__outline__end,
+.v-field--variant-outlined .v-field__outline__notch::before,
+.v-field--variant-outlined .v-field__outline__notch::after {
+  border-color: rgb(var(--v-theme-outline)) !important;
+}
+
+// Focused state
+.v-field--variant-outlined.v-field--focused .v-field__outline__start,
+.v-field--variant-outlined.v-field--focused .v-field__outline__end,
+.v-field--variant-outlined.v-field--focused .v-field__outline__notch::before,
+.v-field--variant-outlined.v-field--focused .v-field__outline__notch::after {
+  border-color: rgb(var(--v-theme-primary)) !important;
+}
+
+// Medium emphasis text
+.text-medium-emphasis {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+// Checkbox/switch/radio labels
+.v-checkbox .v-label,
+.v-switch .v-label,
+.v-radio .v-label {
+  color: rgb(var(--v-theme-on-surface)) !important;
+  opacity: 1 !important;
+}
+
+// Radio group labels
+.v-radio-group > .v-input__control > .v-label {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+// Select text
+.v-select__selection-text {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}

@@ -3,5 +3,33 @@
 > @facts/web@0.0.0 lint /Users/blakeing/Code/facts-alpha/apps/web
 > oxlint && eslint . --fix
 
-Found 0 warnings and 0 errors.
-Finished in 50ms on 31 files using 10 threads.
+
+  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-console.html\[38;2;244;191;117;1meslint(no-console)[0m]8;;\: [38;2;244;191;117;1mUnexpected console statement.[0m
+    ╭─[[38;2;92;157;255;1msrc/app/providers/router.ts[0m:20:7]
+ [2m19[0m │     if (localStorage.getItem('vuetify:dynamic-reload')) {
+ [2m20[0m │       console.error('Dynamic import error, reloading page did not fix it', err)
+    · [38;2;246;87;248m      ─────────────[0m
+ [2m21[0m │     } else {
+    ╰────
+[38;2;106;159;181m  help: [0mDelete this console statement.
+
+  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-console.html\[38;2;244;191;117;1meslint(no-console)[0m]8;;\: [38;2;244;191;117;1mUnexpected console statement.[0m
+    ╭─[[38;2;92;157;255;1msrc/app/providers/router.ts[0m:22:7]
+ [2m21[0m │     } else {
+ [2m22[0m │       console.log('Reloading page to fix dynamic import error')
+    · [38;2;246;87;248m      ───────────[0m
+ [2m23[0m │       localStorage.setItem('vuetify:dynamic-reload', 'true')
+    ╰────
+[38;2;106;159;181m  help: [0mDelete this console statement.
+
+  [38;2;244;191;117;1m⚠[0m ]8;;https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-console.html\[38;2;244;191;117;1meslint(no-console)[0m]8;;\: [38;2;244;191;117;1mUnexpected console statement.[0m
+    ╭─[[38;2;92;157;255;1msrc/app/providers/router.ts[0m:27:5]
+ [2m26[0m │   } else {
+ [2m27[0m │     console.error(err)
+    · [38;2;246;87;248m    ─────────────[0m
+ [2m28[0m │   }
+    ╰────
+[38;2;106;159;181m  help: [0mDelete this console statement.
+
+Found 3 warnings and 0 errors.
+Finished in 55ms on 31 files using 10 threads.

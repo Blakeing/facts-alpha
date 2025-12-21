@@ -3,8 +3,7 @@
     :variant="computedVariant"
     :elevation="computedElevation"
     :rounded="rounded"
-    :color="color"
-    :class="cardClass"
+    :color="computedColor"
     v-bind="$attrs"
   >
     <v-card-item v-if="title || subtitle || $slots.prepend || $slots.append">
@@ -12,8 +11,12 @@
         <slot name="prepend" />
       </template>
 
-      <v-card-title v-if="title">{{ title }}</v-card-title>
-      <v-card-subtitle v-if="subtitle">{{ subtitle }}</v-card-subtitle>
+      <v-card-title v-if="title">
+        {{ title }}
+      </v-card-title>
+      <v-card-subtitle v-if="subtitle">
+        {{ subtitle }}
+      </v-card-subtitle>
 
       <template v-if="$slots.append" #append>
         <slot name="append" />
@@ -33,20 +36,32 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 
-export type CardVariant = 'elevated' | 'flat' | 'outlined' | 'tonal'
+/**
+ * M3 Card Variants
+ *
+ * - elevated: Has shadow, surface color background
+ * - filled: Surface-container background, no shadow
+ * - outlined: Border, surface color background
+ */
+export type CardVariant = 'elevated' | 'filled' | 'outlined'
 
 export interface FCardProps {
   /** Card title */
   title?: string
   /** Card subtitle */
   subtitle?: string
-  /** Visual variant */
+  /**
+   * M3 card variant:
+   * - elevated: shadow elevation
+   * - filled: surface-container background
+   * - outlined: border (default)
+   */
   variant?: CardVariant
   /** Elevation (shadow depth) - only for elevated variant */
   elevation?: string | number
   /** Border radius */
   rounded?: string | number | boolean
-  /** Background color */
+  /** Background color override */
   color?: string
   /** Remove default padding */
   noPadding?: boolean
@@ -65,18 +80,50 @@ const props = withDefaults(defineProps<FCardProps>(), {
   actionsEnd: true,
 })
 
-const computedVariant = computed(() => props.variant)
-
-const computedElevation = computed(() => {
-  if (props.variant === 'elevated') {
-    return props.elevation ?? 2
+/**
+ * Map M3 variants to Vuetify variants
+ */
+const computedVariant = computed(() => {
+  switch (props.variant) {
+    case 'elevated':
+      return 'elevated'
+    case 'filled':
+      return 'flat'
+    case 'outlined':
+    default:
+      return 'outlined'
   }
-  return props.elevation ?? 0
 })
 
-const cardClass = computed(() => ({
-  'f-card': true,
-}))
+/**
+ * M3 elevation levels
+ */
+const computedElevation = computed(() => {
+  if (props.elevation !== undefined) {
+    return props.elevation
+  }
+  if (props.variant === 'elevated') {
+    return 1
+  }
+  return 0
+})
+
+/**
+ * M3 surface colors by variant
+ */
+const computedColor = computed(() => {
+  if (props.color) {
+    return props.color
+  }
+  switch (props.variant) {
+    case 'filled':
+      return 'surface-variant'
+    case 'elevated':
+    case 'outlined':
+    default:
+      return 'surface'
+  }
+})
 
 const contentClass = computed(() => ({
   'pa-0': props.noPadding,
@@ -86,10 +133,3 @@ const actionsClass = computed(() => ({
   'justify-end': props.actionsEnd,
 }))
 </script>
-
-<style scoped>
-.f-card {
-  overflow: hidden;
-}
-</style>
-
