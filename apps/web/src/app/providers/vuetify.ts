@@ -1,29 +1,46 @@
 /**
  * app/providers/vuetify.ts
  *
- * Vuetify configuration - stripped down to basics for debugging
+ * Vuetify configuration with MD3 Blueprint
+ * Using Material Design 3 defaults with custom brand colors
+ *
+ * @see https://vuetifyjs.com/en/features/blueprints/#material-design-3
+ * @see https://m3.material.io/
  */
 
 import { createVuetify } from 'vuetify'
+import { md3 } from 'vuetify/blueprints'
 
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
+// Brand colors - custom palette for funeral home ERP
+const brandColors = {
+  primary: '#1660c4', // Deep indigo - professionalism
+  secondary: '#67544e', // Warm brown - warmth/comfort
+  error: '#ba1a1a', // M3 error red
+  success: '#2e7d32', // Green for positive states
+  warning: '#f57c00', // Orange for warnings
+  info: '#1976d2', // Blue for informational
+}
+
 export default createVuetify({
+  // MD3 Blueprint provides M3-compliant:
+  // - Shapes (corner radii)
+  // - Typography scale
+  // - Component defaults
+  // - Motion/transitions
+  blueprint: md3,
+
   theme: {
     themes: {
       light: {
-        colors: {
-          primary: '#1660c4',
-          secondary: '#67544e',
-          error: '#ba1a1a',
-          success: '#2e7d32',
-          warning: '#f57c00',
-          info: '#1976d2',
-        },
+        colors: brandColors,
       },
     },
   },
+
+  // Density overrides for ERP aesthetic (compact forms)
   defaults: {
     VTextField: {
       variant: 'outlined',
@@ -45,13 +62,6 @@ export default createVuetify({
     },
     VSwitch: {
       density: 'compact',
-    },
-    VBtn: {
-      rounded: 'pill',
-      elevation: 0,
-    },
-    VCard: {
-      rounded: 'lg',
     },
     VList: {
       density: 'compact',

@@ -60,13 +60,27 @@ The application follows [Feature-Sliced Design](https://feature-sliced.design/) 
 
 ## Design System (`@facts/ui`)
 
-### Design Tokens
+### Material Design 3 (MD3)
 
-Located in `packages/ui/src/tokens/`:
+The app uses Vuetify's **MD3 Blueprint** which provides:
+- M3-compliant shapes (corner radii)
+- M3 typography scale
+- M3 component behavior and defaults
+- M3 motion/transitions
 
-- **colors.ts** - M3 tonal palettes, light/dark color schemes, semantic colors
-- **spacing.ts** - Spacing scale (4px base unit)
-- **typography.ts** - Font families, sizes, weights
+We only define **brand colors** to override the generic M3 palette:
+
+```typescript
+// packages/ui/src/tokens/colors.ts
+export const brandColors = {
+  primary: '#1660c4',   // Deep indigo - professionalism
+  secondary: '#67544e', // Warm brown - warmth/comfort
+  error: '#ba1a1a',
+  success: '#2e7d32',
+  warning: '#f57c00',
+  info: '#1976d2',
+}
+```
 
 ### Wrapper Components
 
@@ -118,9 +132,25 @@ Vuetify components with simplified APIs and consistent defaults:
 
 Located in `apps/web/src/app/providers/vuetify.ts`:
 
-- Uses **MD3 Blueprint** for Material Design 3 defaults
-- Light theme only (dark mode stripped for simplicity)
-- Custom brand colors applied via `lightScheme` from `@facts/ui`
+```typescript
+import { createVuetify } from 'vuetify'
+import { md3 } from 'vuetify/blueprints'
+
+export default createVuetify({
+  blueprint: md3,  // M3 shapes, typography, motion
+  theme: {
+    themes: {
+      light: {
+        colors: brandColors,  // Just brand color overrides
+      },
+    },
+  },
+  defaults: { /* compact density for ERP */ },
+})
+```
+
+- **MD3 Blueprint** handles all M3 design tokens
+- Light theme only (dark mode ready via `darkScheme` if needed)
 - Compact density defaults for ERP aesthetic
 
 ## Current Implementation Status
@@ -184,13 +214,13 @@ The app runs at `http://localhost:3000` by default.
 
 ## Key Files Reference
 
-| File                                             | Purpose                                |
-| ------------------------------------------------ | -------------------------------------- |
-| `apps/web/src/app/providers/vuetify.ts`          | Vuetify configuration, theme, defaults |
-| `apps/web/src/styles/settings.scss`              | SASS overrides, global styles          |
-| `apps/web/src/widgets/app-shell/ui/AppShell.vue` | Main layout with sidebar               |
-| `packages/ui/src/tokens/colors.ts`               | M3 color system                        |
-| `packages/ui/src/index.ts`                       | UI package exports                     |
+| File                                             | Purpose                                 |
+| ------------------------------------------------ | --------------------------------------- |
+| `apps/web/src/app/providers/vuetify.ts`          | MD3 Blueprint + brand colors            |
+| `apps/web/src/styles/settings.scss`              | SASS overrides, global styles           |
+| `apps/web/src/widgets/app-shell/ui/AppShell.vue` | Main layout with sidebar                |
+| `packages/ui/src/tokens/colors.ts`               | Brand color definitions                 |
+| `packages/ui/src/index.ts`                       | UI package exports                      |
 
 ## Conventions
 

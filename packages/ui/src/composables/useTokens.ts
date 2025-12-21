@@ -1,22 +1,14 @@
 /**
- * Composable for accessing design tokens in Vue components
+ * Composable for accessing brand color tokens in Vue components
+ *
+ * With MD3 Blueprint, most design tokens are handled by Vuetify.
+ * This composable provides access to brand colors if needed.
  */
 
-import { colors, vuetifyColors } from '../tokens/colors'
-import { spacing, vuetifySpacing, componentSpacing } from '../tokens/spacing'
-import { fontFamily, fontSize, fontWeight, lineHeight, textStyles } from '../tokens/typography'
+import { brandColors } from '../tokens/colors'
 
 export function useTokens() {
   return {
-    colors,
-    vuetifyColors,
-    spacing,
-    vuetifySpacing,
-    componentSpacing,
-    fontFamily,
-    fontSize,
-    fontWeight,
-    lineHeight,
-    textStyles,
+    brandColors,
   }
 }
