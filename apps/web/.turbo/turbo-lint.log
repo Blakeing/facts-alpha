@@ -1,4 +1,0 @@
-
-> @facts/web@0.0.0 lint /Users/blakeing/Code/facts-alpha/apps/web
-> oxlint && eslint . --fix
-
