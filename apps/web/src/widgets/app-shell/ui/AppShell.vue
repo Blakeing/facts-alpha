@@ -5,7 +5,7 @@
   @see https://vuetifyjs.com/en/components/app-bars/
 -->
 <template>
-  <v-layout>
+  <v-layout class="app-shell">
     <!-- Navigation Drawer with Rail Support -->
     <v-navigation-drawer
       v-model="drawer"
@@ -124,7 +124,7 @@
     </v-app-bar>
 
     <!-- Main Content -->
-    <v-main>
+    <v-main scrollable>
       <v-container
         class="pa-6"
         fluid
@@ -154,3 +154,21 @@
     return current?.title ?? 'Dashboard'
   })
 </script>
+
+<style scoped>
+  /* Ensure the layout fills viewport and enables independent scrolling */
+  .app-shell {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+
+  /* Main content area scrolls independently */
+  :deep(.v-main) {
+    overflow-y: auto;
+  }
+
+  /* Navigation drawer scrolls if content overflows */
+  :deep(.v-navigation-drawer__content) {
+    overflow-y: auto;
+  }
+</style>
