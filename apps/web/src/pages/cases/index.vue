@@ -86,13 +86,11 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Case, CaseStatus } from '@/entities/case/model/case'
-  import { FButton, type FColumn, FDataTable, FTextField, PageHeader } from '@facts/ui'
-  import { formatDate } from '@facts/utils'
   import { computed, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useCaseStore } from '@/entities/case'
-  import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
+  import { type Case, type CaseStatus, CaseStatusBadge, useCaseStore } from '@/entities/case'
+  import { formatDate } from '@/shared/lib'
+  import { FButton, type FColumn, FDataTable, FTextField, PageHeader } from '@/shared/ui'
 
   const router = useRouter()
   const caseStore = useCaseStore()

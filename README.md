@@ -91,7 +91,11 @@ Vuetify components with simplified APIs and consistent defaults:
 
 ```vue
 <script setup>
-  import { FButton, FTextField, FCard } from '@facts/ui'
+  // In apps/web, import through shared layer
+  import { FButton, FTextField, FCard } from '@/shared/ui'
+  
+  // In packages or external apps, import directly
+  // import { FButton, FTextField, FCard } from '@facts/ui'
 </script>
 
 <template>
@@ -190,11 +194,39 @@ The app runs at `http://localhost:3000` by default.
 
 ## Conventions
 
-### Imports
+### FSD Import Rules
 
-- Use `@facts/ui` for design system components
-- Use `@facts/utils` for shared utilities
-- Use `@/` alias for app-internal imports
+All imports must follow the FSD layer hierarchy (top to bottom, imports flow downward only):
+
+```
+app → pages → widgets → features → entities → shared
+```
+
+**Within `apps/web/src/`:**
+
+```typescript
+// ✅ CORRECT: Import through layer public APIs
+import { FButton, FCard, useToast } from '@/shared/ui'
+import { formatDate } from '@/shared/lib'
+import { CaseStatusBadge, useCaseStore } from '@/entities/case'
+import { CaseForm } from '@/features/case-form'
+import { AppShell } from '@/widgets'
+
+// ❌ WRONG: Direct package imports (bypasses shared layer)
+import { FButton } from '@facts/ui'
+import { formatDate } from '@facts/utils'
+
+// ❌ WRONG: Deep imports (bypasses public API)
+import AppShell from '@/widgets/app-shell/ui/AppShell.vue'
+import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
+```
+
+**Re-export structure in shared layer:**
+
+- `@/shared/ui` - Re-exports `@facts/ui` + app-specific UI (toast)
+- `@/shared/lib` - Re-exports `@facts/utils`
+- `@/shared/api` - HTTP client utilities
+- `@/shared/config` - App constants
 
 ### Component Naming
 
@@ -207,6 +239,19 @@ The app runs at `http://localhost:3000` by default.
 - Use Pinia stores for entity state
 - Stores live in `entities/*/model/` or `features/*/model/`
 - Composables for reusable reactive logic
+
+### Public API Pattern
+
+Each FSD slice must have an `index.ts` that exports its public API:
+
+```typescript
+// entities/case/index.ts
+export type { Case, CaseStatus } from './model/case'
+export { useCaseStore } from './model/caseStore'
+export { default as CaseStatusBadge } from './ui/CaseStatusBadge.vue'
+```
+
+Consumers import only from the slice root, never from internal paths.
 
 ## Browser Support
 

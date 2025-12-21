@@ -50,12 +50,11 @@
 </template>
 
 <script lang="ts" setup>
-  import { FButton, PageHeader } from '@facts/ui'
   import { computed, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { type CaseFormValues, formValuesToCase, useCaseStore } from '@/entities/case'
   import { CaseForm } from '@/features/case-form'
-  import { useToast } from '@/shared/ui'
+  import { FButton, PageHeader, useToast } from '@/shared/ui'
 
   const route = useRoute()
   const router = useRouter()

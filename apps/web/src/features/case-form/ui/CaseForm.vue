@@ -257,7 +257,14 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Case, CaseFormValues } from '@/entities/case'
+  import { computed } from 'vue'
+  import {
+    type Case,
+    caseFormSchema,
+    type CaseFormValues,
+    caseToFormValues,
+    getDefaultCaseFormValues,
+  } from '@/entities/case'
   import {
     FButton,
     FCard,
@@ -269,13 +276,7 @@
     FSwitch,
     FTextarea,
     FTextField,
-  } from '@facts/ui'
-  import { computed } from 'vue'
-  import {
-    caseFormSchema,
-    caseToFormValues,
-    getDefaultCaseFormValues,
-  } from '@/entities/case'
+  } from '@/shared/ui'
 
   const props = defineProps<{
     case?: Case

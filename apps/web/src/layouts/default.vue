@@ -5,5 +5,5 @@
 </template>
 
 <script lang="ts" setup>
-  import AppShell from '@/widgets/app-shell/ui/AppShell.vue'
+  import { AppShell } from '@/widgets'
 </script>

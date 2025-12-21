@@ -13,12 +13,11 @@
 </template>
 
 <script lang="ts" setup>
-  import { PageHeader } from '@facts/ui'
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { type CaseFormValues, formValuesToCase, useCaseStore } from '@/entities/case'
   import { CaseForm } from '@/features/case-form'
-  import { useToast } from '@/shared/ui'
+  import { PageHeader, useToast } from '@/shared/ui'
 
   const router = useRouter()
   const caseStore = useCaseStore()

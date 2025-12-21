@@ -618,6 +618,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { ref } from 'vue'
+  import { z } from 'zod'
   import {
     FButton,
     FCard,
@@ -631,11 +633,9 @@
     FSwitch,
     FTextarea,
     FTextField,
+    useToast,
     useTypedForm,
-  } from '@facts/ui'
-  import { ref } from 'vue'
-  import { z } from 'zod'
-  import { useToast } from '@/shared/ui'
+  } from '@/shared/ui'
 
   const toast = useToast()
 

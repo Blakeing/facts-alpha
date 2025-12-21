@@ -365,13 +365,12 @@
 </template>
 
 <script lang="ts" setup>
-  import { FButton, FCard } from '@facts/ui'
-  import { formatDate, formatPhone } from '@facts/utils'
   import { computed, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { CaseStatusBadge, type ServiceType, useCaseStore } from '@/entities/case'
   import { CaseDeleteDialog } from '@/features/case-form'
-  import { useToast } from '@/shared/ui'
+  import { formatDate, formatPhone } from '@/shared/lib'
+  import { FButton, FCard, useToast } from '@/shared/ui'
 
   const route = useRoute()
   const router = useRouter()
