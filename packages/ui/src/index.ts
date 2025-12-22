@@ -89,6 +89,8 @@ export type { FAvatarProps } from './components/FAvatar.vue'
 
 export { default as FTooltip } from './components/FTooltip.vue'
 
+export { default as FLoader } from './components/FLoader.vue'
+
 // Data Display
 export { default as FDataTable } from './components/FDataTable.vue'
 export type { FDataTableProps, FColumn } from './components/FDataTable.vue'

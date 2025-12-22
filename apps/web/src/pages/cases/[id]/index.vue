@@ -1,14 +1,9 @@
 <template>
   <!-- Loading State -->
-  <div
+  <FLoader
     v-if="isLoading"
-    class="d-flex justify-center align-center py-12"
-  >
-    <v-progress-circular
-      color="primary"
-      indeterminate
-    />
-  </div>
+    text="Loading case..."
+  />
 
   <!-- Case Detail View -->
   <div v-else-if="caseItem">
@@ -381,7 +376,7 @@
   import { caseApi, CaseStatusBadge, type ServiceType, useCase } from '@/entities/case'
   import { CaseDeleteDialog } from '@/features/case-form'
   import { formatDate, formatPhone } from '@/shared/lib'
-  import { FButton, FCard, useToast } from '@/shared/ui'
+  import { FButton, FCard, FLoader, useToast } from '@/shared/ui'
 
   const route = useRoute()
   const router = useRouter()

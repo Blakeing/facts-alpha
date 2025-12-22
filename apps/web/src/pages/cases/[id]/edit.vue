@@ -1,14 +1,9 @@
 <template>
   <!-- Loading State -->
-  <div
+  <FLoader
     v-if="isLoadingInitial"
-    class="d-flex justify-center align-center py-12"
-  >
-    <v-progress-circular
-      color="primary"
-      indeterminate
-    />
-  </div>
+    text="Loading case..."
+  />
 
   <!-- Case Edit View -->
   <div v-else-if="initialValues">
@@ -65,7 +60,7 @@
   import { useRoute, useRouter } from 'vue-router'
   import { type CaseFormValues, useCase, useCaseForm } from '@/entities/case'
   import { CaseForm } from '@/features/case-form'
-  import { FButton, PageHeader, useToast } from '@/shared/ui'
+  import { FButton, FLoader, PageHeader, useToast } from '@/shared/ui'
 
   const route = useRoute()
   const router = useRouter()

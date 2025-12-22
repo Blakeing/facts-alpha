@@ -88,20 +88,21 @@ export const brandColors = {
 
 Vuetify components with simplified APIs and consistent defaults:
 
-| Component        | Wraps           | Purpose                                                               |
-| ---------------- | --------------- | --------------------------------------------------------------------- |
-| `FButton`        | `v-btn`         | Intent-based buttons (primary, secondary, tonal, danger, ghost, text) |
-| `FTextField`     | `v-text-field`  | Text input with compact density                                       |
-| `FTextarea`      | `v-textarea`    | Multiline text with auto-grow                                         |
-| `FSelect`        | `v-select`      | Dropdown with options array API                                       |
-| `FCard`          | `v-card`        | Cards with variant support (elevated, filled, outlined)               |
-| `FDialog`        | `v-dialog`      | Modal dialogs with preset widths                                      |
-| `FDataTable`     | `v-data-table`  | Tables with simplified column definitions                             |
-| `FCheckbox`      | `v-checkbox`    | Single checkbox                                                       |
-| `FCheckboxGroup` | `v-checkbox`    | Multiple checkboxes with options array                                |
-| `FSwitch`        | `v-switch`      | Toggle switch                                                         |
-| `FRadioGroup`    | `v-radio-group` | Radio buttons with options array                                      |
-| `FDatePicker`    | `v-date-input`  | Date selection                                                        |
+| Component        | Wraps                    | Purpose                                                               |
+| ---------------- | ------------------------ | --------------------------------------------------------------------- |
+| `FButton`        | `v-btn`                  | Intent-based buttons (primary, secondary, tonal, danger, ghost, text) |
+| `FTextField`     | `v-text-field`           | Text input with compact density                                       |
+| `FTextarea`      | `v-textarea`             | Multiline text with auto-grow                                         |
+| `FSelect`        | `v-select`               | Dropdown with options array API                                       |
+| `FCard`          | `v-card`                 | Cards with variant support (elevated, filled, outlined)               |
+| `FDialog`        | `v-dialog`               | Modal dialogs with preset widths                                      |
+| `FDataTable`     | `v-data-table`           | Tables with simplified column definitions                             |
+| `FCheckbox`      | `v-checkbox`             | Single checkbox                                                       |
+| `FCheckboxGroup` | `v-checkbox`             | Multiple checkboxes with options array                                |
+| `FSwitch`        | `v-switch`               | Toggle switch                                                         |
+| `FRadioGroup`    | `v-radio-group`          | Radio buttons with options array                                      |
+| `FDatePicker`    | `v-date-input`           | Date selection                                                        |
+| `FLoader`        | `v-overlay`/`v-progress` | Loading indicator (inline or overlay mode)                            |
 
 ### Usage
 
