@@ -48,6 +48,7 @@ export default createVuetify({
   },
 
   // Density overrides for ERP aesthetic (compact forms)
+  // M3-aligned defaults for shapes and density
   defaults: {
     VTextField: {
       variant: 'outlined',
@@ -76,6 +77,20 @@ export default createVuetify({
     VDateInput: {
       variant: 'outlined',
       density: 'compact',
+    },
+    // M3 shape defaults
+    VCard: {
+      rounded: 'lg',
+    },
+    VBtn: {
+      rounded: 'xl',
+    },
+    VChip: {
+      rounded: 'lg',
+    },
+    VSnackbar: {
+      rounded: 'lg',
+      location: 'bottom',
     },
   },
 })

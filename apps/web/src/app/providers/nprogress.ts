@@ -5,9 +5,9 @@
  */
 
 import NProgress from 'nprogress'
-import 'nprogress/nprogress.css'
-
 import router from './router'
+
+import 'nprogress/nprogress.css'
 
 // Configure NProgress
 NProgress.configure({
@@ -48,7 +48,7 @@ function injectStyles() {
       box-shadow: 0 0 10px rgb(var(--v-theme-primary)), 0 0 5px rgb(var(--v-theme-primary)) !important;
     }
   `
-  document.head.appendChild(style)
+  document.head.append(style)
 }
 
-export { NProgress }
+export { default as NProgress } from 'nprogress'

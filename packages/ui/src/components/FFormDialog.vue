@@ -5,7 +5,10 @@
     persistent
     v-bind="$attrs"
   >
-    <v-card style="position: relative">
+    <v-card
+      rounded="xl"
+      style="position: relative"
+    >
       <FLoader :model-value="busy" />
 
       <v-card-title v-if="title">{{ title }}</v-card-title>

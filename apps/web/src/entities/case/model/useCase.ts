@@ -10,7 +10,6 @@
  * ```
  */
 
-import type { Case } from './case'
 import { useQuery } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { caseApi } from '../api'

@@ -1,5 +1,6 @@
 <template>
   <v-chip
+    rounded="lg"
     v-bind="$attrs"
     @click:close="$emit('close')"
   >

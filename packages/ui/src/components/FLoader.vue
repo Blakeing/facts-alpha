@@ -45,7 +45,7 @@
   withDefaults(defineProps<Props>(), {
     modelValue: true,
     color: 'primary',
-    size: 44,
+    size: 48,
     width: 4,
     scrim: true,
   })

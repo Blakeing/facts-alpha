@@ -30,7 +30,7 @@
 
   const props = withDefaults(defineProps<FButtonProps>(), {
     intent: 'primary',
-    rounded: 'pill',
+    rounded: 'xl',
   })
 
   const intentConfig = {

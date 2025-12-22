@@ -4,7 +4,7 @@
     :max-width="computedWidth"
     v-bind="$attrs"
   >
-    <v-card>
+    <v-card rounded="xl">
       <v-card-title v-if="title">{{ title }}</v-card-title>
       <v-card-text>
         <slot />

@@ -81,6 +81,9 @@ export { default as FListCard } from './components/FListCard.vue'
 
 export { default as FFormDialog } from './components/FFormDialog.vue'
 
+export { default as FFullScreenDialog } from './components/FFullScreenDialog.vue'
+export type { FFullScreenDialogProps } from './components/FFullScreenDialog.vue'
+
 // Navigation & Menus
 export { default as FBreadcrumbs } from './components/FBreadcrumbs.vue'
 export type { FBreadcrumbsProps, BreadcrumbItem } from './components/FBreadcrumbs.vue'

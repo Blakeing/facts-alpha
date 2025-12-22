@@ -14,6 +14,7 @@ export interface NavigationItem {
 export const navigation: NavigationItem[] = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
   { title: 'Cases', icon: 'mdi-folder-open-outline', to: '/cases' },
+  { title: 'Contracts', icon: 'mdi-file-document-outline', to: '/contracts' },
   { title: 'Calendar', icon: 'mdi-calendar-outline', to: '/calendar', disabled: true },
   { title: 'Contacts', icon: 'mdi-account-group-outline', to: '/contacts', disabled: true },
 ]

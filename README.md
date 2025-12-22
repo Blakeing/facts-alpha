@@ -88,24 +88,25 @@ export const brandColors = {
 
 Vuetify components with simplified APIs and consistent defaults:
 
-| Component        | Wraps                      | Purpose                                                               |
-| ---------------- | -------------------------- | --------------------------------------------------------------------- |
-| `FButton`        | `v-btn`                    | Intent-based buttons (primary, secondary, tonal, danger, ghost, text) |
-| `FTextField`     | `v-text-field`             | Text input with compact density                                       |
-| `FTextarea`      | `v-textarea`               | Multiline text with auto-grow                                         |
-| `FSelect`        | `v-select`                 | Dropdown with options array API                                       |
-| `FCard`          | `v-card`                   | Cards with variant support (elevated, filled, outlined)               |
-| `FDialog`        | `v-dialog`                 | Modal dialogs with preset widths                                      |
-| `FDataTable`     | `v-data-table`             | Tables with simplified column definitions                             |
-| `FCheckbox`      | `v-checkbox`               | Single checkbox                                                       |
-| `FCheckboxGroup` | `v-checkbox`               | Multiple checkboxes with options array                                |
-| `FSwitch`        | `v-switch`                 | Toggle switch                                                         |
-| `FRadioGroup`    | `v-radio-group`            | Radio buttons with options array                                      |
-| `FDatePicker`    | `v-date-input`             | Date selection                                                        |
-| `FLoader`        | `v-overlay`                | Loading overlay with spinner (contained to parent)                    |
-| `FPageCard`      | `FCard` + `FLoader`        | Page/section wrapper with loading overlay                             |
-| `FListCard`      | `FPageCard` + `FDataTable` | Data list wrapper with search, filters, loading                       |
-| `FFormDialog`    | `v-dialog` + `FLoader`     | Form dialog with loading overlay and Save/Cancel                      |
+| Component           | Wraps                      | Purpose                                                               |
+| ------------------- | -------------------------- | --------------------------------------------------------------------- |
+| `FButton`           | `v-btn`                    | Intent-based buttons (primary, secondary, tonal, danger, ghost, text) |
+| `FTextField`        | `v-text-field`             | Text input with compact density                                       |
+| `FTextarea`         | `v-textarea`               | Multiline text with auto-grow                                         |
+| `FSelect`           | `v-select`                 | Dropdown with options array API                                       |
+| `FCard`             | `v-card`                   | Cards with variant support (elevated, filled, outlined)               |
+| `FDialog`           | `v-dialog`                 | Modal dialogs with preset widths                                      |
+| `FDataTable`        | `v-data-table`             | Tables with simplified column definitions                             |
+| `FCheckbox`         | `v-checkbox`               | Single checkbox                                                       |
+| `FCheckboxGroup`    | `v-checkbox`               | Multiple checkboxes with options array                                |
+| `FSwitch`           | `v-switch`                 | Toggle switch                                                         |
+| `FRadioGroup`       | `v-radio-group`            | Radio buttons with options array                                      |
+| `FDatePicker`       | `v-date-input`             | Date selection                                                        |
+| `FLoader`           | `v-overlay`                | Loading overlay with spinner (contained to parent)                    |
+| `FPageCard`         | `FCard` + `FLoader`        | Page/section wrapper with loading overlay                             |
+| `FListCard`         | `FPageCard` + `FDataTable` | Data list wrapper with search, filters, loading                       |
+| `FFormDialog`       | `v-dialog` + `FLoader`     | Form dialog with loading overlay and Save/Cancel                      |
+| `FFullScreenDialog` | `v-dialog fullscreen`      | Full-screen dialog for complex ERP editing workflows                  |
 
 ### Usage
 
@@ -176,6 +177,11 @@ export default createVuetify({
   - [x] Case detail page
   - [x] Case create/edit form
   - [x] Case entity (types, store, mock data)
+- [x] Contract Management module (MVP):
+  - [x] Contract list page with FListCard
+  - [x] Full-screen dialog editing pattern (FFullScreenDialog)
+  - [x] Tabbed interface (General, Items, Payments)
+  - [x] Contract entity (types, schema, mock API, composables)
 - [x] Linting/formatting setup (Oxlint, ESLint, Prettier)
 - [x] VSCode configuration
 - [x] Domain-centric composable architecture:
@@ -361,6 +367,61 @@ export function useCaseForm(caseId?: string) {
 - **Request deduplication**: Multiple components, one request
 - **Self-documenting**: Names reflect domain, not implementation
 - **Scalable**: Same pattern for all entities
+
+### Full-Screen Dialog Pattern (ERP Workflows)
+
+For complex editing workflows (contracts, orders), use the **full-screen dialog pattern**:
+
+| Approach               | Use Case                                           |
+| ---------------------- | -------------------------------------------------- |
+| **Route-based pages**  | Simple CRUD, deep linking needed (Cases)           |
+| **Full-screen dialog** | Complex tabbed forms, master-detail UX (Contracts) |
+
+**Implementation:**
+
+```vue
+<!-- pages/contracts/index.vue -->
+<template>
+  <FListCard @click:row="openContract">
+    <!-- list content -->
+  </FListCard>
+
+  <ContractDialog
+    v-model="dialogVisible"
+    :contract-id="selectedId"
+    @saved="handleSaved"
+  />
+</template>
+```
+
+```vue
+<!-- features/contract-dialog/ui/ContractDialog.vue -->
+<template>
+  <FFullScreenDialog
+    v-model="model"
+    :title="contract?.contractNumber"
+    :busy="isBusy"
+  >
+    <template #toolbar>
+      <FButton @click="save">Save</FButton>
+    </template>
+
+    <v-tabs v-model="activeTab">
+      <v-tab>General</v-tab>
+      <v-tab>Items</v-tab>
+      <v-tab>Payments</v-tab>
+    </v-tabs>
+    <!-- tab content -->
+  </FFullScreenDialog>
+</template>
+```
+
+**Benefits:**
+
+- **Context preservation**: User stays on list mentally
+- **Instant open/close**: No navigation delay
+- **Modal workflow**: Forces completion or cancellation
+- **Complex forms**: Tabs, sub-dialogs, validation
 
 ### Public API Pattern
 
