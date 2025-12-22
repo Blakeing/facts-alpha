@@ -74,6 +74,13 @@ export type { FCardProps, CardVariant } from './components/FCard.vue'
 export { default as FDialog } from './components/FDialog.vue'
 export type { FDialogProps, DialogWidth } from './components/FDialog.vue'
 
+// Wrapper Components
+export { default as FPageCard } from './components/FPageCard.vue'
+
+export { default as FListCard } from './components/FListCard.vue'
+
+export { default as FFormDialog } from './components/FFormDialog.vue'
+
 // Navigation & Menus
 export { default as FBreadcrumbs } from './components/FBreadcrumbs.vue'
 export type { FBreadcrumbsProps, BreadcrumbItem } from './components/FBreadcrumbs.vue'

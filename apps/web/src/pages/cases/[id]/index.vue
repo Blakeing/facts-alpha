@@ -1,12 +1,8 @@
 <template>
-  <!-- Loading State -->
-  <FLoader
-    v-if="isLoading"
-    text="Loading case..."
-  />
+  <FLoader v-model="isLoading" />
 
   <!-- Case Detail View -->
-  <div v-else-if="caseItem">
+  <div v-if="caseItem">
     <!-- Header -->
     <div class="d-flex align-center justify-space-between mb-6">
       <div class="d-flex align-center ga-4">
@@ -346,9 +342,9 @@
     />
   </div>
 
-  <!-- Not Found -->
+  <!-- Not Found (only show after loading completes) -->
   <div
-    v-else
+    v-else-if="!isLoading"
     class="text-center py-12"
   >
     <v-icon

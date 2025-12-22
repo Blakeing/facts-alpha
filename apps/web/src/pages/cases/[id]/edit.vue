@@ -1,12 +1,8 @@
 <template>
-  <!-- Loading State -->
-  <FLoader
-    v-if="isLoadingInitial"
-    text="Loading case..."
-  />
+  <FLoader v-model="isLoadingInitial" />
 
   <!-- Case Edit View -->
-  <div v-else-if="initialValues">
+  <div v-if="initialValues">
     <div class="mb-4">
       <FButton
         intent="ghost"
@@ -31,9 +27,9 @@
     />
   </div>
 
-  <!-- Not Found -->
+  <!-- Not Found (only show after loading completes) -->
   <div
-    v-else
+    v-else-if="!isLoadingInitial"
     class="text-center py-12"
   >
     <v-icon

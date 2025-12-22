@@ -540,77 +540,34 @@
 
         <!-- Loader -->
         <FCard
-          subtitle="Loading indicator with overlay and inline modes"
+          subtitle="Loading indicator overlay - covers parent container"
           title="FLoader"
         >
-          <v-row>
-            <!-- Inline Mode -->
-            <v-col
-              cols="12"
-              md="6"
+          <div>
+            <p class="text-body-2 text-medium-emphasis mb-3">
+              Covers content with a spinner. Parent must have <code>position: relative</code>.
+            </p>
+            <FButton
+              intent="secondary"
+              @click="toggleOverlayLoader"
             >
-              <h4 class="text-subtitle-2 font-weight-medium mb-3">Inline Mode</h4>
-              <p class="text-body-2 text-medium-emphasis mb-3">
-                Use with v-if to replace content while loading
-              </p>
-              <FButton
-                intent="secondary"
-                @click="toggleInlineLoader"
-              >
-                {{ showInlineLoader ? 'Hide' : 'Show' }} Inline Loader
-              </FButton>
-              <div
-                class="mt-4 pa-4 rounded"
-                style="
-                  border: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
-                  min-height: 150px;
-                "
-              >
-                <FLoader
-                  v-if="showInlineLoader"
-                  min-height="100px"
-                  text="Loading data..."
-                />
-                <div v-else>
-                  <p class="text-body-2">Content is loaded!</p>
-                </div>
-              </div>
-            </v-col>
-
-            <!-- Overlay Mode -->
-            <v-col
-              cols="12"
-              md="6"
+              {{ showOverlayLoader ? 'Hide' : 'Show' }} Loader
+            </FButton>
+            <div
+              class="mt-4 pa-4 rounded"
+              style="
+                border: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
+                min-height: 150px;
+                position: relative;
+              "
             >
-              <h4 class="text-subtitle-2 font-weight-medium mb-3">Overlay Mode</h4>
-              <p class="text-body-2 text-medium-emphasis mb-3">
-                Covers content with a spinner (parent needs position: relative)
+              <FLoader v-model="showOverlayLoader" />
+              <p class="text-body-2">This content stays visible but is covered by the overlay.</p>
+              <p class="text-body-2 mt-2">
+                The overlay uses <code>position: relative</code> on the parent.
               </p>
-              <FButton
-                intent="secondary"
-                @click="toggleOverlayLoader"
-              >
-                {{ showOverlayLoader ? 'Hide' : 'Show' }} Overlay Loader
-              </FButton>
-              <div
-                class="mt-4 pa-4 rounded"
-                style="
-                  border: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
-                  min-height: 150px;
-                  position: relative;
-                "
-              >
-                <FLoader
-                  v-model="showOverlayLoader"
-                  overlay
-                />
-                <p class="text-body-2">This content stays visible but is covered by the overlay.</p>
-                <p class="text-body-2 mt-2">
-                  The overlay uses <code>position: relative</code> on the parent.
-                </p>
-              </div>
-            </v-col>
-          </v-row>
+            </div>
+          </div>
         </FCard>
 
         <!-- Data Table -->
@@ -810,13 +767,8 @@
   const dialogMd = ref(false)
   const dialogLg = ref(false)
 
-  // Loaders
-  const showInlineLoader = ref(false)
+  // Loader
   const showOverlayLoader = ref(false)
-
-  function toggleInlineLoader() {
-    showInlineLoader.value = !showInlineLoader.value
-  }
 
   function toggleOverlayLoader() {
     showOverlayLoader.value = !showOverlayLoader.value
