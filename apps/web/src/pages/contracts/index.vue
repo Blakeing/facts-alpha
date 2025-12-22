@@ -1,6 +1,7 @@
 <template>
   <FListCard
     v-model:search="search"
+    :busy="isLoadingContract"
     :columns="columns"
     empty-icon="mdi-file-document-outline"
     empty-subtitle="Create your first contract to get started."
@@ -92,8 +93,10 @@
 </template>
 
 <script lang="ts" setup>
+  import { useQueryClient } from '@tanstack/vue-query'
   import { computed, ref } from 'vue'
   import {
+    contractApi,
     type ContractListing,
     type ContractStatus,
     ContractStatusBadge,
@@ -104,11 +107,13 @@
   import { FButton, type FColumn, FListCard, useToast } from '@/shared/ui'
 
   const toast = useToast()
+  const queryClient = useQueryClient()
   const { isLoading, filteredContracts, contractsByStatus, search, statusFilter } = useContracts()
 
   // Dialog state
   const dialogVisible = ref(false)
   const selectedContractId = ref<string | null>(null)
+  const isLoadingContract = ref(false)
 
   const columns: FColumn[] = [
     { key: 'contractNumber', title: 'Contract #', sortable: true, width: 160 },
@@ -150,10 +155,27 @@
   // Apply status filter
   const displayedContracts = computed(() => filteredContracts.value)
 
-  function openContract(_event: Event, { item }: { item: unknown }) {
+  async function openContract(_event: Event, { item }: { item: unknown }) {
     const contract = item as ContractListing
-    selectedContractId.value = contract.id
-    dialogVisible.value = true
+
+    try {
+      // Show loader on the list (legacy pattern: load first, then open)
+      isLoadingContract.value = true
+
+      // Prefetch the contract data before opening dialog
+      await queryClient.fetchQuery({
+        queryKey: ['contract', contract.id],
+        queryFn: () => contractApi.get(contract.id),
+      })
+
+      // Data is now cached - open dialog (it will load instantly)
+      selectedContractId.value = contract.id
+      dialogVisible.value = true
+    } catch {
+      toast.error('Failed to load contract')
+    } finally {
+      isLoadingContract.value = false
+    }
   }
 
   function createContract() {
