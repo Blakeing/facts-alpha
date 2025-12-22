@@ -45,9 +45,7 @@ export interface TypedFieldArrayReturn<TValue> {
  *
  * @param name - The field path in the form (e.g., 'services' or 'contacts')
  */
-export function useTypedFieldArray<TValue = unknown>(
-  name: string,
-): TypedFieldArrayReturn<TValue> {
+export function useTypedFieldArray<TValue = unknown>(name: string): TypedFieldArrayReturn<TValue> {
   const fieldArray = useFieldArray<TValue>(name)
 
   // Computed fields with proper typing

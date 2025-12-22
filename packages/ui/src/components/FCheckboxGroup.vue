@@ -7,18 +7,18 @@
       {{ label }}
     </v-label>
     <div :class="['d-flex', inline ? 'flex-row flex-wrap ga-4' : 'flex-column']">
-    <v-checkbox
-      v-for="option in options"
-      :key="String(option.value)"
-      v-model="fieldValue"
-      :label="option.label"
-      :value="option.value"
-      :disabled="option.disabled"
-      :color="option.color"
-      :error-messages="fieldError"
+      <v-checkbox
+        v-for="option in options"
+        :key="String(option.value)"
+        v-model="fieldValue"
+        :label="option.label"
+        :value="option.value"
+        :disabled="option.disabled"
+        :color="option.color"
+        :error-messages="fieldError"
         hide-details="auto"
-      @blur="handleBlur"
-    />
+        @blur="handleBlur"
+      />
     </div>
   </div>
 </template>

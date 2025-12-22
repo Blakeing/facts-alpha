@@ -49,8 +49,8 @@
       empty-icon="mdi-folder-open-outline"
       empty-subtitle="Create your first case to get started."
       empty-title="No cases found"
-      :items="filteredCases"
-      :loading="caseStore.isLoading"
+      :items="displayedCases"
+      :loading="isLoading"
       @click:row="handleRowClick"
     >
       <template #item.decedentName="{ item }">
@@ -88,14 +88,13 @@
 <script lang="ts" setup>
   import { computed, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { type Case, type CaseStatus, CaseStatusBadge, useCaseStore } from '@/entities/case'
+  import { type Case, type CaseStatus, CaseStatusBadge, useCases } from '@/entities/case'
   import { formatDate } from '@/shared/lib'
   import { FButton, type FColumn, FDataTable, FTextField, PageHeader } from '@/shared/ui'
 
   const router = useRouter()
-  const caseStore = useCaseStore()
+  const { cases, isLoading, casesByStatus, filteredCases, search } = useCases()
 
-  const search = ref('')
   const selectedStatus = ref<CaseStatus | null>(null)
 
   const columns: FColumn[] = [
@@ -111,56 +110,38 @@
       value: 'pending' as CaseStatus,
       label: 'Pending',
       color: 'warning',
-      count: caseStore.casesByStatus.pending.length,
+      count: casesByStatus.value.pending.length,
     },
     {
       value: 'active' as CaseStatus,
       label: 'Active',
       color: 'primary',
-      count: caseStore.casesByStatus.active.length,
+      count: casesByStatus.value.active.length,
     },
     {
       value: 'in_progress' as CaseStatus,
       label: 'In Progress',
       color: 'info',
-      count: caseStore.casesByStatus.in_progress.length,
+      count: casesByStatus.value.in_progress.length,
     },
     {
       value: 'completed' as CaseStatus,
       label: 'Completed',
       color: 'success',
-      count: caseStore.casesByStatus.completed.length,
+      count: casesByStatus.value.completed.length,
     },
     {
       value: 'archived' as CaseStatus,
       label: 'Archived',
       color: 'grey',
-      count: caseStore.casesByStatus.archived.length,
+      count: casesByStatus.value.archived.length,
     },
   ])
 
-  const filteredCases = computed(() => {
-    let result = caseStore.cases
-
-    // Filter by status
-    if (selectedStatus.value) {
-      result = result.filter((c) => c.status === selectedStatus.value)
-    }
-
-    // Filter by search
-    if (search.value) {
-      const searchLower = search.value.toLowerCase()
-      result = result.filter(
-        (c) =>
-          c.caseNumber.toLowerCase().includes(searchLower) ||
-          c.decedent.firstName.toLowerCase().includes(searchLower) ||
-          c.decedent.lastName.toLowerCase().includes(searchLower) ||
-          c.nextOfKin.firstName.toLowerCase().includes(searchLower) ||
-          c.nextOfKin.lastName.toLowerCase().includes(searchLower),
-      )
-    }
-
-    return result
+  // Apply status filter on top of search filter
+  const displayedCases = computed(() => {
+    if (!selectedStatus.value) return filteredCases.value
+    return filteredCases.value.filter((c: Case) => c.status === selectedStatus.value)
   })
 
   function handleRowClick(_event: Event, { item }: { item: Case }) {

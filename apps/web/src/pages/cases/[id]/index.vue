@@ -1,6 +1,17 @@
 <template>
+  <!-- Loading State -->
+  <div
+    v-if="isLoading"
+    class="d-flex justify-center align-center py-12"
+  >
+    <v-progress-circular
+      color="primary"
+      indeterminate
+    />
+  </div>
+
   <!-- Case Detail View -->
-  <div v-if="caseItem">
+  <div v-else-if="caseItem">
     <!-- Header -->
     <div class="d-flex align-center justify-space-between mb-6">
       <div class="d-flex align-center ga-4">
@@ -367,23 +378,20 @@
 <script lang="ts" setup>
   import { computed, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { CaseStatusBadge, type ServiceType, useCaseStore } from '@/entities/case'
+  import { caseApi, CaseStatusBadge, type ServiceType, useCase } from '@/entities/case'
   import { CaseDeleteDialog } from '@/features/case-form'
   import { formatDate, formatPhone } from '@/shared/lib'
   import { FButton, FCard, useToast } from '@/shared/ui'
 
   const route = useRoute()
   const router = useRouter()
-  const caseStore = useCaseStore()
   const toast = useToast()
+
+  const caseId = computed(() => (route.params as { id?: string }).id ?? '')
+  const { case: caseItem, isLoading } = useCase(caseId)
 
   const showDeleteDialog = ref(false)
   const isDeleting = ref(false)
-
-  const caseItem = computed(() => {
-    const id = (route.params as { id?: string }).id
-    return caseStore.cases.find((c) => c.id === id) || null
-  })
 
   const serviceLabels: Record<ServiceType, string> = {
     visitation: 'Visitation',
@@ -398,10 +406,17 @@
     return serviceLabels[type] || type
   }
 
-  function handleArchive() {
-    if (caseItem.value) {
-      caseStore.updateCase(caseItem.value.id, { status: 'archived' })
+  async function handleArchive() {
+    if (!caseItem.value) return
+    try {
+      // Use caseToFormValues to convert Case to form values for the API
+      const { caseToFormValues } = await import('@/entities/case')
+      const formValues = caseToFormValues(caseItem.value)
+      formValues.status = 'archived'
+      await caseApi.update(caseItem.value.id, formValues)
       toast.success('Case archived successfully')
+    } catch {
+      toast.error('Failed to archive case')
     }
   }
 
@@ -411,7 +426,7 @@
     isDeleting.value = true
     try {
       const caseNumber = caseItem.value.caseNumber
-      caseStore.removeCase(caseItem.value.id)
+      await caseApi.delete(caseItem.value.id)
       toast.success(`Case ${caseNumber} deleted`)
       router.push('/cases')
     } catch {

@@ -1,6 +1,17 @@
 <template>
+  <!-- Loading State -->
+  <div
+    v-if="isLoadingInitial"
+    class="d-flex justify-center align-center py-12"
+  >
+    <v-progress-circular
+      color="primary"
+      indeterminate
+    />
+  </div>
+
   <!-- Case Edit View -->
-  <div v-if="caseItem">
+  <div v-else-if="initialValues">
     <div class="mb-4">
       <FButton
         intent="ghost"
@@ -13,13 +24,13 @@
     </div>
 
     <PageHeader
-      :subtitle="`Editing ${caseItem.caseNumber}`"
+      :subtitle="`Editing case`"
       title="Edit Case"
     />
 
     <CaseForm
-      :case="caseItem"
-      :loading="isSubmitting"
+      :case="caseData"
+      :loading="isSaving"
       @cancel="handleCancel"
       @submit="handleSubmit"
     />
@@ -50,47 +61,39 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref } from 'vue'
+  import { computed } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { type CaseFormValues, formValuesToCase, useCaseStore } from '@/entities/case'
+  import { type CaseFormValues, useCase, useCaseForm } from '@/entities/case'
   import { CaseForm } from '@/features/case-form'
   import { FButton, PageHeader, useToast } from '@/shared/ui'
 
   const route = useRoute()
   const router = useRouter()
-  const caseStore = useCaseStore()
   const toast = useToast()
 
-  const isSubmitting = ref(false)
+  const caseId = computed(() => (route.params as { id?: string }).id ?? '')
 
-  const caseItem = computed(() => {
-    const id = (route.params as { id?: string }).id
-    return caseStore.cases.find((c) => c?.id === id) || null
+  // Get the case data for passing to the form
+  const { case: caseData } = useCase(caseId)
+
+  // Setup form with mutation
+  const { save, isSaving, isLoadingInitial, initialValues } = useCaseForm(caseId.value, {
+    onSuccess: () => {
+      toast.success('Case updated successfully')
+      router.push(`/cases/${caseId.value}`)
+    },
+    onError: () => {
+      toast.error('Failed to update case')
+    },
   })
 
   async function handleSubmit(values: CaseFormValues) {
-    if (!caseItem.value) return
-
-    isSubmitting.value = true
-
-    try {
-      // Convert form values to Case entity, preserving existing case metadata
-      const updatedCase = formValuesToCase(values, caseItem.value)
-
-      caseStore.updateCase(caseItem.value.id, updatedCase)
-      toast.success('Case updated successfully')
-      router.push(`/cases/${caseItem.value.id}`)
-    } catch {
-      toast.error('Failed to update case')
-    } finally {
-      isSubmitting.value = false
-    }
+    await save(values)
   }
 
   function handleCancel() {
-    const id = (route.params as { id?: string }).id
-    if (id) {
-      router.push(`/cases/${id}`)
+    if (caseId.value) {
+      router.push(`/cases/${caseId.value}`)
     } else {
       router.push('/cases')
     }

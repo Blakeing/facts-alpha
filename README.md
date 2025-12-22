@@ -8,7 +8,8 @@ A modern, scalable funeral home ERP system built with Vue 3, Vuetify 3, and Feat
 - **UI Library**: Vuetify 3 with MD3 Blueprint
 - **Build Tool**: Vite 7
 - **Monorepo**: Turborepo + pnpm workspaces
-- **State Management**: Pinia
+- **Data Fetching**: TanStack Query (Vue Query)
+- **State Management**: Pinia (for global state)
 - **Routing**: Vue Router (file-based with unplugin-vue-router)
 - **Linting**: Oxlint (fast) + ESLint (Vue/Vuetify rules)
 - **Formatting**: Prettier
@@ -63,6 +64,7 @@ The application follows [Feature-Sliced Design](https://feature-sliced.design/) 
 ### Material Design 3 (MD3)
 
 The app uses Vuetify's **MD3 Blueprint** which provides:
+
 - M3-compliant shapes (corner radii)
 - M3 typography scale
 - M3 component behavior and defaults
@@ -73,7 +75,7 @@ We only define **brand colors** to override the generic M3 palette:
 ```typescript
 // packages/ui/src/tokens/colors.ts
 export const brandColors = {
-  primary: '#1660c4',   // Deep indigo - professionalism
+  primary: '#1660c4', // Deep indigo - professionalism
   secondary: '#67544e', // Warm brown - warmth/comfort
   error: '#ba1a1a',
   success: '#2e7d32',
@@ -107,7 +109,7 @@ Vuetify components with simplified APIs and consistent defaults:
 <script setup>
   // In apps/web, import through shared layer
   import { FButton, FTextField, FCard } from '@/shared/ui'
-  
+
   // In packages or external apps, import directly
   // import { FButton, FTextField, FCard } from '@facts/ui'
 </script>
@@ -137,15 +139,17 @@ import { createVuetify } from 'vuetify'
 import { md3 } from 'vuetify/blueprints'
 
 export default createVuetify({
-  blueprint: md3,  // M3 shapes, typography, motion
+  blueprint: md3, // M3 shapes, typography, motion
   theme: {
     themes: {
       light: {
-        colors: brandColors,  // Just brand color overrides
+        colors: brandColors, // Just brand color overrides
       },
     },
   },
-  defaults: { /* compact density for ERP */ },
+  defaults: {
+    /* compact density for ERP */
+  },
 })
 ```
 
@@ -170,11 +174,16 @@ export default createVuetify({
   - [x] Case entity (types, store, mock data)
 - [x] Linting/formatting setup (Oxlint, ESLint, Prettier)
 - [x] VSCode configuration
+- [x] Domain-centric composable architecture:
+  - [x] TanStack Query for data fetching and caching
+  - [x] Case domain composables (`useCases`, `useCase`, `useCaseForm`)
+  - [x] Mock API client pattern (`caseApi`)
+  - [x] Permissions composable (`usePermissions`) ready for auth
 
 ### Pending
 
-- [ ] Authentication/Authorization
-- [ ] API integration (backend)
+- [ ] Authentication/Authorization (usePermissions ready)
+- [ ] API integration (backend - mock API pattern established)
 - [ ] Additional modules (Calendar, Contacts, Settings)
 - [ ] Multi-tenant support (entity exists, not implemented)
 - [ ] Dark mode (removed for now, tokens ready)
@@ -214,13 +223,15 @@ The app runs at `http://localhost:3000` by default.
 
 ## Key Files Reference
 
-| File                                             | Purpose                                 |
-| ------------------------------------------------ | --------------------------------------- |
-| `apps/web/src/app/providers/vuetify.ts`          | MD3 Blueprint + brand colors            |
-| `apps/web/src/styles/settings.scss`              | SASS overrides, global styles           |
-| `apps/web/src/widgets/app-shell/ui/AppShell.vue` | Main layout with sidebar                |
-| `packages/ui/src/tokens/colors.ts`               | Brand color definitions                 |
-| `packages/ui/src/index.ts`                       | UI package exports                      |
+| File                                             | Purpose                       |
+| ------------------------------------------------ | ----------------------------- |
+| `apps/web/src/app/providers/vuetify.ts`          | MD3 Blueprint + brand colors  |
+| `apps/web/src/app/providers/query.ts`            | TanStack Query configuration  |
+| `apps/web/src/styles/settings.scss`              | SASS overrides, global styles |
+| `apps/web/src/widgets/app-shell/ui/AppShell.vue` | Main layout with sidebar      |
+| `apps/web/src/entities/case/model/useCases.ts`   | Example domain composable     |
+| `packages/ui/src/tokens/colors.ts`               | Brand color definitions       |
+| `packages/ui/src/index.ts`                       | UI package exports            |
 
 ## Conventions
 
@@ -237,8 +248,8 @@ app → pages → widgets → features → entities → shared
 ```typescript
 // ✅ CORRECT: Import through layer public APIs
 import { FButton, FCard, useToast } from '@/shared/ui'
-import { formatDate } from '@/shared/lib'
-import { CaseStatusBadge, useCaseStore } from '@/entities/case'
+import { formatDate, usePermissions } from '@/shared/lib'
+import { useCases, useCase, useCaseForm, CaseStatusBadge } from '@/entities/case'
 import { CaseForm } from '@/features/case-form'
 import { AppShell } from '@/widgets'
 
@@ -254,7 +265,7 @@ import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
 **Re-export structure in shared layer:**
 
 - `@/shared/ui` - Re-exports `@facts/ui` + app-specific UI (toast)
-- `@/shared/lib` - Re-exports `@facts/utils`
+- `@/shared/lib` - Re-exports `@facts/utils` + `usePermissions`
 - `@/shared/api` - HTTP client utilities
 - `@/shared/config` - App constants
 
@@ -266,9 +277,86 @@ import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
 
 ### State Management
 
-- Use Pinia stores for entity state
-- Stores live in `entities/*/model/` or `features/*/model/`
-- Composables for reusable reactive logic
+- **TanStack Query** for server state (data fetching, caching, mutations)
+- **Domain Composables**: `useCases()`, `useCase()`, `useCaseForm()`
+- **Pinia** for client-only global state (auth, user preferences)
+- Composables live in `entities/*/model/`
+
+### Domain-Centric Composables with TanStack Query
+
+The app uses a **domain-centric composable pattern** powered by TanStack Query:
+
+| Pattern                | Example            | Purpose                             |
+| ---------------------- | ------------------ | ----------------------------------- |
+| `use{Entity}s()`       | `useCases()`       | List with caching, filtering        |
+| `use{Entity}(id)`      | `useCase(id)`      | Single entity with cache            |
+| `use{Entity}Form(id?)` | `useCaseForm(id?)` | Create/edit with cache invalidation |
+
+**Architecture:**
+
+```
+Pages
+  ↓
+Domain Composables (entities/case/model/)
+├── useCases.ts          # useQuery + domain computed
+├── useCase.ts           # useQuery with reactive ID
+└── useCaseForm.ts       # useQuery + useMutation
+  ↓
+TanStack Query (automatic caching, deduplication)
+  ↓
+API Client (entities/case/api/)
+```
+
+**Example: Case Entity**
+
+```typescript
+// entities/case/model/useCases.ts - List with caching
+export function useCases() {
+  const search = ref('')
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['cases'],
+    queryFn: () => caseApi.list(),
+  })
+
+  const cases = computed(() => data.value ?? [])
+  const activeCases = computed(() => cases.value.filter((c) => c.status === 'active'))
+
+  return { cases, isLoading, error, search, load: refetch, activeCases }
+}
+
+// entities/case/model/useCaseForm.ts - Mutations with cache invalidation
+export function useCaseForm(caseId?: string) {
+  const isEditing = !!caseId
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data) => (isEditing ? caseApi.update(caseId!, data) : caseApi.create(data)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cases'] }),
+  })
+
+  return { save: mutation.mutateAsync, isSaving: mutation.isPending, isEditing }
+}
+```
+
+**Usage in Pages:**
+
+```vue
+<script setup lang="ts">
+  import { useCases, CaseStatusBadge } from '@/entities/case'
+
+  // Data loads automatically, cached across navigation
+  const { cases, isLoading, error, search, activeCases } = useCases()
+</script>
+```
+
+**Benefits:**
+
+- **Automatic caching**: Navigate back without refetch
+- **Cache invalidation**: Mutations update related queries
+- **Request deduplication**: Multiple components, one request
+- **Self-documenting**: Names reflect domain, not implementation
+- **Scalable**: Same pattern for all entities
 
 ### Public API Pattern
 
@@ -277,7 +365,7 @@ Each FSD slice must have an `index.ts` that exports its public API:
 ```typescript
 // entities/case/index.ts
 export type { Case, CaseStatus } from './model/case'
-export { useCaseStore } from './model/caseStore'
+export { useCases, useCase, useCaseForm } from './model/useCases'
 export { default as CaseStatusBadge } from './ui/CaseStatusBadge.vue'
 ```
 

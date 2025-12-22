@@ -5,7 +5,7 @@
       title="New Case"
     />
     <CaseForm
-      :loading="isSubmitting"
+      :loading="isSaving"
       @cancel="handleCancel"
       @submit="handleSubmit"
     />
@@ -13,33 +13,26 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { type CaseFormValues, formValuesToCase, useCaseStore } from '@/entities/case'
+  import { type CaseFormValues, useCaseForm } from '@/entities/case'
   import { CaseForm } from '@/features/case-form'
   import { PageHeader, useToast } from '@/shared/ui'
 
   const router = useRouter()
-  const caseStore = useCaseStore()
   const toast = useToast()
 
-  const isSubmitting = ref(false)
-
-  async function handleSubmit(values: CaseFormValues) {
-    isSubmitting.value = true
-
-    try {
-      // Convert form values to Case entity
-      const newCase = formValuesToCase(values)
-
-      caseStore.addCase(newCase)
+  const { save, isSaving } = useCaseForm(undefined, {
+    onSuccess: (newCase) => {
       toast.success('Case created successfully')
       router.push(`/cases/${newCase.id}`)
-    } catch {
+    },
+    onError: () => {
       toast.error('Failed to create case')
-    } finally {
-      isSubmitting.value = false
-    }
+    },
+  })
+
+  async function handleSubmit(values: CaseFormValues) {
+    await save(values)
   }
 
   function handleCancel() {

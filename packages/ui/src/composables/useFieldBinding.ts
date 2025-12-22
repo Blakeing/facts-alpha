@@ -32,7 +32,7 @@ export interface FieldBinding<T> {
   /** Props to spread onto Vuetify components */
   attrs: {
     'error-messages': string | undefined
-    'onBlur': () => void
+    onBlur: () => void
   }
   /** Mark field as touched (triggers validation) */
   handleBlur: () => void
@@ -59,7 +59,7 @@ export function useFieldBinding<T = string>(
 
   const attrs = computed(() => ({
     'error-messages': errorMessage.value || undefined,
-    'onBlur': handleBlur,
+    onBlur: handleBlur,
   }))
 
   return {
@@ -94,4 +94,3 @@ export function useFieldBindings<T extends Record<string, string>>(
 
   return result
 }
-

@@ -65,7 +65,8 @@
   }
 
   export interface FDataTableProps {
-    items: Record<string, unknown>[]
+    /** Table data items */
+    items: unknown[]
     /** Column definitions - maps to Vuetify's `headers` */
     columns: FColumn[]
     loading?: boolean
