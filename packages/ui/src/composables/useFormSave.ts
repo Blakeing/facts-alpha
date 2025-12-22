@@ -28,12 +28,16 @@ export interface FormSaveReturn {
   clearError: () => void
   /**
    * Try to save the form
-   * @param formRef - Reference to the FForm component
+   * @param validator - Object with validate() method (e.g., useFormModel return)
    * @param saveHandler - Function to call if validation passes
    * @returns true if save was successful, false otherwise
    */
   trySave: (
-    formRef: { validate: () => Promise<{ valid: boolean; errors: Record<string, string> }> } | null,
+    validator: {
+      validate: () =>
+        | { valid: boolean; errors: Record<string, string> }
+        | Promise<{ valid: boolean; errors: Record<string, string> }>
+    } | null,
     saveHandler: () => Promise<void>,
   ) => Promise<boolean>
 }
@@ -47,18 +51,17 @@ export interface FormSaveReturn {
  *
  * @example
  * ```ts
+ * const { model, validate } = useFormModel(schema, getDefaults)
  * const { isSaving, errorMessage, trySave } = useFormSave({
  *   onSuccess: () => emit('saved'),
  *   onError: (error) => console.error(error),
  * })
  *
  * async function handleSave() {
- *   const success = await trySave(formRef.value, async () => {
- *     await api.save(formData)
+ *   const success = await trySave({ validate }, async () => {
+ *     await api.save(model.value)
  *   })
- *   if (success) {
- *     closeDialog()
- *   }
+ *   if (success) closeDialog()
  * }
  * ```
  */
@@ -79,11 +82,15 @@ export function useFormSave(options: FormSaveOptions = {}): FormSaveReturn {
   }
 
   async function trySave(
-    formRef: { validate: () => Promise<{ valid: boolean; errors: Record<string, string> }> } | null,
+    validator: {
+      validate: () =>
+        | { valid: boolean; errors: Record<string, string> }
+        | Promise<{ valid: boolean; errors: Record<string, string> }>
+    } | null,
     saveHandler: () => Promise<void>,
   ): Promise<boolean> {
-    if (!formRef) {
-      errorMessage.value = 'Form reference not available'
+    if (!validator) {
+      errorMessage.value = 'Validator not available'
       return false
     }
 
@@ -94,8 +101,8 @@ export function useFormSave(options: FormSaveOptions = {}): FormSaveReturn {
       await onBeforeSave()
     }
 
-    // Validate the form
-    const { valid, errors } = await formRef.validate()
+    // Validate the form (supports both sync and async)
+    const { valid, errors } = await Promise.resolve(validator.validate())
 
     if (!valid) {
       errorMessage.value = validationErrorMessage

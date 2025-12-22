@@ -10,28 +10,32 @@
           <v-row dense>
             <v-col cols="12">
               <FSelect
+                v-model="model.type"
+                field="type"
                 label="Contract Type"
-                name="type"
                 :options="contractTypeOptions"
               />
             </v-col>
             <v-col cols="12">
               <FSelect
+                v-model="model.status"
+                field="status"
                 label="Status"
-                name="status"
                 :options="statusOptions"
               />
             </v-col>
             <v-col cols="12">
               <FDatePicker
+                v-model="model.date"
+                field="date"
                 label="Contract Date"
-                name="date"
               />
             </v-col>
             <v-col cols="12">
               <FTextField
+                v-model="model.prePrintedContractNumber"
+                field="prePrintedContractNumber"
                 label="Pre-Printed Contract #"
-                name="prePrintedContractNumber"
                 placeholder="Optional"
               />
             </v-col>
@@ -116,8 +120,9 @@
               md="6"
             >
               <FTextField
+                v-model="model.purchaser.firstName"
+                field="purchaser.firstName"
                 label="First Name"
-                name="purchaser.firstName"
               />
             </v-col>
             <v-col
@@ -125,8 +130,9 @@
               md="6"
             >
               <FTextField
+                v-model="model.purchaser.lastName"
+                field="purchaser.lastName"
                 label="Last Name"
-                name="purchaser.lastName"
               />
             </v-col>
             <v-col
@@ -134,8 +140,9 @@
               md="6"
             >
               <FTextField
+                v-model="model.purchaser.phone"
+                field="purchaser.phone"
                 label="Phone"
-                name="purchaser.phone"
               />
             </v-col>
             <v-col
@@ -143,15 +150,17 @@
               md="6"
             >
               <FTextField
+                v-model="model.purchaser.email"
+                field="purchaser.email"
                 label="Email"
-                name="purchaser.email"
                 type="email"
               />
             </v-col>
             <v-col cols="12">
               <FTextField
+                v-model="model.purchaser.relationship"
+                field="purchaser.relationship"
                 label="Relationship to Beneficiary"
-                name="purchaser.relationship"
                 placeholder="e.g., Spouse, Child, Sibling"
               />
             </v-col>
@@ -171,8 +180,9 @@
               md="4"
             >
               <FTextField
+                v-model="model.beneficiary.firstName"
+                field="beneficiary.firstName"
                 label="First Name"
-                name="beneficiary.firstName"
               />
             </v-col>
             <v-col
@@ -180,8 +190,9 @@
               md="4"
             >
               <FTextField
+                v-model="model.beneficiary.middleName"
+                field="beneficiary.middleName"
                 label="Middle Name"
-                name="beneficiary.middleName"
               />
             </v-col>
             <v-col
@@ -189,8 +200,9 @@
               md="4"
             >
               <FTextField
+                v-model="model.beneficiary.lastName"
+                field="beneficiary.lastName"
                 label="Last Name"
-                name="beneficiary.lastName"
               />
             </v-col>
             <v-col
@@ -198,8 +210,9 @@
               md="6"
             >
               <FDatePicker
+                v-model="model.beneficiary.dateOfBirth"
+                field="beneficiary.dateOfBirth"
                 label="Date of Birth"
-                name="beneficiary.dateOfBirth"
               />
             </v-col>
             <v-col
@@ -207,8 +220,9 @@
               md="6"
             >
               <FDatePicker
+                v-model="model.beneficiary.dateOfDeath"
+                field="beneficiary.dateOfDeath"
                 label="Date of Death"
-                name="beneficiary.dateOfDeath"
               />
             </v-col>
           </v-row>
@@ -221,7 +235,8 @@
       <v-col cols="12">
         <FCard title="Notes">
           <FTextarea
-            name="notes"
+            v-model="model.notes"
+            field="notes"
             placeholder="Add any notes about this contract..."
             :rows="4"
           />
@@ -232,11 +247,18 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Contract } from '@/entities/contract'
+  import type { Contract, ContractFormValues } from '@/entities/contract'
   import { formatCurrency } from '@/shared/lib'
   import { FCard, FDatePicker, FSelect, FTextarea, FTextField } from '@/shared/ui'
 
+  /**
+   * Uses Vue 3.4+ defineModel for proper two-way binding.
+   * Parent uses: <ContractGeneral v-model="model" />
+   */
+  const model = defineModel<ContractFormValues>({ required: true })
+
   defineProps<{
+    /** Contract data for financial summary (read-only) */
     contract?: Contract | null
   }>()
 

@@ -9,57 +9,73 @@
 
 <script lang="ts">
   /**
-   * FCheckbox - Checkbox with vee-validate integration
+   * FCheckbox - Checkbox with validation support
    *
-   * Thin wrapper around v-checkbox. All Vuetify props pass through via $attrs.
-   * @see https://vuetifyjs.com/en/components/checkboxes/
+   * @example
+   * // With form context
+   * <FFormProvider :get-error="getError" :touch="touch">
+   *   <FCheckbox v-model="model.agreed" field="agreed" label="I agree" />
+   * </FFormProvider>
    *
    * @example
    * // Standalone
    * <FCheckbox v-model="agreed" label="I agree to terms" />
-   *
-   * @example
-   * // Form-integrated
-   * <FCheckbox name="acceptTerms" label="Accept terms and conditions" />
    */
   type CheckboxValue = boolean | string | number | null
 
   export interface FCheckboxProps {
-    /** Field name for vee-validate form binding */
-    name?: string
+    /** Field path for auto error/blur via form context */
+    field?: string
     /** Checkbox value */
     modelValue?: CheckboxValue
+    /** External error message (manual mode) */
+    error?: string
   }
 </script>
 
 <script lang="ts" setup>
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
+  import { computed, watch } from 'vue'
+  import { useFormContext } from '../composables/useFormContext'
 
   const props = withDefaults(defineProps<FCheckboxProps>(), {
-    name: undefined,
+    field: undefined,
     modelValue: false,
+    error: undefined,
   })
 
-  const emit = defineEmits<{ 'update:modelValue': [value: CheckboxValue] }>()
+  const emit = defineEmits<{
+    'update:modelValue': [value: CheckboxValue]
+    blur: [event: FocusEvent]
+  }>()
 
-  const nameRef = toRef(props, 'name')
-  const field = props.name ? useField<CheckboxValue>(nameRef as unknown as string) : null
+  const formContext = useFormContext()
 
   const fieldValue = computed({
-    get: () => (field ? field.value.value : props.modelValue),
-    set: (val) => {
-      if (field) {
-        field.value.value = val
-      } else {
-        emit('update:modelValue', val)
-      }
-    },
+    get: () => props.modelValue,
+    set: (val) => emit('update:modelValue', val),
   })
 
-  const fieldError = computed(() => field?.errorMessage.value)
+  const fieldError = computed(() => {
+    if (props.field && formContext) {
+      return formContext.getError(props.field)
+    }
+    return props.error
+  })
+
+  // Real-time validation for touched fields
+  watch(
+    () => props.modelValue,
+    () => {
+      if (props.field && formContext?.validateIfTouched) {
+        formContext.validateIfTouched(props.field)
+      }
+    },
+  )
 
   function handleBlur(e: FocusEvent) {
-    field?.handleBlur(e)
+    if (props.field && formContext) {
+      formContext.touch(props.field)
+    }
+    emit('blur', e)
   }
 </script>

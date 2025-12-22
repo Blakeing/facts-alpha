@@ -126,9 +126,6 @@ importers:
       '@facts/utils':
         specifier: workspace:*
         version: link:../utils
-      '@vee-validate/zod':
-        specifier: ^4.15.1
-        version: 4.15.1(vue@3.5.26(typescript@5.9.3))(zod@3.25.76)
       '@vueuse/core':
         specifier: ^12.8.2
         version: 12.8.2(typescript@5.9.3)
@@ -138,9 +135,6 @@ importers:
       ag-grid-vue3:
         specifier: ^33.0.0
         version: 33.3.2(vue@3.5.26(typescript@5.9.3))
-      vee-validate:
-        specifier: ^4.15.1
-        version: 4.15.1(vue@3.5.26(typescript@5.9.3))
       zod:
         specifier: ^3.25.76
         version: 3.25.76

@@ -23,19 +23,17 @@ export interface UseDirtyFormReturn {
  *
  * @example
  * ```ts
- * const formRef = ref<InstanceType<typeof FForm> | null>(null)
- * const { hasChanges, takeSnapshot, canClose } = useDirtyForm(
- *   () => formRef.value?.values
- * )
+ * const { model } = useFormModel(schema, getDefaults)
+ * const { hasChanges, takeSnapshot, canClose } = useDirtyForm(() => model.value)
  *
  * // When dialog opens
  * watch(dialogOpen, (open) => {
- *   if (open) takeSnapshot()
+ *   if (open) setTimeout(() => takeSnapshot(), 0)
  * })
  *
  * // After save
  * async function handleSave() {
- *   await save()
+ *   await save(model.value)
  *   takeSnapshot() // Reset dirty state
  * }
  *

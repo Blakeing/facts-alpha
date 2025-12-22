@@ -120,20 +120,42 @@ Reusable form utilities inspired by legacy FACTS app patterns:
 
 | Composable     | Purpose                                                        |
 | -------------- | -------------------------------------------------------------- |
+| `useFormModel` | Live model state management with Zod validation                |
 | `useDirtyForm` | Snapshot-based dirty tracking for unsaved changes detection    |
 | `useConfirm`   | Promise-based confirmation dialogs (pairs with FConfirmDialog) |
 | `useFormSave`  | Standardized validate-then-save pattern with error handling    |
-| `useTypedForm` | Type-safe vee-validate form creation with Zod schemas          |
 
-**Example: Dirty Form Tracking**
+**Example: Live Model Pattern**
 
 ```typescript
-const { takeSnapshot, canClose } = useDirtyForm(() => formRef.value?.values)
+// Form state with Zod validation
+const { model, errors, validate, getError, touch, reset } = useFormModel(
+  contractSchema,
+  () => getDefaultValues()
+)
+
+// Dirty tracking on the model
+const { takeSnapshot, canClose } = useDirtyForm(() => model.value)
 
 // Snapshot when dialog opens
 watch(dialogOpen, (open) => {
   if (open) setTimeout(() => takeSnapshot(), 0)
 })
+
+// Validation on blur
+<FTextField
+  v-model="model.name"
+  :error="getError('name')"
+  @blur="touch('name')"
+/>
+
+// Validation on save
+async function handleSave() {
+  const { valid } = validate()
+  if (!valid) return
+  await save(model.value)
+  takeSnapshot() // Reset dirty state
+}
 
 // Check before close
 async function handleClose() {
@@ -234,6 +256,8 @@ export default createVuetify({
   - [x] Mock API client pattern (`caseApi`, `contractApi`)
   - [x] Permissions composable (`usePermissions`) ready for auth
 - [x] Form utilities (inspired by legacy FACTS app):
+  - [x] `useFormModel` - Live model state management with Zod validation
+  - [x] `FFormErrors` - Validation error summary component
   - [x] `useDirtyForm` - Snapshot-based dirty tracking
   - [x] `useConfirm` + `FConfirmDialog` - Promise-based confirmations
   - [x] `useFormSave` - Validate-then-save pattern

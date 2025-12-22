@@ -1,8 +1,8 @@
 <template>
   <v-select
     v-model="fieldValue"
-    :items="options"
     :error-messages="fieldError"
+    :items="options"
     v-bind="$attrs"
     @blur="handleBlur"
   />
@@ -10,65 +10,81 @@
 
 <script lang="ts">
   /**
-   * FSelect - Dropdown select with vee-validate integration
+   * FSelect - Dropdown select with validation support
    *
-   * Thin wrapper around v-select. All Vuetify props pass through via $attrs.
-   * @see https://vuetifyjs.com/en/components/selects/
+   * @example
+   * // With form context (recommended)
+   * <FFormProvider :get-error="getError" :touch="touch">
+   *   <FSelect v-model="model.status" field="status" :options="statusOptions" />
+   * </FFormProvider>
    *
    * @example
    * // Standalone
    * <FSelect v-model="status" :options="statusOptions" label="Status" />
-   *
-   * @example
-   * // Form-integrated
-   * <FSelect name="role" :options="roleOptions" label="Role" />
    */
+  type SelectValue = string | number | null | (string | number)[]
+
   export type SelectOption = {
     title: string
     value: string | number
     disabled?: boolean
   }
 
-  type SelectValue = string | number | (string | number)[] | null
-
   export interface FSelectProps {
-    /** Field name for vee-validate form binding */
-    name?: string
+    /** Field path for auto error/blur via form context */
+    field?: string
     /** Selected value */
     modelValue?: SelectValue
     /** Select options */
     options: SelectOption[]
+    /** External error message (manual mode) */
+    error?: string
   }
 </script>
 
 <script lang="ts" setup>
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
+  import { computed, watch } from 'vue'
+  import { useFormContext } from '../composables/useFormContext'
 
   const props = withDefaults(defineProps<FSelectProps>(), {
-    name: undefined,
+    field: undefined,
     modelValue: null,
+    error: undefined,
   })
 
-  const emit = defineEmits<{ 'update:modelValue': [value: SelectValue] }>()
+  const emit = defineEmits<{
+    'update:modelValue': [value: SelectValue]
+    blur: [event: FocusEvent]
+  }>()
 
-  const nameRef = toRef(props, 'name')
-  const field = props.name ? useField<SelectValue>(nameRef as unknown as string) : null
+  const formContext = useFormContext()
 
   const fieldValue = computed({
-    get: () => (field ? field.value.value : props.modelValue),
-    set: (val) => {
-      if (field) {
-        field.value.value = val
-      } else {
-        emit('update:modelValue', val)
-      }
-    },
+    get: () => props.modelValue,
+    set: (val) => emit('update:modelValue', val),
   })
 
-  const fieldError = computed(() => field?.errorMessage.value)
+  const fieldError = computed(() => {
+    if (props.field && formContext) {
+      return formContext.getError(props.field)
+    }
+    return props.error
+  })
+
+  // Real-time validation for touched fields
+  watch(
+    () => props.modelValue,
+    () => {
+      if (props.field && formContext?.validateIfTouched) {
+        formContext.validateIfTouched(props.field)
+      }
+    },
+  )
 
   function handleBlur(e: FocusEvent) {
-    field?.handleBlur(e)
+    if (props.field && formContext) {
+      formContext.touch(props.field)
+    }
+    emit('blur', e)
   }
 </script>

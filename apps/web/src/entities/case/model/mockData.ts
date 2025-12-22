@@ -165,7 +165,7 @@ function generateCase(
               street: `${Math.floor(Math.random() * 9999) + 1} ${randomElement(['Oak', 'Maple', 'Main', 'Elm', 'Park', 'Cedar'])} ${randomElement(['Street', 'Avenue', 'Road', 'Drive'])}`,
               city: randomElement(['Springfield', 'Chicago', 'Peoria', 'Bloomington', 'Normal']),
               state: 'IL',
-              zip: `${62700 + Math.floor(Math.random() * 10)}`,
+              zip: `${62_700 + Math.floor(Math.random() * 10)}`,
             }
           : undefined,
     },
@@ -181,7 +181,7 @@ const generatedCases: Case[] = []
 let caseNum = 1
 
 // Generate cases for each status
-statuses.forEach((status) => {
+for (const status of statuses) {
   const count =
     status === 'active'
       ? 12
@@ -203,6 +203,6 @@ statuses.forEach((status) => {
     generatedCases.push(generateCase(caseNum, caseNumber, status, dateOfDeath))
     caseNum++
   }
-})
+}
 
 export const mockCases: Case[] = generatedCases

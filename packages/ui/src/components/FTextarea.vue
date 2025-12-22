@@ -9,55 +9,71 @@
 
 <script lang="ts">
   /**
-   * FTextarea - Multiline text input with vee-validate integration
+   * FTextarea - Multiline text input with validation support
    *
-   * Thin wrapper around v-textarea. All Vuetify props pass through via $attrs.
-   * @see https://vuetifyjs.com/en/components/textareas/
+   * @example
+   * // With form context (recommended)
+   * <FFormProvider :get-error="getError" :touch="touch">
+   *   <FTextarea v-model="model.notes" field="notes" label="Notes" />
+   * </FFormProvider>
    *
    * @example
    * // Standalone
    * <FTextarea v-model="notes" label="Notes" />
-   *
-   * @example
-   * // Form-integrated
-   * <FTextarea name="description" label="Description" auto-grow />
    */
   export interface FTextareaProps {
-    /** Field name for vee-validate form binding */
-    name?: string
-    /** Value for standalone v-model usage */
+    /** Field path for auto error/blur via form context */
+    field?: string
+    /** Value for v-model binding */
     modelValue?: string
+    /** External error message (manual mode) */
+    error?: string
   }
 </script>
 
 <script lang="ts" setup>
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
+  import { computed, watch } from 'vue'
+  import { useFormContext } from '../composables/useFormContext'
 
   const props = withDefaults(defineProps<FTextareaProps>(), {
-    name: undefined,
+    field: undefined,
     modelValue: '',
+    error: undefined,
   })
 
-  const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+  const emit = defineEmits<{
+    'update:modelValue': [value: string]
+    blur: [event: FocusEvent]
+  }>()
 
-  const nameRef = toRef(props, 'name')
-  const field = props.name ? useField<string>(nameRef as unknown as string) : null
+  const formContext = useFormContext()
 
   const fieldValue = computed({
-    get: () => (field ? field.value.value : props.modelValue),
-    set: (val) => {
-      if (field) {
-        field.value.value = val as string
-      } else {
-        emit('update:modelValue', val as string)
-      }
-    },
+    get: () => props.modelValue,
+    set: (val) => emit('update:modelValue', val as string),
   })
 
-  const fieldError = computed(() => field?.errorMessage.value)
+  const fieldError = computed(() => {
+    if (props.field && formContext) {
+      return formContext.getError(props.field)
+    }
+    return props.error
+  })
+
+  // Real-time validation for touched fields
+  watch(
+    () => props.modelValue,
+    () => {
+      if (props.field && formContext?.validateIfTouched) {
+        formContext.validateIfTouched(props.field)
+      }
+    },
+  )
 
   function handleBlur(e: FocusEvent) {
-    field?.handleBlur(e)
+    if (props.field && formContext) {
+      formContext.touch(props.field)
+    }
+    emit('blur', e)
   }
 </script>

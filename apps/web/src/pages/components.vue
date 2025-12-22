@@ -600,71 +600,81 @@
       </div>
     </section>
 
-    <!-- Validation Section (vee-validate + Zod) -->
+    <!-- Validation Section (Live Model + Zod) -->
     <section class="mb-8">
       <h2 class="text-h5 font-weight-medium mb-4">Form Validation</h2>
 
       <FCard
-        subtitle="Using vee-validate with Zod schemas for type-safe validation"
-        title="Zod Schema Validation"
+        subtitle="Using useFormModel with Zod schemas for type-safe validation"
+        title="Live Model Validation"
       >
-        <form @submit="onValidationSubmit">
-          <v-row>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                label="Name"
-                name="name"
-                placeholder="Enter your name..."
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                label="Email"
-                name="email"
-                placeholder="Enter your email..."
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                label="Phone"
-                name="phone"
-                placeholder="(555) 123-4567"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                label="Age"
-                name="age"
-                type="number"
-              />
-            </v-col>
-          </v-row>
-          <div class="d-flex ga-3 mt-4">
-            <FButton
-              :disabled="!validationIsValid"
-              intent="primary"
-              type="submit"
-              >Submit</FButton
-            >
-            <FButton
-              intent="text"
-              @click="resetValidationForm"
-              >Reset</FButton
-            >
-          </div>
-        </form>
+        <FFormErrors
+          class="mb-4"
+          :errors="formErrors"
+        />
+        <v-row>
+          <v-col
+            cols="12"
+            md="6"
+          >
+            <FTextField
+              v-model="formModel.name"
+              :error="getFormError('name')"
+              label="Name"
+              placeholder="Enter your name..."
+              @blur="touchField('name')"
+            />
+          </v-col>
+          <v-col
+            cols="12"
+            md="6"
+          >
+            <FTextField
+              v-model="formModel.email"
+              :error="getFormError('email')"
+              label="Email"
+              placeholder="Enter your email..."
+              @blur="touchField('email')"
+            />
+          </v-col>
+          <v-col
+            cols="12"
+            md="6"
+          >
+            <FTextField
+              v-model="formModel.phone"
+              :error="getFormError('phone')"
+              label="Phone"
+              placeholder="(555) 123-4567"
+              @blur="touchField('phone')"
+            />
+          </v-col>
+          <v-col
+            cols="12"
+            md="6"
+          >
+            <FTextField
+              v-model="formModel.age"
+              :error="getFormError('age')"
+              label="Age"
+              type="number"
+              @blur="touchField('age')"
+            />
+          </v-col>
+        </v-row>
+        <div class="d-flex ga-3 mt-4">
+          <FButton
+            :disabled="!formIsValid"
+            intent="primary"
+            @click="handleFormSubmit"
+            >Submit</FButton
+          >
+          <FButton
+            intent="text"
+            @click="resetDemoForm"
+            >Reset</FButton
+          >
+        </div>
 
         <v-divider class="my-6" />
 
@@ -672,9 +682,10 @@
           <strong>How it works:</strong>
           <ul class="mt-2 pl-4">
             <li>Define a Zod schema with validation rules</li>
-            <li>Use <code>useTypedForm</code> composable to create form context</li>
-            <li>Add <code>name</code> prop to F* components to auto-bind to form</li>
-            <li>Validation errors display automatically on blur</li>
+            <li>Use <code>useFormModel</code> composable for live model state</li>
+            <li>Bind with <code>v-model</code> and <code>:error</code> props</li>
+            <li>Validation on blur via <code>touch()</code> function</li>
+            <li>Full validation on submit via <code>validate()</code></li>
           </ul>
         </div>
       </FCard>
@@ -694,14 +705,15 @@
     FDatePicker,
     FDateRangePicker,
     FDialog,
+    FFormErrors,
     FLoader,
     FRadioGroup,
     FSelect,
     FSwitch,
     FTextarea,
     FTextField,
+    useFormModel,
     useToast,
-    useTypedForm,
   } from '@/shared/ui'
 
   const toast = useToast()
@@ -792,7 +804,7 @@
   ]
 
   // =============================================================================
-  // Validation Demo with vee-validate + Zod
+  // Validation Demo with Live Model + Zod
   // =============================================================================
 
   // Define a Zod schema for the demo form
@@ -806,28 +818,34 @@
     phone: z
       .string()
       .regex(/^$|^(\+1\s?)?(\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}$/, 'Invalid phone number'),
-    age: z.string().refine((val) => !val || (Number(val) >= 18 && Number(val) <= 120), {
+    age: z.string().refine((val: string) => !val || (Number(val) >= 18 && Number(val) <= 120), {
       message: 'Age must be between 18 and 120',
     }),
   })
 
-  // Create form with vee-validate + Zod
+  // Create form with useFormModel
   const {
-    handleSubmit,
-    resetForm: resetValidationForm,
-    isValid: validationIsValid,
-  } = useTypedForm({
-    schema: demoFormSchema,
-    initialValues: {
-      name: '',
-      email: '',
-      phone: '',
-      age: '',
-    },
-  })
+    model: formModel,
+    errors: formErrors,
+    isValid: formIsValid,
+    validate: validateForm,
+    getError: getFormError,
+    touch: touchField,
+    reset: resetDemoForm,
+  } = useFormModel(demoFormSchema, () => ({
+    name: '',
+    email: '',
+    phone: '',
+    age: '',
+  }))
 
-  // Create the submit handler for the form element
-  const onValidationSubmit = handleSubmit((values) => {
-    toast.success(`Form submitted! Name: ${values.name}, Email: ${values.email}`)
-  })
+  // Handle form submission
+  function handleFormSubmit() {
+    const result = validateForm()
+    if (result.valid) {
+      toast.success(
+        `Form submitted! Name: ${formModel.value.name}, Email: ${formModel.value.email}`,
+      )
+    }
+  }
 </script>

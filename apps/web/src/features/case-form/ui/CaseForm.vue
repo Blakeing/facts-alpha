@@ -1,263 +1,300 @@
 <template>
-  <FForm
-    :initial-values="initialValues"
-    :schema="caseFormSchema"
-    @submit="handleSubmit"
-  >
-    <template #default="{ isDirty, isSubmitting, isValid }">
-      <!-- Decedent Information -->
-      <FCard
-        class="mb-6"
-        title="Decedent Information"
-      >
-        <v-row>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="First Name"
-              name="decedent.firstName"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="Middle Name"
-              name="decedent.middleName"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="Last Name"
-              name="decedent.lastName"
-            />
-          </v-col>
-        </v-row>
+  <div class="case-form">
+    <!-- Validation errors summary -->
+    <FFormErrors
+      class="mb-6"
+      :errors="errors"
+    />
 
-        <v-row>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FDatePicker
-              label="Date of Birth"
-              name="decedent.dateOfBirth"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FDatePicker
-              label="Date of Death"
-              name="decedent.dateOfDeath"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="Place of Death"
-              name="decedent.placeOfDeath"
-            />
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="Social Security Number"
-              name="decedent.ssn"
-              placeholder="XXX-XX-XXXX"
-            />
-          </v-col>
-          <v-col
-            class="d-flex align-center"
-            cols="12"
-            md="4"
-          >
-            <FSwitch
-              color="primary"
-              label="Veteran"
-              name="decedent.veteranStatus"
-            />
-          </v-col>
-        </v-row>
-      </FCard>
-
-      <!-- Next of Kin -->
-      <FCard
-        class="mb-6"
-        title="Next of Kin"
-      >
-        <v-row>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="First Name"
-              name="nextOfKin.firstName"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="Last Name"
-              name="nextOfKin.lastName"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FSelect
-              label="Relationship"
-              name="nextOfKin.relationship"
-              :options="relationshipOptions"
-            />
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col
-            cols="12"
-            md="6"
-          >
-            <FTextField
-              label="Phone"
-              name="nextOfKin.phone"
-              type="tel"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="6"
-          >
-            <FTextField
-              label="Email"
-              name="nextOfKin.email"
-              type="email"
-            />
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col cols="12">
-            <FTextField
-              label="Street Address"
-              name="nextOfKin.address.street"
-            />
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col
-            cols="12"
-            md="5"
-          >
-            <FTextField
-              label="City"
-              name="nextOfKin.address.city"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="3"
-          >
-            <FSelect
-              label="State"
-              name="nextOfKin.address.state"
-              :options="stateOptions"
-            />
-          </v-col>
-          <v-col
-            cols="12"
-            md="4"
-          >
-            <FTextField
-              label="ZIP Code"
-              name="nextOfKin.address.zip"
-            />
-          </v-col>
-        </v-row>
-      </FCard>
-
-      <!-- Services -->
-      <FCard
-        class="mb-6"
-        title="Services"
-      >
-        <FCheckboxGroup
-          class="mb-4"
-          inline
-          name="services"
-          :options="serviceOptions"
-        />
-
-        <FTextarea
-          auto-grow
-          label="Notes"
-          name="notes"
-          :rows="4"
-        />
-      </FCard>
-
-      <!-- Case Status -->
-      <FCard
-        class="mb-6"
-        title="Case Status"
-      >
-        <FRadioGroup
-          inline
-          name="status"
-          :options="statusOptions"
-        />
-      </FCard>
-
-      <!-- Actions -->
-      <div class="d-flex ga-3 justify-end">
-        <FButton
-          intent="secondary"
-          @click="handleCancel"
+    <!-- Decedent Information -->
+    <FCard
+      class="mb-6"
+      title="Decedent Information"
+    >
+      <v-row>
+        <v-col
+          cols="12"
+          md="4"
         >
-          Cancel
-        </FButton>
-        <FButton
-          :disabled="!isValid || isSubmitting"
-          intent="primary"
-          :loading="loading || isSubmitting"
-          type="submit"
+          <FTextField
+            v-model="model.decedent.firstName"
+            :error="getError('decedent.firstName')"
+            label="First Name"
+            @blur="touch('decedent.firstName')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="4"
         >
-          {{ isEditing ? 'Save Changes' : 'Create Case' }}
-        </FButton>
-      </div>
+          <FTextField
+            v-model="model.decedent.middleName"
+            :error="getError('decedent.middleName')"
+            label="Middle Name"
+            @blur="touch('decedent.middleName')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FTextField
+            v-model="model.decedent.lastName"
+            :error="getError('decedent.lastName')"
+            label="Last Name"
+            @blur="touch('decedent.lastName')"
+          />
+        </v-col>
+      </v-row>
 
-      <!-- Debug: Show dirty state -->
-      <div
-        v-if="isDirty"
-        class="text-caption text-medium-emphasis mt-4"
+      <v-row>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FDatePicker
+            v-model="model.decedent.dateOfBirth"
+            :error="getError('decedent.dateOfBirth')"
+            label="Date of Birth"
+            @blur="touch('decedent.dateOfBirth')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FDatePicker
+            v-model="model.decedent.dateOfDeath"
+            :error="getError('decedent.dateOfDeath')"
+            label="Date of Death"
+            @blur="touch('decedent.dateOfDeath')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FTextField
+            v-model="model.decedent.placeOfDeath"
+            :error="getError('decedent.placeOfDeath')"
+            label="Place of Death"
+            @blur="touch('decedent.placeOfDeath')"
+          />
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FTextField
+            v-model="model.decedent.ssn"
+            :error="getError('decedent.ssn')"
+            label="Social Security Number"
+            placeholder="XXX-XX-XXXX"
+            @blur="touch('decedent.ssn')"
+          />
+        </v-col>
+        <v-col
+          class="d-flex align-center"
+          cols="12"
+          md="4"
+        >
+          <FSwitch
+            v-model="model.decedent.veteranStatus"
+            color="primary"
+            :error="getError('decedent.veteranStatus')"
+            label="Veteran"
+          />
+        </v-col>
+      </v-row>
+    </FCard>
+
+    <!-- Next of Kin -->
+    <FCard
+      class="mb-6"
+      title="Next of Kin"
+    >
+      <v-row>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FTextField
+            v-model="model.nextOfKin.firstName"
+            :error="getError('nextOfKin.firstName')"
+            label="First Name"
+            @blur="touch('nextOfKin.firstName')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FTextField
+            v-model="model.nextOfKin.lastName"
+            :error="getError('nextOfKin.lastName')"
+            label="Last Name"
+            @blur="touch('nextOfKin.lastName')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FSelect
+            v-model="model.nextOfKin.relationship"
+            :error="getError('nextOfKin.relationship')"
+            label="Relationship"
+            :options="relationshipOptions"
+            @blur="touch('nextOfKin.relationship')"
+          />
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col
+          cols="12"
+          md="6"
+        >
+          <FTextField
+            v-model="model.nextOfKin.phone"
+            :error="getError('nextOfKin.phone')"
+            label="Phone"
+            type="tel"
+            @blur="touch('nextOfKin.phone')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="6"
+        >
+          <FTextField
+            v-model="model.nextOfKin.email"
+            :error="getError('nextOfKin.email')"
+            label="Email"
+            type="email"
+            @blur="touch('nextOfKin.email')"
+          />
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col cols="12">
+          <FTextField
+            v-model="model.nextOfKin.address.street"
+            :error="getError('nextOfKin.address.street')"
+            label="Street Address"
+            @blur="touch('nextOfKin.address.street')"
+          />
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col
+          cols="12"
+          md="5"
+        >
+          <FTextField
+            v-model="model.nextOfKin.address.city"
+            :error="getError('nextOfKin.address.city')"
+            label="City"
+            @blur="touch('nextOfKin.address.city')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="3"
+        >
+          <FSelect
+            v-model="model.nextOfKin.address.state"
+            :error="getError('nextOfKin.address.state')"
+            label="State"
+            :options="stateOptions"
+            @blur="touch('nextOfKin.address.state')"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <FTextField
+            v-model="model.nextOfKin.address.zip"
+            :error="getError('nextOfKin.address.zip')"
+            label="ZIP Code"
+            @blur="touch('nextOfKin.address.zip')"
+          />
+        </v-col>
+      </v-row>
+    </FCard>
+
+    <!-- Services -->
+    <FCard
+      class="mb-6"
+      title="Services"
+    >
+      <FCheckboxGroup
+        v-model="model.services"
+        class="mb-4"
+        :error="getError('services')"
+        inline
+        :options="serviceOptions"
+      />
+
+      <FTextarea
+        v-model="model.notes"
+        auto-grow
+        :error="getError('notes')"
+        label="Notes"
+        :rows="4"
+        @blur="touch('notes')"
+      />
+    </FCard>
+
+    <!-- Case Status -->
+    <FCard
+      class="mb-6"
+      title="Case Status"
+    >
+      <FRadioGroup
+        v-model="model.status"
+        :error="getError('status')"
+        inline
+        :options="statusOptions"
+      />
+    </FCard>
+
+    <!-- Actions -->
+    <div class="d-flex ga-3 justify-end">
+      <FButton
+        intent="secondary"
+        @click="handleCancel"
       >
-        * You have unsaved changes
-      </div>
-    </template>
-  </FForm>
+        Cancel
+      </FButton>
+      <FButton
+        :disabled="!isValid"
+        intent="primary"
+        :loading="loading || isSubmitting"
+        @click="handleSubmit"
+      >
+        {{ isEditing ? 'Save Changes' : 'Create Case' }}
+      </FButton>
+    </div>
+
+    <!-- Debug: Show dirty state -->
+    <div
+      v-if="hasChanges()"
+      class="text-caption text-medium-emphasis mt-4"
+    >
+      * You have unsaved changes
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import {
     type Case,
     caseFormSchema,
@@ -270,12 +307,14 @@
     FCard,
     FCheckboxGroup,
     FDatePicker,
-    FForm,
+    FFormErrors,
     FRadioGroup,
     FSelect,
     FSwitch,
     FTextarea,
     FTextField,
+    useDirtyForm,
+    useFormModel,
   } from '@/shared/ui'
 
   const props = defineProps<{
@@ -288,6 +327,8 @@
     cancel: []
   }>()
 
+  const isSubmitting = ref(false)
+
   // Compute initial values from case prop or defaults
   const initialValues = computed(() =>
     props.case ? caseToFormValues(props.case) : getDefaultCaseFormValues(),
@@ -295,9 +336,39 @@
 
   const isEditing = computed(() => !!props.case)
 
-  // Handle form submission (FForm emits Record<string, unknown>, we know it's CaseFormValues)
-  function handleSubmit(values: Record<string, unknown>) {
-    emit('submit', values as CaseFormValues)
+  // Live model form state
+  const { model, errors, isValid, validate, getError, touch, reset } = useFormModel(
+    caseFormSchema,
+    () => initialValues.value,
+  )
+
+  // Track dirty state
+  const { hasChanges, takeSnapshot } = useDirtyForm(() => model.value)
+
+  // Reset form when case prop changes
+  watch(
+    () => props.case,
+    () => {
+      reset(initialValues.value)
+      setTimeout(() => takeSnapshot(), 0)
+    },
+    { immediate: true },
+  )
+
+  async function handleSubmit() {
+    // Validate all fields
+    const result = validate()
+    if (!result.valid) {
+      return
+    }
+
+    isSubmitting.value = true
+    try {
+      emit('submit', model.value as CaseFormValues)
+      takeSnapshot() // Reset dirty state after submit
+    } finally {
+      isSubmitting.value = false
+    }
   }
 
   function handleCancel() {
@@ -387,3 +458,10 @@
     'WY',
   ].map((abbr) => ({ title: abbr, value: abbr }))
 </script>
+
+<style scoped>
+  .case-form {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+</style>

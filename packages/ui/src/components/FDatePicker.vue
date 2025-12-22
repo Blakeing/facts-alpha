@@ -9,71 +9,79 @@
 
 <script lang="ts">
   /**
-   * FDatePicker - Date input with calendar popup
+   * FDatePicker - Date input with calendar popup and validation support
    *
-   * Thin wrapper around Vuetify's v-date-input with vee-validate integration.
-   * Uses ISO date strings (YYYY-MM-DD) externally, handles Date conversion internally
-   * via Vuetify's date composable.
+   * Uses ISO date strings (YYYY-MM-DD) externally, handles Date conversion internally.
    *
-   * @see https://vuetifyjs.com/en/components/date-inputs/
+   * @example
+   * // With form context (recommended)
+   * <FFormProvider :get-error="getError" :touch="touch">
+   *   <FDatePicker v-model="model.birthDate" field="birthDate" label="Birth Date" />
+   * </FFormProvider>
    *
    * @example
    * // Standalone
-   * <FDatePicker v-model="date" label="Birth Date" />
-   *
-   * @example
-   * // Form-integrated (auto-binds to vee-validate)
-   * <FForm :schema="schema">
-   *   <FDatePicker name="birthDate" label="Birth Date" />
-   * </FForm>
+   * <FDatePicker v-model="date" label="Date" />
    */
   export interface FDatePickerProps {
-    /** Field name for vee-validate form binding */
-    name?: string
+    /** Field path for auto error/blur via form context */
+    field?: string
     /** Date value as ISO string (YYYY-MM-DD) or null */
     modelValue?: string | null
+    /** External error message (manual mode) */
+    error?: string
   }
 </script>
 
 <script lang="ts" setup>
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
+  import { computed, watch } from 'vue'
   import { useDate } from 'vuetify'
+  import { useFormContext } from '../composables/useFormContext'
 
   const props = withDefaults(defineProps<FDatePickerProps>(), {
-    name: undefined,
+    field: undefined,
     modelValue: null,
+    error: undefined,
   })
 
-  const emit = defineEmits<{ 'update:modelValue': [value: string | null] }>()
+  const emit = defineEmits<{
+    'update:modelValue': [value: string | null]
+    blur: [event: FocusEvent]
+  }>()
 
-  const nameRef = toRef(props, 'name')
-  const field = props.name ? useField<string | null>(nameRef as unknown as string) : null
-
-  // Use Vuetify's date adapter for consistent parsing/formatting
+  const formContext = useFormContext()
   const adapter = useDate()
 
-  // Internal value for v-date-input (handles Date <-> ISO string conversion)
+  // Convert ISO string <-> Date for v-date-input
   const internalValue = computed({
-    get: () => {
-      const value = field ? field.value.value : props.modelValue
-      // Convert ISO string to Date for v-date-input
-      return value ? adapter.parseISO(value) : null
-    },
+    get: () => (props.modelValue ? adapter.parseISO(props.modelValue) : null),
     set: (val: Date | null) => {
-      // Convert Date back to ISO string
       const strVal = val ? adapter.toISO(val) : null
-      if (field) {
-        field.value.value = strVal
-      } else {
-        emit('update:modelValue', strVal)
-      }
+      emit('update:modelValue', strVal)
     },
   })
 
-  const fieldError = computed(() => field?.errorMessage.value)
+  const fieldError = computed(() => {
+    if (props.field && formContext) {
+      return formContext.getError(props.field)
+    }
+    return props.error
+  })
+
+  // Real-time validation for touched fields
+  watch(
+    () => props.modelValue,
+    () => {
+      if (props.field && formContext?.validateIfTouched) {
+        formContext.validateIfTouched(props.field)
+      }
+    },
+  )
 
   function handleBlur(e: FocusEvent) {
-    field?.handleBlur(e)
+    if (props.field && formContext) {
+      formContext.touch(props.field)
+    }
+    emit('blur', e)
   }
 </script>

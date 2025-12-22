@@ -25,26 +25,17 @@
 
 <script lang="ts">
   /**
-   * FCheckboxGroup - Multiple checkboxes with vee-validate integration
+   * FCheckboxGroup - Multiple checkboxes with validation support
    *
-   * Provides options array API for checkbox groups.
-   * v-model is an array; each checkbox value is added/removed from it.
+   * @example
+   * // With form context
+   * <FFormProvider :get-error="getError" :touch="touch">
+   *   <FCheckboxGroup v-model="model.services" field="services" :options="options" />
+   * </FFormProvider>
    *
    * @example
    * // Standalone
-   * <FCheckboxGroup
-   *   v-model="selectedTags"
-   *   label="Tags"
-   *   :options="[
-   *     { label: 'Urgent', value: 'urgent' },
-   *     { label: 'Featured', value: 'featured' }
-   *   ]"
-   *   inline
-   * />
-   *
-   * @example
-   * // Form-integrated
-   * <FCheckboxGroup name="permissions" :options="permissionOptions" />
+   * <FCheckboxGroup v-model="selected" :options="options" label="Select" inline />
    */
   export type CheckboxOption = {
     label: string
@@ -54,8 +45,8 @@
   }
 
   export interface FCheckboxGroupProps {
-    /** Field name for vee-validate form binding */
-    name?: string
+    /** Field path for auto error/blur via form context */
+    field?: string
     /** Selected values array */
     modelValue?: (string | number)[]
     /** Group label */
@@ -64,39 +55,57 @@
     options: CheckboxOption[]
     /** Display checkboxes horizontally */
     inline?: boolean
+    /** External error message (manual mode) */
+    error?: string
   }
 </script>
 
 <script lang="ts" setup>
-  import { useField } from 'vee-validate'
-  import { computed, toRef } from 'vue'
+  import { computed, watch } from 'vue'
+  import { useFormContext } from '../composables/useFormContext'
 
   const props = withDefaults(defineProps<FCheckboxGroupProps>(), {
-    name: undefined,
+    field: undefined,
     modelValue: () => [],
     label: undefined,
     inline: false,
+    error: undefined,
   })
 
-  const emit = defineEmits<{ 'update:modelValue': [value: (string | number)[]] }>()
+  const emit = defineEmits<{
+    'update:modelValue': [value: (string | number)[]]
+    blur: [event: FocusEvent]
+  }>()
 
-  const nameRef = toRef(props, 'name')
-  const field = props.name ? useField<(string | number)[]>(nameRef as unknown as string) : null
+  const formContext = useFormContext()
 
   const fieldValue = computed({
-    get: () => (field ? field.value.value : props.modelValue),
-    set: (val) => {
-      if (field) {
-        field.value.value = val as (string | number)[]
-      } else {
-        emit('update:modelValue', val as (string | number)[])
-      }
-    },
+    get: () => props.modelValue,
+    set: (val) => emit('update:modelValue', val as (string | number)[]),
   })
 
-  const fieldError = computed(() => field?.errorMessage.value)
+  const fieldError = computed(() => {
+    if (props.field && formContext) {
+      return formContext.getError(props.field)
+    }
+    return props.error
+  })
+
+  // Real-time validation for touched fields
+  watch(
+    () => props.modelValue,
+    () => {
+      if (props.field && formContext?.validateIfTouched) {
+        formContext.validateIfTouched(props.field)
+      }
+    },
+    { deep: true },
+  )
 
   function handleBlur(e: FocusEvent) {
-    field?.handleBlur(e)
+    if (props.field && formContext) {
+      formContext.touch(props.field)
+    }
+    emit('blur', e)
   }
 </script>

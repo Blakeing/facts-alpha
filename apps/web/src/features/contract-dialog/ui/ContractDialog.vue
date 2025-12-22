@@ -1,6 +1,6 @@
 <template>
   <FFullScreenDialog
-    v-model="model"
+    v-model="dialogModel"
     :busy="isBusy"
     :error="errorMessage"
     :title="dialogTitle"
@@ -30,89 +30,98 @@
         v-if="contract || !contractId"
         :disabled="isBusy"
         prepend-icon="mdi-content-save"
-        @click="triggerSave"
+        @click="handleSave"
       >
         Save
       </FButton>
     </template>
 
+    <!-- Validation errors snackbar (shows on failed save) -->
+    <FFormErrorsSnackbar
+      v-model="showErrors"
+      :errors="errors"
+    />
+
     <!-- Contract content with tabs -->
-    <FForm
+    <div
       v-if="contract || !contractId"
-      ref="formRef"
       class="contract-dialog-content"
-      :initial-values="initialValues"
-      :schema="contractFormSchema"
-      @submit="handleSave"
     >
-      <template #default>
-        <FTabs v-model="activeTab">
-          <v-tab
-            rounded="0"
-            value="general"
-          >
-            General
-          </v-tab>
-          <v-tab
-            rounded="0"
-            value="items"
-          >
-            Items
-            <v-badge
-              v-if="items.length > 0"
-              class="ml-2"
-              color="primary"
-              :content="items.length"
-              inline
-            />
-          </v-tab>
-          <v-tab
-            rounded="0"
-            value="payments"
-          >
-            Payments
-            <v-badge
-              v-if="payments.length > 0"
-              class="ml-2"
-              color="success"
-              :content="payments.length"
-              inline
-            />
-          </v-tab>
-        </FTabs>
+      <FTabs v-model="activeTab">
+        <v-tab
+          rounded="0"
+          value="general"
+        >
+          General
+        </v-tab>
+        <v-tab
+          rounded="0"
+          value="items"
+        >
+          Items
+          <v-badge
+            v-if="items.length > 0"
+            class="ml-2"
+            color="primary"
+            :content="items.length"
+            inline
+          />
+        </v-tab>
+        <v-tab
+          rounded="0"
+          value="payments"
+        >
+          Payments
+          <v-badge
+            v-if="payments.length > 0"
+            class="ml-2"
+            color="success"
+            :content="payments.length"
+            inline
+          />
+        </v-tab>
+      </FTabs>
 
-        <v-window v-model="activeTab">
-          <v-window-item value="general">
-            <div class="pa-6">
-              <ContractGeneral :contract="contract" />
-            </div>
-          </v-window-item>
-
-          <v-window-item value="items">
-            <div class="pa-6">
-              <ContractItems
-                :contract-id="contractId"
-                :items="items"
-                @add="handleAddItem"
-                @remove="handleRemoveItem"
+      <v-window v-model="activeTab">
+        <v-window-item value="general">
+          <div class="pa-6">
+            <FFormProvider
+              :get-error="getError"
+              :touch="touch"
+              :validate-if-touched="validateIfTouched"
+            >
+              <ContractGeneral
+                v-model="model"
+                :contract="contract"
               />
-            </div>
-          </v-window-item>
+            </FFormProvider>
+          </div>
+        </v-window-item>
 
-          <v-window-item value="payments">
-            <div class="pa-6">
-              <ContractPayments
-                :contract-id="contractId"
-                :financials="financials"
-                :payments="payments"
-                @add="handleAddPayment"
-                @remove="handleRemovePayment"
-              />
-            </div>
-          </v-window-item>
-        </v-window>
-      </template>
-    </FForm>
+        <v-window-item value="items">
+          <div class="pa-6">
+            <ContractItems
+              :contract-id="contractId"
+              :items="items"
+              @add="handleAddItem"
+              @remove="handleRemoveItem"
+            />
+          </div>
+        </v-window-item>
+
+        <v-window-item value="payments">
+          <div class="pa-6">
+            <ContractPayments
+              :contract-id="contractId"
+              :financials="financials"
+              :payments="payments"
+              @add="handleAddPayment"
+              @remove="handleRemovePayment"
+            />
+          </div>
+        </v-window-item>
+      </v-window>
+    </div>
 
     <!-- Not found state -->
     <div
@@ -147,11 +156,13 @@
   import {
     FButton,
     FConfirmDialog,
-    FForm,
+    FFormErrorsSnackbar,
+    FFormProvider,
     FFullScreenDialog,
     FTabs,
     useConfirm,
     useDirtyForm,
+    useFormModel,
   } from '@/shared/ui'
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'
@@ -173,16 +184,12 @@
     closed: []
   }>()
 
-  const model = useVModel(props, 'modelValue', emit)
+  const dialogModel = useVModel(props, 'modelValue', emit)
   const activeTab = ref('general')
   const errorMessage = ref<string | null>(null)
-  const formRef = ref<InstanceType<typeof FForm> | null>(null)
 
   // Confirmation dialog for unsaved changes
   const confirmDialog = useConfirm()
-
-  // Track dirty state for close confirmation (snapshot-based like legacy FACTS app)
-  const { takeSnapshot, canClose } = useDirtyForm(() => formRef.value?.values)
 
   // Load contract data if editing
   const {
@@ -193,40 +200,48 @@
     isLoading: isLoadingContract,
   } = useContract(computed(() => props.contractId))
 
-  // Form state
+  // Form state with useContractForm for API operations
   const {
     initialValues: loadedInitialValues,
-    save,
+    save: saveContract,
     isSaving,
     addItem,
     removeItem,
     addPayment,
     removePayment,
     isBusy: isMutating,
-  } = useContractForm(props.contractId, {
-    onSuccess: () => {
-      // Take new snapshot after successful save (resets dirty state)
-      takeSnapshot()
-      emit('saved')
-    },
-    onError: (error) => {
-      errorMessage.value = error.message || 'An error occurred'
-    },
-  })
+  } = useContractForm(props.contractId)
 
-  // Initial values for the form
-  const initialValues = computed(() => {
-    return loadedInitialValues.value ?? getDefaultContractFormValues()
-  })
+  // Live model form state
+  const { model, errors, validate, getError, touch, validateIfTouched, reset } = useFormModel(
+    contractFormSchema,
+    () => loadedInitialValues.value ?? getDefaultContractFormValues(),
+  )
+
+  // Show errors snackbar only on failed save
+  const showErrors = ref(false)
+
+  // Track dirty state for close confirmation (snapshot-based like legacy FACTS app)
+  const { takeSnapshot, canClose } = useDirtyForm(() => model.value)
 
   const isBusy = computed(() => isLoadingContract.value || isSaving.value || isMutating.value)
 
   // Reset form when dialog opens and take snapshot
-  watch(model, (visible: boolean) => {
+  watch(dialogModel, (visible: boolean) => {
     if (visible) {
       activeTab.value = 'general'
       errorMessage.value = null
+      // Reset form to loaded values
+      reset(loadedInitialValues.value ?? getDefaultContractFormValues())
       // Take snapshot after a tick to ensure form is initialized
+      setTimeout(() => takeSnapshot(), 0)
+    }
+  })
+
+  // Update form when contract data loads
+  watch(loadedInitialValues, (newValues) => {
+    if (newValues && dialogModel.value) {
+      reset(newValues)
       setTimeout(() => takeSnapshot(), 0)
     }
   })
@@ -238,24 +253,21 @@
     return 'New Contract'
   })
 
-  async function triggerSave() {
-    if (!formRef.value) return
-
-    // Validate first and show error if invalid
-    const result = await formRef.value.validate()
+  async function handleSave() {
+    // Validate all fields
+    const result = validate()
     if (!result.valid) {
-      errorMessage.value = 'Please fix the validation errors before saving'
+      showErrors.value = true
       return
     }
 
-    formRef.value.submitForm()
-  }
-
-  async function handleSave(values: Record<string, unknown>) {
     try {
-      await save(values as ContractFormValues)
-    } catch {
-      // Error handled by onError callback
+      await saveContract(model.value as ContractFormValues)
+      // Take new snapshot after successful save (resets dirty state)
+      takeSnapshot()
+      emit('saved')
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : 'An error occurred'
     }
   }
 
@@ -304,7 +316,7 @@
 
     if (!shouldClose) return
 
-    model.value = false
+    dialogModel.value = false
     emit('closed')
   }
 </script>
