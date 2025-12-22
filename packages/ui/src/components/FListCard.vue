@@ -1,7 +1,9 @@
 <template>
   <FPageCard
     :busy="busy"
+    :class="{ 'fill-height': fillHeight }"
     :error="error"
+    :fill-height="fillHeight"
     :subtitle="subtitle"
     :title="title"
     @error="handleError"
@@ -36,6 +38,7 @@
       :empty-icon="emptyIcon"
       :empty-subtitle="emptySubtitle"
       :empty-title="emptyTitle"
+      :fill-height="fillHeight"
       :items="items"
       :loading="loading"
       v-bind="$attrs"
@@ -64,24 +67,29 @@
   </FPageCard>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts" setup generic="T">
   /**
-   * FListCard - DataTable wrapper with search, loading, and empty states
+   * FListCard - Data table with search, loading, and empty states
    *
    * Combines FPageCard + FDataTable for a complete list view component.
+   * Column definitions extend AG Grid's ColDef with a `key` shorthand.
    *
    * @example
    * ```vue
    * <FListCard
    *   title="Cases"
-   *   :busy="isNavigating"
    *   :items="cases"
-   *   :columns="columns"
+   *   :columns="[
+   *     { key: 'caseNumber', headerName: 'Case #', width: 120 },
+   *     {
+   *       key: 'decedentName',
+   *       headerName: 'Decedent',
+   *       valueGetter: (p) => `${p.data.decedent.lastName}, ${p.data.decedent.firstName}`,
+   *     },
+   *     { key: 'status', headerName: 'Status' },
+   *   ]"
    *   @click:row="handleRowClick"
    * >
-   *   <template #commands>
-   *     <FButton @click="add">New Case</FButton>
-   *   </template>
    *   <template #item.status="{ item }">
    *     <CaseStatusBadge :status="item.status" />
    *   </template>
@@ -93,62 +101,66 @@
   import FDataTable from './FDataTable.vue'
   import FPageCard from './FPageCard.vue'
 
-  interface Props {
-    /** Section title */
-    title?: string
-    /** Section subtitle */
-    subtitle?: string
-    /** Shows loading overlay when true (covers entire card) */
-    busy?: boolean
-    /** Error message - emits 'error' event when set */
-    error?: string | null
-    /** Table data items */
-    items: unknown[]
-    /** Column definitions */
-    columns: FColumn[]
-    /** Table loading state (shows in table, not overlay) */
-    loading?: boolean
-    /** Show search field */
-    searchable?: boolean
-    /** Search field placeholder */
-    searchPlaceholder?: string
-    /** Search value (v-model:search) */
-    search?: string
-    /** Empty state icon */
-    emptyIcon?: string
-    /** Empty state title */
-    emptyTitle?: string
-    /** Empty state subtitle */
-    emptySubtitle?: string
-  }
-
-  const props = withDefaults(defineProps<Props>(), {
-    title: undefined,
-    subtitle: undefined,
-    busy: false,
-    error: null,
-    loading: false,
-    searchable: true,
-    searchPlaceholder: 'Search...',
-    search: '',
-    emptyIcon: undefined,
-    emptyTitle: undefined,
-    emptySubtitle: undefined,
-  })
+  const props = withDefaults(
+    defineProps<{
+      /** Section title */
+      title?: string
+      /** Section subtitle */
+      subtitle?: string
+      /** Shows loading overlay when true (covers entire card) */
+      busy?: boolean
+      /** Error message - emits 'error' event when set */
+      error?: string | null
+      /** Table data items */
+      items: T[]
+      /** Column definitions */
+      columns: FColumn<T>[]
+      /** Table loading state (shows in table, not overlay) */
+      loading?: boolean
+      /** Show search field */
+      searchable?: boolean
+      /** Search field placeholder */
+      searchPlaceholder?: string
+      /** Search value (v-model:search) */
+      search?: string
+      /** Empty state icon */
+      emptyIcon?: string
+      /** Empty state title */
+      emptyTitle?: string
+      /** Empty state subtitle */
+      emptySubtitle?: string
+      /** Fill available height - table scrolls internally */
+      fillHeight?: boolean
+    }>(),
+    {
+      title: undefined,
+      subtitle: undefined,
+      busy: false,
+      error: null,
+      loading: false,
+      searchable: true,
+      searchPlaceholder: 'Search...',
+      search: '',
+      emptyIcon: undefined,
+      emptyTitle: undefined,
+      emptySubtitle: undefined,
+      fillHeight: false,
+    },
+  )
 
   const emit = defineEmits<{
     error: [message: string]
-    'click:row': [event: Event, data: { item: unknown }]
+    'click:row': [event: Event, data: { item: T }]
     'update:search': [value: string]
   }>()
 
   const searchValue = computed({
     get: () => props.search,
-    set: (val) => emit('update:search', val || ''),
+    set: (val: string) => emit('update:search', val || ''),
   })
 
   function handleRowClick(event: Event, data: { item: unknown }) {
-    emit('click:row', event, data)
+    emit('click:row', event, data as { item: T })
   }
 
   function handleError(message: string) {

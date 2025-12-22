@@ -7,18 +7,21 @@
     @close="handleClose"
   >
     <template #subtitle>
-      <ContractStatusBadge
+      <v-chip
         v-if="contract"
-        class="ml-2"
-        :status="contract.status"
-      />
+        class="ml-3"
+        :color="getContractStatusColor(contract.status)"
+        size="small"
+        variant="elevated"
+      >
+        {{ getContractStatusLabel(contract.status) }}
+      </v-chip>
     </template>
 
     <template #toolbar>
       <FButton
         v-if="contract || !contractId"
-        :disabled="isBusy || !formIsValid"
-        intent="ghost"
+        :disabled="isBusy"
         prepend-icon="mdi-content-save"
         @click="triggerSave"
       >
@@ -26,38 +29,27 @@
       </FButton>
     </template>
 
-    <!-- Loading state for initial load -->
-    <div
-      v-if="isLoadingInitial"
-      class="d-flex align-center justify-center pa-12"
-    >
-      <v-progress-circular
-        color="primary"
-        indeterminate
-        size="48"
-      />
-    </div>
-
     <!-- Contract content with tabs -->
     <FForm
-      v-else-if="contract || !contractId"
+      v-if="contract || !contractId"
       ref="formRef"
       class="contract-dialog-content"
       :initial-values="initialValues"
       :schema="contractFormSchema"
       @submit="handleSave"
     >
-      <template #default="{ isValid: formValid }">
-        <!-- Expose form validity to parent scope -->
-        <FormValidityBridge :is-valid="formValid" />
-
-        <v-tabs
-          v-model="activeTab"
-          bg-color="surface"
-          class="contract-tabs"
-        >
-          <v-tab value="general">General</v-tab>
-          <v-tab value="items">
+      <template #default>
+        <FTabs v-model="activeTab">
+          <v-tab
+            rounded="0"
+            value="general"
+          >
+            General
+          </v-tab>
+          <v-tab
+            rounded="0"
+            value="items"
+          >
             Items
             <v-badge
               v-if="items.length > 0"
@@ -67,7 +59,10 @@
               inline
             />
           </v-tab>
-          <v-tab value="payments">
+          <v-tab
+            rounded="0"
+            value="payments"
+          >
             Payments
             <v-badge
               v-if="payments.length > 0"
@@ -77,7 +72,7 @@
               inline
             />
           </v-tab>
-        </v-tabs>
+        </FTabs>
 
         <v-window v-model="activeTab">
           <v-window-item value="general">
@@ -132,16 +127,17 @@
 
 <script lang="ts" setup>
   import { useVModel } from '@vueuse/core'
-  import { computed, defineComponent, h, ref, watch } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import {
     contractFormSchema,
     type ContractFormValues,
-    ContractStatusBadge,
+    getContractStatusColor,
+    getContractStatusLabel,
     getDefaultContractFormValues,
     useContract,
     useContractForm,
   } from '@/entities/contract'
-  import { FButton, FForm, FFullScreenDialog } from '@/shared/ui'
+  import { FButton, FForm, FFullScreenDialog, FTabs } from '@/shared/ui'
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'
   import ContractPayments from './ContractPayments.vue'
@@ -166,22 +162,6 @@
   const activeTab = ref('general')
   const errorMessage = ref<string | null>(null)
   const formRef = ref<InstanceType<typeof FForm> | null>(null)
-  const formIsValid = ref(true)
-
-  // Helper component to bridge form validity to parent scope
-  const FormValidityBridge = defineComponent({
-    props: { isValid: Boolean },
-    setup(bridgeProps) {
-      watch(
-        () => bridgeProps.isValid,
-        (valid) => {
-          formIsValid.value = valid
-        },
-        { immediate: true },
-      )
-      return () => h('span', { style: 'display: none' })
-    },
-  })
 
   // Load contract data if editing
   const {
@@ -194,7 +174,6 @@
 
   // Form state
   const {
-    isLoadingInitial,
     initialValues: loadedInitialValues,
     save,
     isSaving,
@@ -218,7 +197,7 @@
   })
 
   // Reset form when dialog opens
-  watch(model, (visible) => {
+  watch(model, (visible: boolean) => {
     if (visible) {
       activeTab.value = 'general'
       errorMessage.value = null
@@ -234,8 +213,17 @@
     return 'New Contract'
   })
 
-  function triggerSave() {
-    formRef.value?.submitForm()
+  async function triggerSave() {
+    if (!formRef.value) return
+
+    // Validate first and show error if invalid
+    const result = await formRef.value.validate()
+    if (!result.valid) {
+      errorMessage.value = 'Please fix the validation errors before saving'
+      return
+    }
+
+    formRef.value.submitForm()
   }
 
   async function handleSave(values: Record<string, unknown>) {
@@ -288,15 +276,5 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-  }
-
-  .contract-tabs {
-    flex-shrink: 0;
-    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  }
-
-  .v-window {
-    flex: 1;
-    overflow-y: auto;
   }
 </style>

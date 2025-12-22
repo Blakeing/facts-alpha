@@ -230,11 +230,11 @@
   const isAdding = ref(false)
 
   const columns: FColumn[] = [
-    { key: 'date', title: 'Date', width: 120 },
-    { key: 'method', title: 'Method', width: 140 },
-    { key: 'amount', title: 'Amount', width: 120, align: 'end' },
-    { key: 'reference', title: 'Reference' },
-    { key: 'actions', title: '', width: 60, sortable: false },
+    { key: 'date', headerName: 'Date', width: 120 },
+    { key: 'method', headerName: 'Method', width: 140 },
+    { key: 'amount', headerName: 'Amount', width: 120, cellStyle: { textAlign: 'right' } },
+    { key: 'reference', headerName: 'Reference' },
+    { key: 'actions', headerName: '', width: 60, sortable: false },
   ]
 
   const methodOptions = [

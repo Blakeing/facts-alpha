@@ -776,11 +776,11 @@
 
   // Data Table
   const tableColumns = [
-    { key: 'id', title: 'ID', width: '80px' },
-    { key: 'name', title: 'Name' },
-    { key: 'email', title: 'Email' },
-    { key: 'status', title: 'Status' },
-    { key: 'actions', title: '', align: 'end' as const, sortable: false },
+    { key: 'id', headerName: 'ID', width: 80 },
+    { key: 'name', headerName: 'Name' },
+    { key: 'email', headerName: 'Email' },
+    { key: 'status', headerName: 'Status' },
+    { key: 'actions', headerName: '', cellStyle: { textAlign: 'right' }, sortable: false },
   ]
 
   const tableItems = [

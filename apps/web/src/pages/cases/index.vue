@@ -5,8 +5,11 @@
     empty-icon="mdi-folder-open-outline"
     empty-subtitle="Create your first case to get started."
     empty-title="No cases found"
+    fill-height
     :items="displayedCases"
     :loading="isLoading"
+    :page-size="10"
+    pagination
     search-placeholder="Search by name, case number..."
     :searchable="true"
     subtitle="Manage funeral cases and services"
@@ -43,23 +46,9 @@
       </div>
     </template>
 
-    <template #item.decedentName="{ item }">
-      <span class="font-weight-medium">
-        {{ item.decedent.lastName }}, {{ item.decedent.firstName }}
-      </span>
-    </template>
-
+    <!-- Custom cell renderers via slots -->
     <template #item.status="{ item }">
-      <CaseStatusBadge :status="item.status" />
-    </template>
-
-    <template #item.dateOfDeath="{ item }">
-      {{ formatDate(item.decedent.dateOfDeath) }}
-    </template>
-
-    <template #item.nextOfKin="{ item }">
-      {{ item.nextOfKin.firstName }} {{ item.nextOfKin.lastName }}
-      <span class="text-medium-emphasis">({{ item.nextOfKin.relationship }})</span>
+      <CaseStatusBadge :status="(item as Case).status" />
     </template>
 
     <template #empty>
@@ -86,12 +75,29 @@
 
   const selectedStatus = ref<CaseStatus | null>(null)
 
-  const columns: FColumn[] = [
-    { key: 'caseNumber', title: 'Case #', sortable: true, width: 120 },
-    { key: 'decedentName', title: 'Decedent', sortable: true },
-    { key: 'status', title: 'Status', sortable: true, width: 140 },
-    { key: 'dateOfDeath', title: 'Date of Death', sortable: true, width: 140 },
-    { key: 'nextOfKin', title: 'Next of Kin' },
+  // Column definitions using AG Grid's ColDef API (with `key` shorthand)
+  const columns: FColumn<Case>[] = [
+    { key: 'caseNumber', headerName: 'Case #', width: 120 },
+    {
+      key: 'decedentName',
+      headerName: 'Decedent',
+      valueGetter: (params) =>
+        `${params.data?.decedent.lastName}, ${params.data?.decedent.firstName}`,
+    },
+    { key: 'status', headerName: 'Status', width: 140 },
+    {
+      key: 'dateOfDeath',
+      headerName: 'Date of Death',
+      width: 140,
+      valueGetter: (params) => params.data?.decedent.dateOfDeath,
+      valueFormatter: (params) => formatDate(params.value as string),
+    },
+    {
+      key: 'nextOfKin',
+      headerName: 'Next of Kin',
+      valueGetter: (params) =>
+        `${params.data?.nextOfKin.firstName} ${params.data?.nextOfKin.lastName} (${params.data?.nextOfKin.relationship})`,
+    },
   ]
 
   const statusFilters = computed(() => [

@@ -6,6 +6,7 @@
     empty-icon="mdi-file-document-outline"
     empty-subtitle="Create your first contract to get started."
     empty-title="No contracts found"
+    fill-height
     :items="displayedContracts"
     :loading="isLoading"
     search-placeholder="Search by contract #, name..."
@@ -45,31 +46,14 @@
       </div>
     </template>
 
-    <template #item.contractNumber="{ item }">
-      <span class="font-weight-medium">{{ item.contractNumber }}</span>
-      <div
-        v-if="item.prePrintedContractNumber"
-        class="text-caption text-medium-emphasis"
-      >
-        {{ item.prePrintedContractNumber }}
-      </div>
-    </template>
-
+    <!-- Custom cell renderers via slots -->
     <template #item.status="{ item }">
-      <ContractStatusBadge :status="item.status" />
-    </template>
-
-    <template #item.date="{ item }">
-      {{ formatDate(item.date) }}
-    </template>
-
-    <template #item.grandTotal="{ item }">
-      {{ formatCurrency(item.grandTotal) }}
+      <ContractStatusBadge :status="(item as ContractListing).status" />
     </template>
 
     <template #item.balanceDue="{ item }">
-      <span :class="{ 'text-error': item.balanceDue > 0 }">
-        {{ formatCurrency(item.balanceDue) }}
+      <span :class="{ 'text-error': (item as ContractListing).balanceDue > 0 }">
+        {{ formatCurrency((item as ContractListing).balanceDue) }}
       </span>
     </template>
 
@@ -115,14 +99,26 @@
   const selectedContractId = ref<string | null>(null)
   const isLoadingContract = ref(false)
 
-  const columns: FColumn[] = [
-    { key: 'contractNumber', title: 'Contract #', sortable: true, width: 160 },
-    { key: 'date', title: 'Date', sortable: true, width: 120 },
-    { key: 'purchaserName', title: 'Purchaser', sortable: true },
-    { key: 'beneficiaryName', title: 'Beneficiary', sortable: true },
-    { key: 'status', title: 'Status', sortable: true, width: 120 },
-    { key: 'grandTotal', title: 'Total', sortable: true, width: 120, align: 'end' },
-    { key: 'balanceDue', title: 'Balance', sortable: true, width: 120, align: 'end' },
+  // Column definitions using AG Grid's ColDef API (with `key` shorthand)
+  const columns: FColumn<ContractListing>[] = [
+    { key: 'contractNumber', headerName: 'Contract #', width: 160 },
+    {
+      key: 'date',
+      headerName: 'Date',
+      width: 120,
+      valueFormatter: (params) => formatDate(params.value as string),
+    },
+    { key: 'purchaserName', headerName: 'Purchaser' },
+    { key: 'beneficiaryName', headerName: 'Beneficiary' },
+    { key: 'status', headerName: 'Status', width: 120 },
+    {
+      key: 'grandTotal',
+      headerName: 'Total',
+      width: 120,
+      cellStyle: { textAlign: 'right' },
+      valueFormatter: (params) => formatCurrency(params.value as number),
+    },
+    { key: 'balanceDue', headerName: 'Balance', width: 120, cellStyle: { textAlign: 'right' } },
   ]
 
   const statusFilters = computed(() => [
@@ -159,7 +155,6 @@
     const contract = item as ContractListing
 
     try {
-      // Show loader on the list (legacy pattern: load first, then open)
       isLoadingContract.value = true
 
       // Prefetch the contract data before opening dialog
@@ -168,7 +163,6 @@
         queryFn: () => contractApi.get(contract.id),
       })
 
-      // Data is now cached - open dialog (it will load instantly)
       selectedContractId.value = contract.id
       dialogVisible.value = true
     } catch {

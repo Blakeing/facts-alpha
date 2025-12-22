@@ -126,13 +126,10 @@
     </v-app-bar>
 
     <!-- Main Content -->
-    <v-main scrollable>
-      <v-container
-        class="pa-6"
-        fluid
-      >
+    <v-main class="app-shell__main">
+      <div class="app-shell__content">
         <slot />
-      </v-container>
+      </div>
     </v-main>
   </v-layout>
 </template>
@@ -158,15 +155,37 @@
 </script>
 
 <style scoped>
-  /* Ensure the layout fills viewport and enables independent scrolling */
+  /* Ensure the layout fills viewport */
   .app-shell {
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height for mobile */
   }
 
-  /* Main content area scrolls independently */
-  :deep(.v-main) {
+  /*
+   * Main content area uses CSS Grid for reliable height distribution.
+   * Grid handles nested height propagation better than flexbox.
+   */
+  .app-shell__main {
+    display: grid;
+    grid-template-rows: 1fr;
+    overflow: hidden;
+  }
+
+  .app-shell__content {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    padding: 24px;
     overflow-y: auto;
+  }
+
+  /*
+   * Fill-height mode: child fills entire content area
+   * The grid layout ensures height propagates through nested elements
+   */
+  .app-shell__content > :deep(.fill-height) {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
   }
 
   /* Navigation drawer scrolls if content overflows */

@@ -223,14 +223,14 @@
   const isAdding = ref(false)
 
   const columns: FColumn[] = [
-    { key: 'itemNumber', title: 'Item #', width: 100 },
-    { key: 'description', title: 'Description' },
-    { key: 'category', title: 'Category', width: 120 },
-    { key: 'quantity', title: 'Qty', width: 60, align: 'center' },
-    { key: 'unitPrice', title: 'Price', width: 100, align: 'end' },
-    { key: 'discount', title: 'Discount', width: 100, align: 'end' },
-    { key: 'total', title: 'Total', width: 100, align: 'end' },
-    { key: 'actions', title: '', width: 60, sortable: false },
+    { key: 'itemNumber', headerName: 'Item #', width: 100 },
+    { key: 'description', headerName: 'Description' },
+    { key: 'category', headerName: 'Category', width: 120 },
+    { key: 'quantity', headerName: 'Qty', width: 60, cellStyle: { textAlign: 'center' } },
+    { key: 'unitPrice', headerName: 'Price', width: 100, cellStyle: { textAlign: 'right' } },
+    { key: 'discount', headerName: 'Discount', width: 100, cellStyle: { textAlign: 'right' } },
+    { key: 'total', headerName: 'Total', width: 100, cellStyle: { textAlign: 'right' } },
+    { key: 'actions', headerName: '', width: 60, sortable: false },
   ]
 
   const categoryOptions = [

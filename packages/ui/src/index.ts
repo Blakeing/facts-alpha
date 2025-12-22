@@ -14,12 +14,17 @@ export * from './tokens'
 // =============================================================================
 export { useTokens } from './composables'
 export { useFieldBinding, useFieldBindings, useTypedForm, useTypedFieldArray } from './composables'
+export { useFormSave, useDirtyForm } from './composables'
 export type {
   FieldBinding,
   FieldBindingOptions,
   TypedFormOptions,
   TypedFormReturn,
   TypedFieldArrayReturn,
+  FormSaveOptions,
+  FormSaveReturn,
+  DirtyFormOptions,
+  DirtyFormReturn,
 } from './composables'
 
 // =============================================================================
@@ -90,6 +95,8 @@ export type { FBreadcrumbsProps, BreadcrumbItem } from './components/FBreadcrumb
 
 export { default as FMenu } from './components/FMenu.vue'
 export type { FMenuProps, MenuItem } from './components/FMenu.vue'
+
+export { default as FTabs } from './components/FTabs.vue'
 
 // Feedback & Display
 export { default as FChip } from './components/FChip.vue'

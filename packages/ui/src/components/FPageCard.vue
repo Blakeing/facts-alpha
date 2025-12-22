@@ -1,12 +1,9 @@
 <template>
-  <div
-    class="f-page-card-wrapper"
-    style="position: relative"
-  >
+  <div :class="['f-page-card-wrapper', { 'f-page-card-wrapper--fill': fillHeight }]">
     <FLoader :model-value="busy" />
 
     <FCard
-      class="f-page-card"
+      :class="['f-page-card', { 'f-page-card--fill': fillHeight }]"
       :subtitle="subtitle"
       :title="title"
       v-bind="$attrs"
@@ -62,6 +59,8 @@
     busy?: boolean
     /** Error message - emits 'error' event when set */
     error?: string | null
+    /** Fill available height */
+    fillHeight?: boolean
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -69,6 +68,7 @@
     subtitle: undefined,
     busy: false,
     error: null,
+    fillHeight: false,
   })
 
   const emit = defineEmits<{
@@ -88,7 +88,30 @@
 </script>
 
 <style scoped>
+  .f-page-card-wrapper {
+    position: relative;
+  }
+
   .f-page-card {
     overflow: visible;
+  }
+
+  /* Fill-height mode: use grid to propagate height */
+  .f-page-card-wrapper--fill {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .f-page-card--fill {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .f-page-card--fill :deep(.v-card-text) {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
   }
 </style>

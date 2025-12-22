@@ -6,20 +6,23 @@
     transition="dialog-bottom-transition"
     v-bind="$attrs"
   >
-    <v-card class="f-fullscreen-dialog">
+    <v-card
+      class="f-fullscreen-dialog"
+      rounded="0"
+    >
       <FLoader :model-value="busy" />
 
       <v-toolbar
         :color="color"
-        dark
+        flat
+        rounded="0"
       >
         <v-btn
-          icon
+          icon="mdi-close"
+          variant="text"
           :disabled="busy"
           @click="handleClose"
-        >
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
+        />
 
         <v-toolbar-title class="px-2">
           {{ title }}
@@ -28,9 +31,7 @@
 
         <v-spacer />
 
-        <v-toolbar-items v-if="$slots.toolbar">
-          <slot name="toolbar" />
-        </v-toolbar-items>
+        <slot name="toolbar" />
       </v-toolbar>
 
       <div class="f-fullscreen-dialog__content">
@@ -117,7 +118,7 @@
   // Watch error prop and show snackbar
   watch(
     () => props.error,
-    (newError) => {
+    (newError: string | null | undefined) => {
       if (newError) {
         showError.value = true
       }

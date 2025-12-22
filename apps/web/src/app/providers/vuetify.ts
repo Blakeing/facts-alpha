@@ -17,14 +17,28 @@ import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
 // Brand colors - custom palette for funeral home ERP
+// Vuetify automatically generates:
+// - Contrast colors (light/dark text)
+// - Hover/active/focus states
+// - Tonal variants (for chips, badges)
+// - Opacity overlays
+//
+// You can provide just the base color (current approach) OR
+// provide the full structure for more control (see comment below)
 const brandColors = {
   primary: '#1660c4', // Deep indigo - professionalism
-  secondary: '#67544e', // Warm brown - warmth/comfort
-  error: '#ba1a1a', // M3 error red
-  success: '#2e7d32', // Green for positive states
-  warning: '#f57c00', // Orange for warnings
-  info: '#1976d2', // Blue for informational
 }
+
+// Optional: Full color structure for explicit control
+// If you want to override specific variants, you can do:
+// const brandColors = {
+//   primary: {
+//     base: '#1660c4',
+//     darken1: '#0d4a8f',  // Vuetify auto-generates if not provided
+//     lighten1: '#1e7ce8',  // Vuetify auto-generates if not provided
+//     // ... etc
+//   }
+// }
 
 export default createVuetify({
   // MD3 Blueprint provides M3-compliant:
@@ -51,15 +65,12 @@ export default createVuetify({
   // M3-aligned defaults for shapes and density
   defaults: {
     VTextField: {
-      variant: 'outlined',
       density: 'compact',
     },
     VTextarea: {
-      variant: 'outlined',
       density: 'compact',
     },
     VSelect: {
-      variant: 'outlined',
       density: 'compact',
     },
     VCheckbox: {
@@ -75,22 +86,7 @@ export default createVuetify({
       density: 'compact',
     },
     VDateInput: {
-      variant: 'outlined',
       density: 'compact',
-    },
-    // M3 shape defaults
-    VCard: {
-      rounded: 'lg',
-    },
-    VBtn: {
-      rounded: 'xl',
-    },
-    VChip: {
-      rounded: 'lg',
-    },
-    VSnackbar: {
-      rounded: 'lg',
-      location: 'bottom',
     },
   },
 })
