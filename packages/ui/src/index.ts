@@ -14,7 +14,7 @@ export * from './tokens'
 // =============================================================================
 export { useTokens } from './composables'
 export { useFieldBinding, useFieldBindings, useTypedForm, useTypedFieldArray } from './composables'
-export { useFormSave, useDirtyForm } from './composables'
+export { useFormSave, useDirtyForm, useConfirm } from './composables'
 export type {
   FieldBinding,
   FieldBindingOptions,
@@ -23,8 +23,10 @@ export type {
   TypedFieldArrayReturn,
   FormSaveOptions,
   FormSaveReturn,
-  DirtyFormOptions,
-  DirtyFormReturn,
+  UseDirtyFormReturn,
+  ConfirmOptions,
+  ConfirmState,
+  UseConfirmReturn,
 } from './composables'
 
 // =============================================================================
@@ -78,6 +80,8 @@ export type { FCardProps, CardVariant } from './components/FCard.vue'
 
 export { default as FDialog } from './components/FDialog.vue'
 export type { FDialogProps, DialogWidth } from './components/FDialog.vue'
+
+export { default as FConfirmDialog } from './components/FConfirmDialog.vue'
 
 // Wrapper Components
 export { default as FPageCard } from './components/FPageCard.vue'

@@ -1,126 +1,75 @@
-import { ref, watch, type Ref } from 'vue'
-
-/**
- * Options for the dirty form tracking
- */
-export interface DirtyFormOptions {
-  /** Confirm message when closing with unsaved changes */
-  confirmMessage?: string
-  /** Confirm title */
-  confirmTitle?: string
-}
+import { cloneDeep, isEqual } from '@facts/utils'
+import { ref } from 'vue'
 
 /**
  * Return type for useDirtyForm composable
  */
-export interface DirtyFormReturn {
-  /** Whether the form has unsaved changes */
-  isDirty: Ref<boolean>
-  /** The original form state (JSON string) */
-  originalState: Ref<string>
-  /** Mark the current state as the new "clean" baseline */
-  markClean: () => void
-  /** Reset to the original clean state */
-  reset: () => void
-  /**
-   * Check if it's safe to close (prompts user if dirty)
-   * @param confirmFn - Function to show confirmation dialog
-   * @returns true if safe to close, false if user cancelled
-   */
-  canClose: (confirmFn?: () => Promise<boolean>) => Promise<boolean>
+export interface UseDirtyFormReturn {
+  /** Check if there are actual changes since last snapshot */
+  hasChanges: () => boolean
+  /** Take a snapshot of current values (call when form opens or after save) */
+  takeSnapshot: () => void
+  /** Check if safe to close, prompting user if there are changes */
+  canClose: (confirmFn: () => Promise<boolean>) => Promise<boolean>
 }
 
 /**
- * Composable for tracking form dirty state
+ * Composable for tracking form dirty state using snapshot comparison.
  *
- * Inspired by the legacy FACTS app's hasChanges() pattern.
- * Tracks changes to a form state object and provides confirmation
- * when attempting to close with unsaved changes.
+ * Inspired by the legacy FACTS app's approach:
+ * 1. Take a snapshot when form opens
+ * 2. Compare current values to snapshot
+ * 3. Same object structure = reliable comparison
  *
  * @example
  * ```ts
- * const formData = ref({ name: '', email: '' })
- * const { isDirty, markClean, canClose } = useDirtyForm(formData)
+ * const formRef = ref<InstanceType<typeof FForm> | null>(null)
+ * const { hasChanges, takeSnapshot, canClose } = useDirtyForm(
+ *   () => formRef.value?.values
+ * )
  *
- * // After saving
- * markClean()
+ * // When dialog opens
+ * watch(dialogOpen, (open) => {
+ *   if (open) takeSnapshot()
+ * })
  *
- * // Before closing
+ * // After save
+ * async function handleSave() {
+ *   await save()
+ *   takeSnapshot() // Reset dirty state
+ * }
+ *
+ * // Before close
  * async function handleClose() {
- *   const shouldClose = await canClose(() =>
- *     confirm('You have unsaved changes. Close anyway?')
- *   )
- *   if (shouldClose) {
- *     closeDialog()
- *   }
+ *   if (!await canClose(() => confirm('Discard changes?'))) return
+ *   closeDialog()
  * }
  * ```
  */
-export function useDirtyForm<T>(
-  formState: Ref<T>,
-  options: DirtyFormOptions = {},
-): DirtyFormReturn {
-  const {
-    confirmMessage = 'You have unsaved changes. Are you sure you want to close?',
-    // confirmTitle = 'Unsaved Changes',
-  } = options
+export function useDirtyForm(getCurrentValues: () => unknown): UseDirtyFormReturn {
+  const snapshot = ref<unknown>(null)
 
-  const originalState = ref<string>('')
-  const isDirty = ref(false)
-
-  // Serialize the form state to JSON for comparison
-  function serialize(state: T): string {
-    return JSON.stringify(state ?? {})
+  function takeSnapshot() {
+    const values = getCurrentValues()
+    // Deep clone to capture current state
+    snapshot.value = values ? cloneDeep(values) : null
   }
 
-  // Initialize and watch for changes
-  function updateDirtyState() {
-    const currentState = serialize(formState.value)
-    isDirty.value = currentState !== originalState.value
+  function hasChanges(): boolean {
+    const current = getCurrentValues()
+    if (!current || !snapshot.value) return false
+    // Compare current to snapshot - same structure, reliable comparison
+    return !isEqual(cloneDeep(current), snapshot.value)
   }
 
-  // Watch form state for changes
-  watch(
-    formState,
-    () => {
-      updateDirtyState()
-    },
-    { deep: true },
-  )
-
-  // Mark the current state as "clean"
-  function markClean() {
-    originalState.value = serialize(formState.value)
-    isDirty.value = false
+  async function canClose(confirmFn: () => Promise<boolean>): Promise<boolean> {
+    if (!hasChanges()) return true
+    return await confirmFn()
   }
-
-  // Reset tracking (typically called when form loads)
-  function reset() {
-    markClean()
-  }
-
-  // Check if safe to close
-  async function canClose(confirmFn?: () => Promise<boolean>): Promise<boolean> {
-    if (!isDirty.value) {
-      return true
-    }
-
-    if (confirmFn) {
-      return await confirmFn()
-    }
-
-    // Default browser confirm
-    return window.confirm(confirmMessage)
-  }
-
-  // Initialize original state
-  markClean()
 
   return {
-    isDirty,
-    originalState,
-    markClean,
-    reset,
+    hasChanges,
+    takeSnapshot,
     canClose,
   }
 }

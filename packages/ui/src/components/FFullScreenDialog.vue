@@ -127,8 +127,9 @@
 
   function handleClose() {
     if (props.busy) return
+    // Only emit close event - let parent decide whether to actually close
+    // Parent should set modelValue to false to close the dialog
     emit('close')
-    model.value = false
   }
 
   // Keyboard support

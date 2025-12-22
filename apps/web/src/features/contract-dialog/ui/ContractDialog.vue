@@ -6,6 +6,13 @@
     :title="dialogTitle"
     @close="handleClose"
   >
+    <!-- Unsaved changes confirmation dialog -->
+    <FConfirmDialog
+      v-model="confirmDialog.isOpen.value"
+      v-bind="confirmDialog.options.value"
+      @cancel="confirmDialog.handleCancel"
+      @confirm="confirmDialog.handleConfirm"
+    />
     <template #subtitle>
       <v-chip
         v-if="contract"
@@ -137,7 +144,15 @@
     useContract,
     useContractForm,
   } from '@/entities/contract'
-  import { FButton, FForm, FFullScreenDialog, FTabs } from '@/shared/ui'
+  import {
+    FButton,
+    FConfirmDialog,
+    FForm,
+    FFullScreenDialog,
+    FTabs,
+    useConfirm,
+    useDirtyForm,
+  } from '@/shared/ui'
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'
   import ContractPayments from './ContractPayments.vue'
@@ -163,6 +178,12 @@
   const errorMessage = ref<string | null>(null)
   const formRef = ref<InstanceType<typeof FForm> | null>(null)
 
+  // Confirmation dialog for unsaved changes
+  const confirmDialog = useConfirm()
+
+  // Track dirty state for close confirmation (snapshot-based like legacy FACTS app)
+  const { takeSnapshot, canClose } = useDirtyForm(() => formRef.value?.values)
+
   // Load contract data if editing
   const {
     contract,
@@ -184,6 +205,8 @@
     isBusy: isMutating,
   } = useContractForm(props.contractId, {
     onSuccess: () => {
+      // Take new snapshot after successful save (resets dirty state)
+      takeSnapshot()
       emit('saved')
     },
     onError: (error) => {
@@ -196,15 +219,17 @@
     return loadedInitialValues.value ?? getDefaultContractFormValues()
   })
 
-  // Reset form when dialog opens
+  const isBusy = computed(() => isLoadingContract.value || isSaving.value || isMutating.value)
+
+  // Reset form when dialog opens and take snapshot
   watch(model, (visible: boolean) => {
     if (visible) {
       activeTab.value = 'general'
       errorMessage.value = null
+      // Take snapshot after a tick to ensure form is initialized
+      setTimeout(() => takeSnapshot(), 0)
     }
   })
-
-  const isBusy = computed(() => isLoadingContract.value || isSaving.value || isMutating.value)
 
   const dialogTitle = computed(() => {
     if (props.contractId && contract.value) {
@@ -266,7 +291,20 @@
     }
   }
 
-  function handleClose() {
+  async function handleClose() {
+    const shouldClose = await canClose(() =>
+      confirmDialog.confirm({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Are you sure you want to close?',
+        confirmText: 'Discard',
+        cancelText: 'Cancel',
+        confirmColor: 'error',
+      }),
+    )
+
+    if (!shouldClose) return
+
+    model.value = false
     emit('closed')
   }
 </script>

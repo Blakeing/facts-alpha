@@ -78,19 +78,43 @@ export type ContractPaymentFormValues = z.infer<typeof contractPaymentSchema>
 export type ContractFormValues = z.infer<typeof contractFormSchema>
 
 // Default values for new contracts
+// Use empty strings for optional string fields (not undefined) because
+// vee-validate converts undefined → '' for text inputs, which would cause
+// false dirty detection when comparing form values to initial values.
 export function getDefaultContractFormValues(): ContractFormValues {
   return {
     type: 'at_need_funeral',
     status: 'draft',
+    caseId: '',
     date: new Date().toISOString().split('T')[0],
+    signDate: '',
+    prePrintedContractNumber: '',
     purchaser: {
+      id: '',
       firstName: '',
+      middleName: '',
       lastName: '',
+      phone: '',
+      email: '',
+      address: undefined, // Keep as undefined - this is an object, not string
+      relationship: '',
+      dateOfBirth: '',
+      dateOfDeath: '',
     },
     coBuyers: [],
     beneficiary: {
+      id: '',
       firstName: '',
+      middleName: '',
       lastName: '',
+      phone: '',
+      email: '',
+      address: undefined, // Keep as undefined - this is an object, not string
+      relationship: '',
+      dateOfBirth: '',
+      dateOfDeath: '',
     },
+    salesPersonId: '',
+    notes: '',
   }
 }
