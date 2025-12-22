@@ -33,8 +33,12 @@ facts-alpha/
 │   │   └── src/
 │   │       ├── components/     # Wrapper components (FButton, FCard, etc.)
 │   │       ├── tokens/         # Design tokens (colors, spacing, typography)
-│   │       └── composables/    # Vue composables
+│   │       └── composables/    # Form utilities (useDirtyForm, useConfirm, etc.)
 │   └── utils/                  # @facts/utils - Shared utilities
+│       └── src/
+│           ├── formatters.ts   # Date, currency, number formatting
+│           ├── object.ts       # lodash re-exports (cloneDeep, isEqual, etc.)
+│           └── validation.ts   # Zod validators (currency, dates, strings)
 └── turbo.json                  # Turborepo configuration
 ```
 
@@ -96,17 +100,53 @@ Vuetify components with simplified APIs and consistent defaults:
 | `FSelect`           | `v-select`                 | Dropdown with options array API                                       |
 | `FCard`             | `v-card`                   | Cards with variant support (elevated, filled, outlined)               |
 | `FDialog`           | `v-dialog`                 | Modal dialogs with preset widths                                      |
-| `FDataTable`        | `v-data-table`             | Tables with simplified column definitions                             |
+| `FConfirmDialog`    | `v-dialog`                 | Confirmation dialogs with Yes/No actions                              |
+| `FDataTable`        | AG Grid                    | Data tables with slot-based cell rendering                            |
 | `FCheckbox`         | `v-checkbox`               | Single checkbox                                                       |
 | `FCheckboxGroup`    | `v-checkbox`               | Multiple checkboxes with options array                                |
 | `FSwitch`           | `v-switch`                 | Toggle switch                                                         |
 | `FRadioGroup`       | `v-radio-group`            | Radio buttons with options array                                      |
 | `FDatePicker`       | `v-date-input`             | Date selection                                                        |
+| `FTabs`             | `v-tabs`                   | Tab navigation with v-model binding                                   |
 | `FLoader`           | `v-overlay`                | Loading overlay with spinner (contained to parent)                    |
 | `FPageCard`         | `FCard` + `FLoader`        | Page/section wrapper with loading overlay                             |
 | `FListCard`         | `FPageCard` + `FDataTable` | Data list wrapper with search, filters, loading                       |
 | `FFormDialog`       | `v-dialog` + `FLoader`     | Form dialog with loading overlay and Save/Cancel                      |
 | `FFullScreenDialog` | `v-dialog fullscreen`      | Full-screen dialog for complex ERP editing workflows                  |
+
+### Form Composables
+
+Reusable form utilities inspired by legacy FACTS app patterns:
+
+| Composable     | Purpose                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `useDirtyForm` | Snapshot-based dirty tracking for unsaved changes detection    |
+| `useConfirm`   | Promise-based confirmation dialogs (pairs with FConfirmDialog) |
+| `useFormSave`  | Standardized validate-then-save pattern with error handling    |
+| `useTypedForm` | Type-safe vee-validate form creation with Zod schemas          |
+
+**Example: Dirty Form Tracking**
+
+```typescript
+const { takeSnapshot, canClose } = useDirtyForm(() => formRef.value?.values)
+
+// Snapshot when dialog opens
+watch(dialogOpen, (open) => {
+  if (open) setTimeout(() => takeSnapshot(), 0)
+})
+
+// Check before close
+async function handleClose() {
+  const shouldClose = await canClose(() =>
+    confirmDialog.confirm({
+      title: 'Unsaved Changes',
+      message: 'Discard changes?',
+      confirmColor: 'error',
+    }),
+  )
+  if (shouldClose) closeDialog()
+}
+```
 
 ### Usage
 
@@ -169,7 +209,7 @@ export default createVuetify({
 - [x] Monorepo setup (Turborepo + pnpm)
 - [x] FSD folder structure
 - [x] Design tokens (colors, spacing, typography)
-- [x] Wrapper component library (14 components)
+- [x] Wrapper component library (20+ components)
 - [x] Application shell with collapsible sidebar (rail mode)
 - [x] Vuetify MD3 blueprint integration
 - [x] Case Management module:
@@ -177,18 +217,36 @@ export default createVuetify({
   - [x] Case detail page
   - [x] Case create/edit form
   - [x] Case entity (types, store, mock data)
-- [x] Contract Management module (MVP):
-  - [x] Contract list page with FListCard
+- [x] Contract Management module:
+  - [x] Contract list page with FListCard + AG Grid
   - [x] Full-screen dialog editing pattern (FFullScreenDialog)
   - [x] Tabbed interface (General, Items, Payments)
   - [x] Contract entity (types, schema, mock API, composables)
+  - [x] Form validation with Zod + vee-validate
+  - [x] Dirty form tracking with unsaved changes confirmation
+  - [x] Save validation with inline errors + toast feedback
 - [x] Linting/formatting setup (Oxlint, ESLint, Prettier)
 - [x] VSCode configuration
 - [x] Domain-centric composable architecture:
   - [x] TanStack Query for data fetching and caching
   - [x] Case domain composables (`useCases`, `useCase`, `useCaseForm`)
-  - [x] Mock API client pattern (`caseApi`)
+  - [x] Contract domain composables (`useContracts`, `useContract`, `useContractForm`)
+  - [x] Mock API client pattern (`caseApi`, `contractApi`)
   - [x] Permissions composable (`usePermissions`) ready for auth
+- [x] Form utilities (inspired by legacy FACTS app):
+  - [x] `useDirtyForm` - Snapshot-based dirty tracking
+  - [x] `useConfirm` + `FConfirmDialog` - Promise-based confirmations
+  - [x] `useFormSave` - Validate-then-save pattern
+  - [x] Zod validators for common patterns (currency, dates, etc.)
+- [x] AG Grid integration for `FDataTable`:
+  - [x] Slot-based cell rendering (`#item.{key}`)
+  - [x] Full AG Grid ColDef support
+  - [x] Auto-height and fill-height modes
+  - [x] Pagination support
+- [x] Utility library (`@facts/utils`):
+  - [x] Date/currency/number formatters
+  - [x] Lodash re-exports (cloneDeep, isEqual, debounce, etc.)
+  - [x] Zod validation schemas
 
 ### Pending
 
