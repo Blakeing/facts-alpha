@@ -680,11 +680,12 @@
   const selectValue = ref(null)
   const multiSelectValue = ref([])
 
-  // Date Pickers
-  const dateValue = ref<Date | null>(null)
-  const dateValue2 = ref<Date | null>(null)
-  const minDate = new Date()
-  const maxDate = new Date(new Date().setMonth(new Date().getMonth() + 3))
+  // Date Pickers (use ISO strings for v-date-input)
+  const dateValue = ref<string | null>(null)
+  const dateValue2 = ref<string | null>(null)
+  const today = new Date()
+  const minDate = today.toISOString().split('T')[0]
+  const maxDate = new Date(today.setMonth(today.getMonth() + 3)).toISOString().split('T')[0]
 
   // Date Range Pickers
   const dateRange = ref<Date[]>([])

@@ -36,11 +36,11 @@
         <v-list-item
           v-for="item in navigation"
           :key="item.title"
-          :active="isActive(item.to)"
+          :active="!item.disabled && isActive(item.to)"
           :disabled="item.disabled"
           :prepend-icon="item.icon"
           :title="item.title"
-          :to="item.to"
+          :to="item.disabled ? undefined : item.to"
           :value="item.title"
         />
       </v-list>
@@ -55,10 +55,11 @@
           <v-list-item
             v-for="item in secondaryNavigation"
             :key="item.title"
+            :active="!item.disabled && isActive(item.to)"
             :disabled="item.disabled"
             :prepend-icon="item.icon"
             :title="item.title"
-            :to="item.to"
+            :to="item.disabled ? undefined : item.to"
             :value="item.title"
           />
         </v-list>

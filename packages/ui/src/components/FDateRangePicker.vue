@@ -92,6 +92,10 @@
 
   const fieldError = computed(() => field?.errorMessage.value)
 
+  // Format date for display
+  const formatDate = (date: Date) =>
+    date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+
   // Format the display value
   const displayValue = computed(() => {
     const range = fieldValue.value
@@ -99,17 +103,8 @@
       return ''
     }
 
-    const formatDate = (date: Date) => {
-      if (!(date instanceof Date)) return ''
-      return date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      })
-    }
-
-    const startDate = range[0]
-    const endDate = range[range.length - 1]
+    const startDate = range.at(0)
+    const endDate = range.at(-1)
 
     if (range.length === 1 && startDate) {
       return formatDate(startDate)

@@ -17,6 +17,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@date-io/date-fns':
+        specifier: ^3.2.0
+        version: 3.2.1(date-fns@4.1.0)
       '@facts/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -35,6 +38,9 @@ importers:
       '@vueuse/core':
         specifier: ^12.8.2
         version: 12.8.2(typescript@5.9.3)
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
       pinia:
         specifier: ^3.0.3
         version: 3.0.4(typescript@5.9.3)(vue@3.5.26(typescript@5.9.3))
@@ -198,6 +204,17 @@ packages:
 
   '@clack/prompts@0.11.0':
     resolution: {integrity: sha512-pMN5FcrEw9hUkZA4f+zLlzivQSeQf5dRGJjSUbvVYDLvpKCdQx5OaknvKzgbtXOizhP+SJJJjqEbOe55uKKfAw==}
+
+  '@date-io/core@3.2.0':
+    resolution: {integrity: sha512-hqwXvY8/YBsT9RwQITG868ZNb1MVFFkF7W1Ecv4P472j/ZWa7EFcgSmxy8PUElNVZfvhdvfv+a8j6NWJqOX5mA==}
+
+  '@date-io/date-fns@3.2.1':
+    resolution: {integrity: sha512-CtXgTOAamkImI+CmbWRNdBi4ljj9xm/tdoPa+eeeiygduzubJTsXp18vYz+Vs/9yLho1zUOXlxpsfsF7PsXSWQ==}
+    peerDependencies:
+      date-fns: ^3.2.0 || ^4.1.0
+    peerDependenciesMeta:
+      date-fns:
+        optional: true
 
   '@esbuild/aix-ppc64@0.27.2':
     resolution: {integrity: sha512-GZMB+a0mOMZs4MpDbj8RJp4cw+w1WV5NYD6xzgvzUJ5Ek2jerwfO2eADyI6ExDSUED+1X8aMbegahsJi+8mgpw==}
@@ -2173,6 +2190,14 @@ snapshots:
       '@clack/core': 0.5.0
       picocolors: 1.1.1
       sisteransi: 1.0.5
+
+  '@date-io/core@3.2.0': {}
+
+  '@date-io/date-fns@3.2.1(date-fns@4.1.0)':
+    dependencies:
+      '@date-io/core': 3.2.0
+    optionalDependencies:
+      date-fns: 4.1.0
 
   '@esbuild/aix-ppc64@0.27.2':
     optional: true

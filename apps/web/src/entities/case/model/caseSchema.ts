@@ -8,10 +8,6 @@
 // Import Case type for conversion functions
 import type { Case, CaseService } from './case'
 
-// =============================================================================
-// CONVERSION UTILITIES
-// =============================================================================
-
 import { z } from 'zod'
 
 // =============================================================================
@@ -54,7 +50,7 @@ export const decedentFormSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100, 'First name is too long'),
   lastName: z.string().min(1, 'Last name is required').max(100, 'Last name is too long'),
   middleName: z.string().max(100, 'Middle name is too long'),
-  dateOfBirth: z.string(),
+  dateOfBirth: z.string().nullable(),
   dateOfDeath: z.string().min(1, 'Date of death is required'),
   placeOfDeath: z.string().max(200, 'Place of death is too long'),
   ssn: z.string().regex(/^$|^\d{3}-?\d{2}-?\d{4}$/, 'Invalid SSN format (XXX-XX-XXXX)'),
@@ -110,7 +106,7 @@ export function getDefaultCaseFormValues(): CaseFormValues {
       firstName: '',
       lastName: '',
       middleName: '',
-      dateOfBirth: '',
+      dateOfBirth: null,
       dateOfDeath: '',
       placeOfDeath: '',
       ssn: '',
@@ -144,7 +140,7 @@ export function caseToFormValues(c: Case): CaseFormValues {
       firstName: c.decedent.firstName,
       lastName: c.decedent.lastName,
       middleName: c.decedent.middleName || '',
-      dateOfBirth: c.decedent.dateOfBirth || '',
+      dateOfBirth: c.decedent.dateOfBirth || null,
       dateOfDeath: c.decedent.dateOfDeath,
       placeOfDeath: c.decedent.placeOfDeath || '',
       ssn: c.decedent.ssn || '',
