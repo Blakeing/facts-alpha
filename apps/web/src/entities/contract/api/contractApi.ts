@@ -49,14 +49,6 @@ export const contractApi = {
   },
 
   /**
-   * Get contracts by case ID
-   */
-  async getByCaseId(caseId: string): Promise<ContractListing[]> {
-    await delay(200)
-    return contracts.filter((c) => c.caseId === caseId).map((c) => contractToListing(c))
-  },
-
-  /**
    * Create a new contract
    */
   async create(data: ContractFormValues): Promise<Contract> {
@@ -71,7 +63,7 @@ export const contractApi = {
       prePrintedContractNumber: data.prePrintedContractNumber,
       type: data.type,
       status: data.status,
-      caseId: data.caseId,
+      locationId: data.locationId,
       date: data.date,
       signDate: data.signDate,
       purchaser: {
@@ -117,15 +109,29 @@ export const contractApi = {
       throw new Error('Contract not found')
     }
 
-    const existing = contracts[index]
+    const existing = contracts[index]!
     const updated: Contract = {
       ...existing,
-      ...data,
-      purchaser: data.purchaser ? { ...existing.purchaser, ...data.purchaser } : existing.purchaser,
+      type: data.type ?? existing.type,
+      status: data.status ?? existing.status,
+      locationId: data.locationId ?? existing.locationId,
+      date: data.date ?? existing.date,
+      signDate: data.signDate ?? existing.signDate,
+      prePrintedContractNumber: data.prePrintedContractNumber ?? existing.prePrintedContractNumber,
+      purchaser: data.purchaser
+        ? { ...existing.purchaser, ...data.purchaser, id: existing.purchaser.id }
+        : existing.purchaser,
       beneficiary: data.beneficiary
-        ? { ...existing.beneficiary, ...data.beneficiary }
+        ? { ...existing.beneficiary, ...data.beneficiary, id: existing.beneficiary.id }
         : existing.beneficiary,
-      coBuyers: data.coBuyers ?? existing.coBuyers,
+      coBuyers: data.coBuyers
+        ? data.coBuyers.map((cb, i) => ({
+            ...cb,
+            id: existing.coBuyers[i]?.id ?? generateId(),
+          }))
+        : existing.coBuyers,
+      salesPersonId: data.salesPersonId ?? existing.salesPersonId,
+      notes: data.notes ?? existing.notes,
       updatedAt: new Date().toISOString(),
     }
 
@@ -204,7 +210,7 @@ export const contractApi = {
     const index = contractItems.findIndex((i) => i.id === itemId)
     if (index === -1) throw new Error('Item not found')
 
-    const existing = contractItems[index]
+    const existing = contractItems[index]!
     const quantity = data.quantity ?? existing.quantity
     const unitPrice = data.unitPrice ?? existing.unitPrice
     const discount = data.discount ?? existing.discount
@@ -212,9 +218,17 @@ export const contractApi = {
     const total = quantity * unitPrice - discount + tax
 
     const updated: ContractItem = {
-      ...existing,
-      ...data,
+      id: existing.id,
+      contractId: existing.contractId,
+      itemNumber: data.itemNumber ?? existing.itemNumber,
+      description: data.description ?? existing.description,
+      category: data.category ?? existing.category,
+      quantity,
+      unitPrice,
+      discount,
+      tax,
       total,
+      notes: data.notes ?? existing.notes,
     }
 
     contractItems[index] = updated

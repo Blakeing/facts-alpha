@@ -126,7 +126,7 @@ export const mockContracts: Contract[] = [
     prePrintedContractNumber: 'PP-12345',
     type: ContractType.AT_NEED_FUNERAL,
     status: ContractStatus.EXECUTED,
-    caseId: '1', // Links to case
+    locationId: 'loc-001', // Evergreen Memorial Funeral Home
     date: '2024-12-10',
     signDate: '2024-12-10',
     purchaser: {
@@ -171,7 +171,7 @@ export const mockContracts: Contract[] = [
     contractNumber: 'AN-2024-0002',
     type: ContractType.AT_NEED_FUNERAL,
     status: ContractStatus.FINALIZED,
-    caseId: '2',
+    locationId: 'loc-001', // Evergreen Memorial Funeral Home
     date: '2024-12-15',
     purchaser: {
       id: 'person-3',
@@ -214,6 +214,7 @@ export const mockContracts: Contract[] = [
     contractNumber: 'AN-2024-0003',
     type: ContractType.AT_NEED_FUNERAL,
     status: ContractStatus.DRAFT,
+    locationId: 'loc-003', // Sunrise Chapel & Crematory
     date: '2024-12-20',
     purchaser: {
       id: 'person-6',
@@ -243,6 +244,7 @@ export const mockContracts: Contract[] = [
     contractNumber: 'PN-2024-0001',
     type: ContractType.PRE_NEED_FUNERAL,
     status: ContractStatus.EXECUTED,
+    locationId: 'loc-003', // Sunrise Chapel & Crematory
     date: '2024-11-01',
     signDate: '2024-11-01',
     purchaser: {
@@ -280,6 +282,7 @@ export function contractToListing(contract: Contract): ContractListing {
     prePrintedContractNumber: contract.prePrintedContractNumber,
     type: contract.type,
     status: contract.status,
+    locationId: contract.locationId,
     date: contract.date,
     purchaserName: `${contract.purchaser.lastName}, ${contract.purchaser.firstName}`,
     beneficiaryName: `${contract.beneficiary.lastName}, ${contract.beneficiary.firstName}`,

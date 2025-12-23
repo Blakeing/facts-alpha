@@ -210,6 +210,7 @@
     useConfirm,
     useFormModel,
   } from '@/shared/ui'
+  import { useUserContextStore } from '@/stores'
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'
   import ContractPayments from './ContractPayments.vue'
@@ -286,6 +287,7 @@
       contractNumber: session.contractNumber.value,
       type: session.contractType.value,
       status: session.status.value,
+      locationId: session.locationId.value,
       date: session.contractDate.value,
       purchaser: people.purchaser.value,
       beneficiary: people.beneficiary.value,
@@ -305,17 +307,20 @@
   // Form Validation (for General tab)
   // ==========================================================================
 
+  const userContext = useUserContextStore()
+
   const initialFormValues = computed(() => {
     if (session.isNewContract.value) {
-      return getDefaultContractFormValues()
+      // New contracts get the current location from user context
+      return getDefaultContractFormValues(userContext.currentLocationId ?? '')
     }
 
     const people = session.people
     return {
       type: session.contractType.value,
       status: session.status.value,
+      locationId: session.locationId.value,
       date: session.contractDate.value,
-      caseId: session.caseId.value,
       purchaser: people.purchaser.value,
       beneficiary: people.beneficiary.value,
       coBuyers: people.coBuyers.value,
@@ -351,7 +356,9 @@
         // Only reset session for new contracts to avoid clearing cached edit data
         if (session.isNewContract.value) {
           session.reset()
-          reset(getDefaultContractFormValues())
+          // Set locationId for new contracts
+          session.locationId.value = userContext.currentLocationId ?? ''
+          reset(getDefaultContractFormValues(userContext.currentLocationId ?? ''))
         }
         // For existing contracts, the session data is already loaded via TanStack Query
         // and will populate the form via the purchaser watch below
@@ -457,7 +464,6 @@
     // Update contract metadata
     session.contractType.value = formData.type
     session.contractDate.value = formData.date
-    session.caseId.value = formData.caseId ?? undefined
 
     return true
   }

@@ -322,6 +322,130 @@ export default createVuetify({
 - Light theme only (dark mode ready via `darkScheme` if needed)
 - Compact density defaults for ERP aesthetic
 
+## Location Context and Filtering
+
+The application supports **location-scoped data access** where users select a location from the toolbar, and all data (contracts, etc.) is automatically filtered to that location.
+
+### Architecture
+
+```mermaid
+flowchart TB
+    subgraph UI [UI Layer]
+        AppShell[AppShell Toolbar]
+        LocationSelector[LocationSelector Dropdown]
+        ContractsList[Contracts List Page]
+    end
+
+    subgraph State [State Management]
+        UserContextStore[userContextStore - Pinia]
+    end
+
+    subgraph Data [Data Layer]
+        LocationApi[locationApi]
+        ContractApi[contractApi]
+        useContracts[useContracts composable]
+    end
+
+    AppShell --> LocationSelector
+    LocationSelector --> UserContextStore
+    LocationSelector --> LocationApi
+    ContractsList --> useContracts
+    useContracts --> ContractApi
+    useContracts --> UserContextStore
+    UserContextStore -->|currentLocationId| useContracts
+```
+
+### Components
+
+**LocationSelector** (`widgets/app-shell/ui/LocationSelector.vue`):
+
+- Dropdown in AppShell toolbar showing current location
+- Displays location name with type icon (funeral home, cemetery)
+- Lists all selectable (non-corporate) locations
+- Shows checkmark on currently selected location
+- Calls `userContext.switchLocation()` on selection
+
+**User Context Store** (`stores/userContext.ts`):
+
+- Pinia store managing current user and location
+- `loadLocations()` - Fetches locations from `locationApi.list()`
+- `switchLocation(locationId)` - Changes current location
+- `currentLocationId` - Computed property for reactive access
+- `selectableLocations` - Filters out corporate locations
+
+### Data Filtering
+
+Contracts are automatically filtered by the current location:
+
+```typescript
+// entities/contract/model/useContracts.ts
+export function useContracts() {
+  const userContext = useUserContextStore()
+
+  // Query key includes locationId for cache separation
+  const queryKey = computed(() => ['contracts', userContext.currentLocationId] as const)
+
+  // Filter by current location first
+  const locationFilteredContracts = computed(() => {
+    const locationId = userContext.currentLocationId
+    if (!locationId) return []
+    return contracts.value.filter((c) => c.locationId === locationId)
+  })
+
+  // ... rest of filtering chain uses locationFilteredContracts
+}
+```
+
+### Contract-Location Relationship
+
+All contracts must have a `locationId` field linking them to a location:
+
+```typescript
+// entities/contract/model/contract.ts
+export interface Contract {
+  // ... other fields
+  locationId: string // Link to Location entity
+}
+```
+
+When creating new contracts, the current location is automatically assigned:
+
+```typescript
+// features/contract-dialog/ui/ContractDialog.vue
+const initialFormValues = computed(() => {
+  if (session.isNewContract.value) {
+    // New contracts get the current location from user context
+    return getDefaultContractFormValues(userContext.currentLocationId ?? '')
+  }
+  // ... existing contract
+})
+```
+
+### Initialization Flow
+
+1. AppShell mounts and calls `userContext.loadLocations()`
+2. Store fetches locations from `locationApi.list()`
+3. First active, non-corporate location is auto-selected
+4. LocationSelector displays current location in toolbar
+5. All data queries (contracts, etc.) filter by `currentLocationId`
+
+### Usage
+
+```vue
+<script setup>
+  import { useUserContextStore } from '@/stores'
+
+  const userContext = useUserContextStore()
+
+  // Access current location
+  const currentLocation = computed(() => userContext.currentLocation)
+  const locationId = computed(() => userContext.currentLocationId)
+
+  // Switch location
+  userContext.switchLocation('loc-003')
+</script>
+```
+
 ## Current Implementation Status
 
 ### Completed
@@ -331,6 +455,11 @@ export default createVuetify({
 - [x] Design tokens (colors, spacing, typography)
 - [x] Wrapper component library (20+ components)
 - [x] Application shell with collapsible sidebar (rail mode)
+- [x] Location context and filtering:
+  - [x] Location selector dropdown in AppShell toolbar
+  - [x] User context store with location management (`useUserContextStore`)
+  - [x] Location-scoped data filtering (contracts filtered by current location)
+  - [x] Location entity integration with API
 - [x] Vuetify MD3 blueprint integration
 - [x] Case Management module:
   - [x] Case list page with filtering and search
@@ -342,6 +471,7 @@ export default createVuetify({
   - [x] Full-screen dialog editing pattern (FFullScreenDialog)
   - [x] Tabbed interface (General, Items, Payments)
   - [x] Contract entity (types, schema, mock API, composables)
+  - [x] Location-scoped filtering (contracts filtered by current location)
   - [x] Form validation with Zod (custom implementation, no vee-validate)
   - [x] Dirty form tracking with unsaved changes confirmation
   - [x] Save validation with inline errors + snackbar + toast feedback
@@ -351,7 +481,8 @@ export default createVuetify({
   - [x] TanStack Query for data fetching and caching
   - [x] Case domain composables (`useCases`, `useCase`, `useCaseForm`)
   - [x] Contract domain composables (`useContracts`, `useContract`, `useContractForm`)
-  - [x] Mock API client pattern (`caseApi`, `contractApi`)
+  - [x] Location domain composables (`locationApi`, location entity)
+  - [x] Mock API client pattern (`caseApi`, `contractApi`, `locationApi`)
   - [x] Permissions composable (`usePermissions`) ready for auth
 - [x] Form utilities (inspired by legacy FACTS app):
   - [x] `useFormModel` - Live model state management with Zod validation
@@ -415,15 +546,18 @@ The app runs at `http://localhost:3000` by default.
 
 ## Key Files Reference
 
-| File                                             | Purpose                       |
-| ------------------------------------------------ | ----------------------------- |
-| `apps/web/src/app/providers/vuetify.ts`          | MD3 Blueprint + brand colors  |
-| `apps/web/src/app/providers/query.ts`            | TanStack Query configuration  |
-| `apps/web/src/styles/settings.scss`              | SASS overrides, global styles |
-| `apps/web/src/widgets/app-shell/ui/AppShell.vue` | Main layout with sidebar      |
-| `apps/web/src/entities/case/model/useCases.ts`   | Example domain composable     |
-| `packages/ui/src/tokens/colors.ts`               | Brand color definitions       |
-| `packages/ui/src/index.ts`                       | UI package exports            |
+| File                                                     | Purpose                               |
+| -------------------------------------------------------- | ------------------------------------- |
+| `apps/web/src/app/providers/vuetify.ts`                  | MD3 Blueprint + brand colors          |
+| `apps/web/src/app/providers/query.ts`                    | TanStack Query configuration          |
+| `apps/web/src/styles/settings.scss`                      | SASS overrides, global styles         |
+| `apps/web/src/widgets/app-shell/ui/AppShell.vue`         | Main layout with sidebar              |
+| `apps/web/src/widgets/app-shell/ui/LocationSelector.vue` | Location dropdown in toolbar          |
+| `apps/web/src/stores/userContext.ts`                     | User and location context store       |
+| `apps/web/src/entities/case/model/useCases.ts`           | Example domain composable             |
+| `apps/web/src/entities/contract/model/useContracts.ts`   | Contract list with location filtering |
+| `packages/ui/src/tokens/colors.ts`                       | Brand color definitions               |
+| `packages/ui/src/index.ts`                               | UI package exports                    |
 
 ## Conventions
 

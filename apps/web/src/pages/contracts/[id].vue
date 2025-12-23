@@ -22,8 +22,8 @@
             <ContractStatusBadge :status="contract.status" />
           </div>
           <p class="text-body-2 text-medium-emphasis">
-            {{ contract.beneficiary.lastName }}, {{ contract.beneficiary.firstName }}
-            · {{ getContractTypeLabel(contract.type) }}
+            {{ contract.beneficiary.lastName }}, {{ contract.beneficiary.firstName }} ·
+            {{ getContractTypeLabel(contract.type) }}
           </p>
         </div>
       </div>
@@ -55,9 +55,7 @@
       <div class="d-flex align-center justify-space-between">
         <div>
           <strong>Contract Incomplete</strong>
-          <div class="text-body-2">
-            Missing: {{ missingFields.join(', ') }}
-          </div>
+          <div class="text-body-2">Missing: {{ missingFields.join(', ') }}</div>
         </div>
         <FButton
           intent="tonal"
@@ -130,7 +128,9 @@
                   size="small"
                 />
               </template>
-              <v-list-item-title class="text-body-2 text-medium-emphasis">Address</v-list-item-title>
+              <v-list-item-title class="text-body-2 text-medium-emphasis"
+                >Address</v-list-item-title
+              >
               <v-list-item-subtitle class="text-body-1">
                 {{ contract.purchaser.address.street }}<br />
                 {{ contract.purchaser.address.city }}, {{ contract.purchaser.address.state }}
@@ -431,7 +431,10 @@
   const route = useRoute()
   const router = useRouter()
 
-  const contractId = computed(() => route.params.id as string)
+  const contractId = computed(() => {
+    const params = route.params as { id: string }
+    return params.id
+  })
 
   // Fetch contract data
   const { data: contract, isLoading } = useQuery({
@@ -488,4 +491,3 @@
     return paymentMethodIcons[method] || 'mdi-cash'
   }
 </script>
-

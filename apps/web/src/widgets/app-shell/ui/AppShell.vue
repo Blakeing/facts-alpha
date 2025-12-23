@@ -78,7 +78,7 @@
         variant="text"
         @click="rail = !rail"
       />
-      <v-toolbar-title>{{ currentTitle }}</v-toolbar-title>
+      <LocationSelector class="ml-4" />
       <v-spacer />
       <v-btn
         icon="mdi-magnify"
@@ -135,11 +135,14 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref } from 'vue'
+  import { onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
+  import { useUserContextStore } from '@/stores'
   import { navigation, secondaryNavigation } from '../model/navigation'
+  import LocationSelector from './LocationSelector.vue'
 
   const route = useRoute()
+  const userContext = useUserContextStore()
   const drawer = ref(true)
   const rail = ref(false)
 
@@ -147,10 +150,13 @@
     return route.path === to || route.path.startsWith(to + '/')
   }
 
-  const currentTitle = computed(() => {
-    const allNav = [...navigation, ...secondaryNavigation]
-    const current = allNav.find((item) => isActive(item.to))
-    return current?.title ?? 'Dashboard'
+  // Initialize user context and load locations
+  onMounted(async () => {
+    // Initialize mock user (auth will come later)
+    userContext.initMockUser()
+
+    // Load locations from the API
+    await userContext.loadLocations()
   })
 </script>
 

@@ -18,17 +18,6 @@
               />
             </v-col>
             <v-col cols="12">
-              <FSelect
-                v-model="model.status"
-                disabled
-                field="status"
-                hint="Use actions menu to change status"
-                label="Status"
-                :options="contractStatusOptions"
-                persistent-hint
-              />
-            </v-col>
-            <v-col cols="12">
               <FDatePicker
                 v-model="model.date"
                 field="date"
@@ -267,7 +256,6 @@
   import {
     type Contract,
     type ContractFormValues,
-    contractStatusOptions,
     contractTypeOptions,
   } from '@/entities/contract'
   import { formatCurrency } from '@/shared/lib'

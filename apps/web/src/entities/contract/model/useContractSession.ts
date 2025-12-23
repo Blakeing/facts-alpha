@@ -60,7 +60,7 @@ export function useContractSession(
   // Contract metadata
   const contractType = ref<ContractType>(ContractType.AT_NEED_FUNERAL)
   const contractDate = ref<string>(new Date().toISOString().split('T')[0] ?? '')
-  const caseId = ref<string | undefined>(undefined)
+  const locationId = ref<string>('')
 
   // ==========================================================================
   // Status - Simple ref, server is source of truth (like legacy app)
@@ -168,7 +168,7 @@ export function useContractSession(
         // Apply metadata
         contractType.value = contract.type
         contractDate.value = contract.date
-        caseId.value = contract.caseId
+        locationId.value = contract.locationId
 
         // Apply status directly from server (source of truth)
         status.value = contract.status
@@ -253,8 +253,8 @@ export function useContractSession(
       const data = {
         type: contractType.value,
         status: status.value,
+        locationId: locationId.value,
         date: contractDate.value,
-        caseId: caseId.value,
         purchaser: {
           firstName: peopleData.purchaser.firstName,
           lastName: peopleData.purchaser.lastName,
@@ -328,7 +328,7 @@ export function useContractSession(
     people.reset()
     contractType.value = ContractType.AT_NEED_FUNERAL
     contractDate.value = new Date().toISOString().split('T')[0] ?? ''
-    caseId.value = undefined
+    locationId.value = ''
     saveError.value = null
     status.value = ContractStatus.DRAFT
     signDate.value = undefined
@@ -352,7 +352,7 @@ export function useContractSession(
     // Contract metadata
     contractType,
     contractDate,
-    caseId,
+    locationId,
 
     // Status (simple ref + derived booleans)
     status: statusComputed,

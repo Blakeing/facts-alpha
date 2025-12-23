@@ -64,7 +64,7 @@ export const contractFormSchema = z.object({
     ContractStatus.VOID,
     ContractStatus.CANCELLED,
   ]),
-  caseId: z.string().optional(),
+  locationId: z.string().min(1, 'Location is required'),
   date: z.string().min(1, 'Contract date is required'),
   signDate: z.string().optional(),
   prePrintedContractNumber: z.string().optional(),
@@ -92,12 +92,12 @@ export type ContractFormValues = z.infer<typeof contractFormSchema>
 // Empty strings for optional fields is a convention (matches what forms render).
 // Note: Dirty detection uses snapshot comparison (form values → form values),
 // so these defaults don't affect dirty tracking - same approach as legacy app.
-export function getDefaultContractFormValues(): ContractFormValues {
+export function getDefaultContractFormValues(locationId: string): ContractFormValues {
   return {
     type: ContractType.AT_NEED_FUNERAL,
     status: ContractStatus.DRAFT,
-    caseId: '',
-    date: new Date().toISOString().split('T')[0],
+    locationId,
+    date: new Date().toISOString().split('T')[0] ?? '',
     signDate: '',
     prePrintedContractNumber: '',
     purchaser: {

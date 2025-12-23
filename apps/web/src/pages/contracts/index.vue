@@ -33,16 +33,16 @@
           v-for="status in statusFilters"
           :key="status.value"
           :color="statusFilter === status.value ? status.color : undefined"
-          :variant="statusFilter === status.value ? 'flat' : 'outlined'"
+          variant="tonal"
           @click="statusFilter = statusFilter === status.value ? null : status.value"
         >
           {{ status.label }}
-          <span
+          <template
             v-if="status.count > 0"
-            class="ml-1"
+            #append
           >
-            ({{ status.count }})
-          </span>
+            <span class="ml-1"> ({{ status.count }}) </span>
+          </template>
         </v-chip>
       </div>
     </template>

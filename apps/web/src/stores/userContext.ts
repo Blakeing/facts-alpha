@@ -7,6 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { locationApi, type LocationListing, type LocationType } from '@/entities/location'
 
 export interface User {
   id: string
@@ -18,8 +19,9 @@ export interface User {
 
 export interface Location {
   id: string
+  identifier: string
   name: string
-  type: 'funeral' | 'cemetery' | 'corporate'
+  type: LocationType
 }
 
 export const useUserContextStore = defineStore('userContext', () => {
@@ -27,6 +29,8 @@ export const useUserContextStore = defineStore('userContext', () => {
   const currentUser = ref<User | null>(null)
   const currentLocation = ref<Location | null>(null)
   const availableLocations = ref<Location[]>([])
+  const locationsLoading = ref(false)
+  const locationsLoaded = ref(false)
 
   // Computed
   const isAuthenticated = computed(() => !!currentUser.value)
@@ -41,6 +45,11 @@ export const useUserContextStore = defineStore('userContext', () => {
   })
   const isAdmin = computed(() => currentUser.value?.role === 'admin')
   const isManager = computed(() => currentUser.value?.role === 'manager' || isAdmin.value)
+
+  // Only show active, non-corporate locations for selection
+  const selectableLocations = computed(() =>
+    availableLocations.value.filter((l) => l.type !== 'corporate'),
+  )
 
   // Actions
   function setUser(user: User | null) {
@@ -66,10 +75,44 @@ export const useUserContextStore = defineStore('userContext', () => {
     currentUser.value = null
     currentLocation.value = null
     availableLocations.value = []
+    locationsLoaded.value = false
   }
 
-  // Initialize with mock data for development
-  function initMockData() {
+  /**
+   * Load locations from the API and set the first active location as current
+   */
+  async function loadLocations(): Promise<void> {
+    // Skip if already loaded or loading
+    if (locationsLoaded.value || locationsLoading.value) return
+
+    locationsLoading.value = true
+    try {
+      const listings = await locationApi.list()
+
+      // Convert LocationListing to our Location shape
+      const locations: Location[] = listings
+        .filter((l: LocationListing) => l.active)
+        .map((l: LocationListing) => ({
+          id: l.id,
+          identifier: l.identifier,
+          name: l.name,
+          type: l.type,
+        }))
+
+      availableLocations.value = locations
+      locationsLoaded.value = true
+
+      // Auto-select first selectable location if none selected
+      if (!currentLocation.value && selectableLocations.value.length > 0) {
+        currentLocation.value = selectableLocations.value[0] ?? null
+      }
+    } finally {
+      locationsLoading.value = false
+    }
+  }
+
+  // Initialize with mock user data for development (auth will come later)
+  function initMockUser() {
     currentUser.value = {
       id: 'user-1',
       email: 'john.doe@example.com',
@@ -77,14 +120,6 @@ export const useUserContextStore = defineStore('userContext', () => {
       lastName: 'Doe',
       role: 'admin',
     }
-
-    availableLocations.value = [
-      { id: 'loc-1', name: 'Springfield Funeral Home', type: 'funeral' },
-      { id: 'loc-2', name: 'Riverside Cemetery', type: 'cemetery' },
-      { id: 'loc-3', name: 'Corporate Office', type: 'corporate' },
-    ]
-
-    currentLocation.value = availableLocations.value[0] ?? null
   }
 
   return {
@@ -92,6 +127,8 @@ export const useUserContextStore = defineStore('userContext', () => {
     currentUser,
     currentLocation,
     availableLocations,
+    locationsLoading,
+    locationsLoaded,
 
     // Computed
     isAuthenticated,
@@ -100,6 +137,7 @@ export const useUserContextStore = defineStore('userContext', () => {
     userInitials,
     isAdmin,
     isManager,
+    selectableLocations,
 
     // Actions
     setUser,
@@ -107,6 +145,7 @@ export const useUserContextStore = defineStore('userContext', () => {
     setAvailableLocations,
     switchLocation,
     logout,
-    initMockData,
+    loadLocations,
+    initMockUser,
   }
 })

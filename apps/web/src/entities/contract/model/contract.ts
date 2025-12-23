@@ -84,7 +84,7 @@ export interface Contract {
   prePrintedContractNumber?: string
   type: ContractType
   status: ContractStatus
-  caseId?: string // Link to Case entity
+  locationId: string // Link to Location entity
   date: string
   signDate?: string
 
@@ -124,6 +124,7 @@ export interface ContractListing {
   prePrintedContractNumber?: string
   type: ContractType
   status: ContractStatus
+  locationId: string
   date: string
   purchaserName: string
   beneficiaryName: string

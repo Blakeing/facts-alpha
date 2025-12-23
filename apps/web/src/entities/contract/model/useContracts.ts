@@ -1,32 +1,47 @@
 /**
  * useContracts - List composable for contracts
+ *
+ * Contracts are filtered by the current location from the user context store.
  */
 
 import type { ContractListing, ContractStatus, ContractType } from './contract'
 import { useQuery } from '@tanstack/vue-query'
 import { computed, ref } from 'vue'
+import { useUserContextStore } from '@/stores'
 import { contractApi } from '../api/contractApi'
 
 export const CONTRACTS_QUERY_KEY = ['contracts'] as const
 
 export function useContracts() {
+  const userContext = useUserContextStore()
+
   const search = ref('')
   const statusFilter = ref<ContractStatus | null>(null)
   const typeFilter = ref<ContractType | null>(null)
 
+  // Query key includes locationId for cache separation per location
+  const queryKey = computed(() => ['contracts', userContext.currentLocationId] as const)
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: CONTRACTS_QUERY_KEY,
+    queryKey,
     queryFn: () => contractApi.list(),
   })
 
   const contracts = computed(() => data.value ?? [])
 
+  // Filter by current location first
+  const locationFilteredContracts = computed(() => {
+    const locationId = userContext.currentLocationId
+    if (!locationId) return []
+    return contracts.value.filter((c) => c.locationId === locationId)
+  })
+
   // Filter by search term
   const searchedContracts = computed(() => {
-    if (!search.value) return contracts.value
+    if (!search.value) return locationFilteredContracts.value
 
     const term = search.value.toLowerCase()
-    return contracts.value.filter(
+    return locationFilteredContracts.value.filter(
       (c) =>
         c.contractNumber.toLowerCase().includes(term) ||
         c.purchaserName.toLowerCase().includes(term) ||
@@ -35,7 +50,7 @@ export function useContracts() {
     )
   })
 
-  // Filter by status
+  // Filter by status and type
   const filteredContracts = computed(() => {
     let result = searchedContracts.value
 
@@ -50,7 +65,7 @@ export function useContracts() {
     return result
   })
 
-  // Group by status for counts
+  // Group by status for counts (uses location-filtered contracts)
   const contractsByStatus = computed(() => {
     const grouped: Record<ContractStatus, ContractListing[]> = {
       draft: [],
@@ -60,20 +75,20 @@ export function useContracts() {
       cancelled: [],
     }
 
-    for (const contract of contracts.value) {
+    for (const contract of locationFilteredContracts.value) {
       grouped[contract.status].push(contract)
     }
 
     return grouped
   })
 
-  // Summary stats
+  // Summary stats (uses location-filtered contracts)
   const stats = computed(() => ({
-    total: contracts.value.length,
+    total: locationFilteredContracts.value.length,
     draft: contractsByStatus.value.draft.length,
     finalized: contractsByStatus.value.finalized.length,
     executed: contractsByStatus.value.executed.length,
-    totalBalance: contracts.value.reduce((sum, c) => sum + c.balanceDue, 0),
+    totalBalance: locationFilteredContracts.value.reduce((sum, c) => sum + c.balanceDue, 0),
   }))
 
   return {
@@ -83,7 +98,7 @@ export function useContracts() {
     typeFilter,
 
     // Data
-    contracts,
+    contracts: locationFilteredContracts,
     filteredContracts,
     contractsByStatus,
     stats,

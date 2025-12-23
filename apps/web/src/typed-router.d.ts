@@ -21,8 +21,7 @@ declare module 'vue-router/auto-routes' {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/components': RouteRecordInfo<'/components', '/components', Record<never, never>, Record<never, never>>,
     '/contracts/': RouteRecordInfo<'/contracts/', '/contracts', Record<never, never>, Record<never, never>>,
-    '/contracts/[id]': RouteRecordInfo<'/contracts/[id]', '/contracts/:id', { id: ParamValue<true> }, { id: ParamValue<false> }, '/contracts/[id]/' | '/contracts/[id]/edit/[[tab]]'>,
-    '/contracts/[id]/': RouteRecordInfo<'/contracts/[id]/', '/contracts/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/contracts/[id]': RouteRecordInfo<'/contracts/[id]', '/contracts/:id', { id: ParamValue<true> }, { id: ParamValue<false> }, '/contracts/[id]/edit/[[tab]]'>,
     '/contracts/[id]/edit/[[tab]]': RouteRecordInfo<'/contracts/[id]/edit/[[tab]]', '/contracts/:id/edit/:tab?', { id: ParamValue<true>, tab?: ParamValueZeroOrOne<true> }, { id: ParamValue<false>, tab?: ParamValueZeroOrOne<false> }>,
     '/contracts/new/[[tab]]': RouteRecordInfo<'/contracts/new/[[tab]]', '/contracts/new/:tab?', { tab?: ParamValueZeroOrOne<true> }, { tab?: ParamValueZeroOrOne<false> }>,
     '/locations/': RouteRecordInfo<'/locations/', '/locations', Record<never, never>, Record<never, never>>,
@@ -52,12 +51,8 @@ declare module 'vue-router/auto-routes' {
       views: never
     }
     'src/pages/contracts/[id].vue': {
-      routes: '/contracts/[id]' | '/contracts/[id]/' | '/contracts/[id]/edit/[[tab]]' | '/contracts/[id]/edit'
+      routes: '/contracts/[id]' | '/contracts/[id]/edit/[[tab]]' | '/contracts/[id]/edit'
       views: 'default'
-    }
-    'src/pages/contracts/[id]/index.vue': {
-      routes: '/contracts/[id]/'
-      views: never
     }
     'src/pages/contracts/[id]/edit/[[tab]].vue': {
       routes: '/contracts/[id]/edit/[[tab]]'
