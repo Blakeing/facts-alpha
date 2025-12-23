@@ -25,6 +25,7 @@ declare module 'vue-router/auto-routes' {
     '/cases/create': RouteRecordInfo<'/cases/create', '/cases/create', Record<never, never>, Record<never, never>>,
     '/components': RouteRecordInfo<'/components', '/components', Record<never, never>, Record<never, never>>,
     '/contracts/': RouteRecordInfo<'/contracts/', '/contracts', Record<never, never>, Record<never, never>>,
+    '/locations/': RouteRecordInfo<'/locations/', '/locations', Record<never, never>, Record<never, never>>,
   }
 
   /**
@@ -64,6 +65,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/contracts/index.vue': {
       routes: '/contracts/'
+      views: never
+    }
+    'src/pages/locations/index.vue': {
+      routes: '/locations/'
       views: never
     }
   }

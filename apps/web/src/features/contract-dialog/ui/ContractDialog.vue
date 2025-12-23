@@ -210,7 +210,7 @@
     addPayment,
     removePayment,
     isBusy: isMutating,
-  } = useContractForm(props.contractId)
+  } = useContractForm(computed(() => props.contractId))
 
   // Live model form state
   const { model, errors, validate, getError, touch, validateIfTouched, reset } = useFormModel(

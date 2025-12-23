@@ -8,7 +8,7 @@ import type {
   ContractPaymentFormValues,
 } from './contractSchema'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed } from 'vue'
+import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { contractApi } from '../api/contractApi'
 import { getDefaultContractFormValues } from './contractSchema'
 import { CONTRACTS_QUERY_KEY } from './useContracts'
@@ -18,20 +18,26 @@ interface UseContractFormOptions {
   onError?: (error: Error) => void
 }
 
-export function useContractForm(contractId?: string | null, options: UseContractFormOptions = {}) {
+export function useContractForm(
+  contractId: MaybeRefOrGetter<string | null | undefined>,
+  options: UseContractFormOptions = {},
+) {
   const queryClient = useQueryClient()
-  const isEditing = !!contractId
+  const isEditing = computed(() => !!toValue(contractId))
 
   // Load existing contract for editing
   const { data: existingContract, isLoading: isLoadingInitial } = useQuery({
-    queryKey: ['contract', contractId],
-    queryFn: () => (contractId ? contractApi.get(contractId) : null),
+    queryKey: computed(() => ['contract', toValue(contractId)] as const),
+    queryFn: () => {
+      const id = toValue(contractId)
+      return id ? contractApi.get(id) : null
+    },
     enabled: isEditing,
   })
 
   // Initial form values
   const initialValues = computed(() => {
-    if (!isEditing) {
+    if (!isEditing.value) {
       return getDefaultContractFormValues()
     }
     if (!existingContract.value) return null
@@ -79,16 +85,18 @@ export function useContractForm(contractId?: string | null, options: UseContract
   // Save mutation (create or update)
   const saveMutation = useMutation({
     mutationFn: async (data: ContractFormValues) => {
-      if (isEditing && contractId) {
-        return contractApi.update(contractId, data)
+      const id = toValue(contractId)
+      if (isEditing.value && id) {
+        return contractApi.update(id, data)
       }
       return contractApi.create(data)
     },
     onSuccess: () => {
       // Invalidate both list and detail queries
       queryClient.invalidateQueries({ queryKey: CONTRACTS_QUERY_KEY })
-      if (contractId) {
-        queryClient.invalidateQueries({ queryKey: ['contract', contractId] })
+      const id = toValue(contractId)
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: ['contract', id] })
       }
       options.onSuccess?.()
     },
@@ -100,8 +108,9 @@ export function useContractForm(contractId?: string | null, options: UseContract
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!contractId) throw new Error('No contract ID')
-      return contractApi.delete(contractId)
+      const id = toValue(contractId)
+      if (!id) throw new Error('No contract ID')
+      return contractApi.delete(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CONTRACTS_QUERY_KEY })
@@ -115,42 +124,50 @@ export function useContractForm(contractId?: string | null, options: UseContract
   // Item mutations
   const addItemMutation = useMutation({
     mutationFn: async (data: ContractItemFormValues) => {
-      if (!contractId) throw new Error('No contract ID')
-      return contractApi.addItem(contractId, data)
+      const id = toValue(contractId)
+      if (!id) throw new Error('No contract ID')
+      return contractApi.addItem(id, data)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contract', contractId] })
+      const id = toValue(contractId)
+      queryClient.invalidateQueries({ queryKey: ['contract', id] })
     },
   })
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      if (!contractId) throw new Error('No contract ID')
-      return contractApi.removeItem(contractId, itemId)
+      const id = toValue(contractId)
+      if (!id) throw new Error('No contract ID')
+      return contractApi.removeItem(id, itemId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contract', contractId] })
+      const id = toValue(contractId)
+      queryClient.invalidateQueries({ queryKey: ['contract', id] })
     },
   })
 
   // Payment mutations
   const addPaymentMutation = useMutation({
     mutationFn: async (data: ContractPaymentFormValues) => {
-      if (!contractId) throw new Error('No contract ID')
-      return contractApi.addPayment(contractId, data)
+      const id = toValue(contractId)
+      if (!id) throw new Error('No contract ID')
+      return contractApi.addPayment(id, data)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contract', contractId] })
+      const id = toValue(contractId)
+      queryClient.invalidateQueries({ queryKey: ['contract', id] })
     },
   })
 
   const removePaymentMutation = useMutation({
     mutationFn: async (paymentId: string) => {
-      if (!contractId) throw new Error('No contract ID')
-      return contractApi.removePayment(contractId, paymentId)
+      const id = toValue(contractId)
+      if (!id) throw new Error('No contract ID')
+      return contractApi.removePayment(id, paymentId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contract', contractId] })
+      const id = toValue(contractId)
+      queryClient.invalidateQueries({ queryKey: ['contract', id] })
     },
   })
 
