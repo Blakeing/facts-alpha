@@ -15,6 +15,10 @@ export default vuetify(
       eqeqeq: 'off',
       'no-var': 'off',
       'prefer-const': 'off',
+
+      // Allow TypeScript declaration merging (const + type with same name)
+      'no-redeclare': 'off',
+      '@typescript-eslint/no-redeclare': 'off',
     },
   },
 

@@ -6,15 +6,19 @@ export type {
   ContractListing,
   ContractPayment,
   ContractPerson,
-  ContractStatus,
-  ContractType,
   PaymentAllocation,
 } from './contract'
 
+// Re-export ContractStatus and ContractType (value + type in one export)
+export { ContractStatus, ContractType } from './contract'
+
+// Helpers and options
 export {
   contractStatusColors,
   contractStatusLabels,
+  contractStatusOptions,
   contractTypeLabels,
+  contractTypeOptions,
   getContractStatusColor,
   getContractStatusLabel,
   getContractTypeLabel,
@@ -38,7 +42,31 @@ export type {
   ContractPersonFormValues,
 } from './contractSchema'
 
-export { useContract } from './useContract'
-export { useContractForm } from './useContractForm'
+// Session Context
+export { CONTRACT_SESSION_KEY } from './contractSessionContext'
+
+export type { ContractSessionContext } from './contractSessionContext'
+// Handlers
+export { type ItemsHandler, useItemsHandler } from './handlers/useItemsHandler'
+
+export {
+  type PaymentFormData,
+  type PaymentMethod,
+  type PaymentsHandler,
+  usePaymentsHandler,
+} from './handlers/usePaymentsHandler'
+export {
+  type PeopleHandler,
+  type PersonFormData,
+  usePeopleHandler,
+} from './handlers/usePeopleHandler'
+
 // Composables
 export { CONTRACTS_QUERY_KEY, useContracts } from './useContracts'
+// Session Architecture
+export { useContractSession, useContractSessionContext } from './useContractSession'
+export type {
+  ContractFinancials,
+  ContractSession,
+  UseContractSessionOptions,
+} from './useContractSession'

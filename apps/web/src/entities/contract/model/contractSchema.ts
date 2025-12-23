@@ -3,6 +3,7 @@
  */
 
 import { z } from 'zod'
+import { ContractStatus, ContractType } from './contract'
 
 // Address schema
 export const addressSchema = z.object({
@@ -51,8 +52,18 @@ export const contractPaymentSchema = z.object({
 
 // Main contract form schema
 export const contractFormSchema = z.object({
-  type: z.enum(['at_need_funeral', 'pre_need_funeral', 'cemetery']),
-  status: z.enum(['draft', 'finalized', 'executed', 'void', 'cancelled']),
+  type: z.enum([
+    ContractType.AT_NEED_FUNERAL,
+    ContractType.PRE_NEED_FUNERAL,
+    ContractType.CEMETERY,
+  ]),
+  status: z.enum([
+    ContractStatus.DRAFT,
+    ContractStatus.FINALIZED,
+    ContractStatus.EXECUTED,
+    ContractStatus.VOID,
+    ContractStatus.CANCELLED,
+  ]),
   caseId: z.string().optional(),
   date: z.string().min(1, 'Contract date is required'),
   signDate: z.string().optional(),
@@ -83,8 +94,8 @@ export type ContractFormValues = z.infer<typeof contractFormSchema>
 // so these defaults don't affect dirty tracking - same approach as legacy app.
 export function getDefaultContractFormValues(): ContractFormValues {
   return {
-    type: 'at_need_funeral',
-    status: 'draft',
+    type: ContractType.AT_NEED_FUNERAL,
+    status: ContractStatus.DRAFT,
     caseId: '',
     date: new Date().toISOString().split('T')[0],
     signDate: '',

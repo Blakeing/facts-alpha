@@ -33,8 +33,6 @@ export {
   getContractStatusLabel,
   getContractTypeLabel,
   getDefaultContractFormValues,
-  useContract,
-  useContractForm,
   useContracts,
 } from './contract'
 export type {

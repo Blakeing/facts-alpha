@@ -14,14 +14,18 @@
                 field="type"
                 label="Contract Type"
                 :options="contractTypeOptions"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col cols="12">
               <FSelect
                 v-model="model.status"
+                disabled
                 field="status"
+                hint="Use actions menu to change status"
                 label="Status"
-                :options="statusOptions"
+                :options="contractStatusOptions"
+                persistent-hint
               />
             </v-col>
             <v-col cols="12">
@@ -29,6 +33,7 @@
                 v-model="model.date"
                 field="date"
                 label="Contract Date"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col cols="12">
@@ -37,6 +42,7 @@
                 field="prePrintedContractNumber"
                 label="Pre-Printed Contract #"
                 placeholder="Optional"
+                :readonly="!isEditable"
               />
             </v-col>
           </v-row>
@@ -123,6 +129,7 @@
                 v-model="model.purchaser.firstName"
                 field="purchaser.firstName"
                 label="First Name"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col
@@ -133,6 +140,7 @@
                 v-model="model.purchaser.lastName"
                 field="purchaser.lastName"
                 label="Last Name"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col
@@ -143,6 +151,7 @@
                 v-model="model.purchaser.phone"
                 field="purchaser.phone"
                 label="Phone"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col
@@ -153,6 +162,7 @@
                 v-model="model.purchaser.email"
                 field="purchaser.email"
                 label="Email"
+                :readonly="!isEditable"
                 type="email"
               />
             </v-col>
@@ -162,6 +172,7 @@
                 field="purchaser.relationship"
                 label="Relationship to Beneficiary"
                 placeholder="e.g., Spouse, Child, Sibling"
+                :readonly="!isEditable"
               />
             </v-col>
           </v-row>
@@ -183,6 +194,7 @@
                 v-model="model.beneficiary.firstName"
                 field="beneficiary.firstName"
                 label="First Name"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col
@@ -193,6 +205,7 @@
                 v-model="model.beneficiary.middleName"
                 field="beneficiary.middleName"
                 label="Middle Name"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col
@@ -203,6 +216,7 @@
                 v-model="model.beneficiary.lastName"
                 field="beneficiary.lastName"
                 label="Last Name"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col
@@ -213,6 +227,7 @@
                 v-model="model.beneficiary.dateOfBirth"
                 field="beneficiary.dateOfBirth"
                 label="Date of Birth"
+                :readonly="!isEditable"
               />
             </v-col>
             <v-col
@@ -223,6 +238,7 @@
                 v-model="model.beneficiary.dateOfDeath"
                 field="beneficiary.dateOfDeath"
                 label="Date of Death"
+                :readonly="!isEditable"
               />
             </v-col>
           </v-row>
@@ -238,6 +254,7 @@
             v-model="model.notes"
             field="notes"
             placeholder="Add any notes about this contract..."
+            :readonly="!isEditable"
             :rows="4"
           />
         </FCard>
@@ -247,7 +264,12 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Contract, ContractFormValues } from '@/entities/contract'
+  import {
+    type Contract,
+    type ContractFormValues,
+    contractStatusOptions,
+    contractTypeOptions,
+  } from '@/entities/contract'
   import { formatCurrency } from '@/shared/lib'
   import { FCard, FDatePicker, FSelect, FTextarea, FTextField } from '@/shared/ui'
 
@@ -260,21 +282,9 @@
   defineProps<{
     /** Contract data for financial summary (read-only) */
     contract?: Contract | null
+    /** Whether the contract is editable (draft status) */
+    isEditable?: boolean
   }>()
-
-  const contractTypeOptions = [
-    { title: 'At-Need Funeral', value: 'at_need_funeral' },
-    { title: 'Pre-Need Funeral', value: 'pre_need_funeral' },
-    { title: 'Cemetery', value: 'cemetery' },
-  ]
-
-  const statusOptions = [
-    { title: 'Draft', value: 'draft' },
-    { title: 'Finalized', value: 'finalized' },
-    { title: 'Executed', value: 'executed' },
-    { title: 'Void', value: 'void' },
-    { title: 'Cancelled', value: 'cancelled' },
-  ]
 </script>
 
 <style scoped>

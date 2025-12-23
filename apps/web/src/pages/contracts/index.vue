@@ -83,7 +83,7 @@
   import {
     contractApi,
     type ContractListing,
-    type ContractStatus,
+    ContractStatus,
     ContractStatusBadge,
     useContracts,
   } from '@/entities/contract'
@@ -125,25 +125,25 @@
 
   const statusFilters = computed(() => [
     {
-      value: 'draft' as ContractStatus,
+      value: ContractStatus.DRAFT,
       label: 'Draft',
       color: 'grey',
       count: list.contractsByStatus.value.draft.length,
     },
     {
-      value: 'finalized' as ContractStatus,
+      value: ContractStatus.FINALIZED,
       label: 'Finalized',
       color: 'warning',
       count: list.contractsByStatus.value.finalized.length,
     },
     {
-      value: 'executed' as ContractStatus,
+      value: ContractStatus.EXECUTED,
       label: 'Executed',
       color: 'success',
       count: list.contractsByStatus.value.executed.length,
     },
     {
-      value: 'void' as ContractStatus,
+      value: ContractStatus.VOID,
       label: 'Void',
       color: 'error',
       count: list.contractsByStatus.value.void.length,

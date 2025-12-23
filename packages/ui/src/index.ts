@@ -15,7 +15,7 @@ export * from './tokens'
 export { useTokens } from './composables'
 export { useFormModel, useFormSave, useDirtyForm, useConfirm } from './composables'
 export { provideFormContext, useFormContext, FORM_CONTEXT_KEY } from './composables'
-export { useListController } from './composables'
+export { useListController, useEntityForm, useSubEntityMutations } from './composables'
 export type {
   UseFormModelReturn,
   FormSaveOptions,
@@ -28,6 +28,12 @@ export type {
   EditDialogState,
   UseListControllerOptions,
   UseListControllerReturn,
+  EntityApi,
+  UseEntityFormOptions,
+  UseEntityFormReturn,
+  SubEntityApi,
+  UseSubEntityMutationsOptions,
+  UseSubEntityMutationsReturn,
 } from './composables'
 
 // =============================================================================
@@ -103,6 +109,9 @@ export type { FBreadcrumbsProps, BreadcrumbItem } from './components/FBreadcrumb
 
 export { default as FMenu } from './components/FMenu.vue'
 export type { FMenuProps, MenuItem } from './components/FMenu.vue'
+
+export { default as FActionsMenu } from './components/FActionsMenu.vue'
+export type { ActionMenuItem } from './components/FActionsMenu.vue'
 
 export { default as FTabs } from './components/FTabs.vue'
 

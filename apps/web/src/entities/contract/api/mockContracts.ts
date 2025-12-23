@@ -2,7 +2,14 @@
  * Mock contract data for development
  */
 
-import type { Contract, ContractItem, ContractListing, ContractPayment } from '../model/contract'
+import {
+  type Contract,
+  type ContractItem,
+  type ContractListing,
+  type ContractPayment,
+  ContractStatus,
+  ContractType,
+} from '../model/contract'
 
 // Helper to generate IDs
 let idCounter = 100
@@ -117,8 +124,8 @@ export const mockContracts: Contract[] = [
     id: 'contract-1',
     contractNumber: 'AN-2024-0001',
     prePrintedContractNumber: 'PP-12345',
-    type: 'at_need_funeral',
-    status: 'executed',
+    type: ContractType.AT_NEED_FUNERAL,
+    status: ContractStatus.EXECUTED,
     caseId: '1', // Links to case
     date: '2024-12-10',
     signDate: '2024-12-10',
@@ -162,8 +169,8 @@ export const mockContracts: Contract[] = [
   {
     id: 'contract-2',
     contractNumber: 'AN-2024-0002',
-    type: 'at_need_funeral',
-    status: 'finalized',
+    type: ContractType.AT_NEED_FUNERAL,
+    status: ContractStatus.FINALIZED,
     caseId: '2',
     date: '2024-12-15',
     purchaser: {
@@ -205,8 +212,8 @@ export const mockContracts: Contract[] = [
   {
     id: 'contract-3',
     contractNumber: 'AN-2024-0003',
-    type: 'at_need_funeral',
-    status: 'draft',
+    type: ContractType.AT_NEED_FUNERAL,
+    status: ContractStatus.DRAFT,
     date: '2024-12-20',
     purchaser: {
       id: 'person-6',
@@ -234,8 +241,8 @@ export const mockContracts: Contract[] = [
   {
     id: 'contract-4',
     contractNumber: 'PN-2024-0001',
-    type: 'pre_need_funeral',
-    status: 'executed',
+    type: ContractType.PRE_NEED_FUNERAL,
+    status: ContractStatus.EXECUTED,
     date: '2024-11-01',
     signDate: '2024-11-01',
     purchaser: {

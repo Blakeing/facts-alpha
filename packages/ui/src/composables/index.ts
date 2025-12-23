@@ -16,3 +16,11 @@ export type {
   UseListControllerOptions,
   UseListControllerReturn,
 } from './useListController'
+export { useEntityForm } from './useEntityForm'
+export type { EntityApi, UseEntityFormOptions, UseEntityFormReturn } from './useEntityForm'
+export { useSubEntityMutations } from './useSubEntityMutations'
+export type {
+  SubEntityApi,
+  UseSubEntityMutationsOptions,
+  UseSubEntityMutationsReturn,
+} from './useSubEntityMutations'

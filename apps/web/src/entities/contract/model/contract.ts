@@ -2,9 +2,31 @@
  * Contract entity types
  */
 
-export type ContractType = 'at_need_funeral' | 'pre_need_funeral' | 'cemetery'
+// =============================================================================
+// Contract Type - const object pattern (no magic strings)
+// =============================================================================
 
-export type ContractStatus = 'draft' | 'finalized' | 'executed' | 'void' | 'cancelled'
+export const ContractType = {
+  AT_NEED_FUNERAL: 'at_need_funeral',
+  PRE_NEED_FUNERAL: 'pre_need_funeral',
+  CEMETERY: 'cemetery',
+} as const
+
+export type ContractType = (typeof ContractType)[keyof typeof ContractType]
+
+// =============================================================================
+// Contract Status - const object pattern (no magic strings)
+// =============================================================================
+
+export const ContractStatus = {
+  DRAFT: 'draft',
+  FINALIZED: 'finalized',
+  EXECUTED: 'executed',
+  VOID: 'void',
+  CANCELLED: 'cancelled',
+} as const
+
+export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus]
 
 export interface Address {
   street: string
@@ -110,22 +132,34 @@ export interface ContractListing {
   balanceDue: number
 }
 
-// Status helpers
+// =============================================================================
+// Status Helpers
+// =============================================================================
+
 export const contractStatusLabels: Record<ContractStatus, string> = {
-  draft: 'Draft',
-  finalized: 'Finalized',
-  executed: 'Executed',
-  void: 'Void',
-  cancelled: 'Cancelled',
+  [ContractStatus.DRAFT]: 'Draft',
+  [ContractStatus.FINALIZED]: 'Finalized',
+  [ContractStatus.EXECUTED]: 'Executed',
+  [ContractStatus.VOID]: 'Void',
+  [ContractStatus.CANCELLED]: 'Cancelled',
 }
 
 export const contractStatusColors: Record<ContractStatus, string> = {
-  draft: 'grey',
-  finalized: 'warning',
-  executed: 'success',
-  void: 'error',
-  cancelled: 'error',
+  [ContractStatus.DRAFT]: 'grey',
+  [ContractStatus.FINALIZED]: 'warning',
+  [ContractStatus.EXECUTED]: 'success',
+  [ContractStatus.VOID]: 'error',
+  [ContractStatus.CANCELLED]: 'error',
 }
+
+/** Dropdown options for contract status */
+export const contractStatusOptions = [
+  { title: 'Draft', value: ContractStatus.DRAFT },
+  { title: 'Finalized', value: ContractStatus.FINALIZED },
+  { title: 'Executed', value: ContractStatus.EXECUTED },
+  { title: 'Void', value: ContractStatus.VOID },
+  { title: 'Cancelled', value: ContractStatus.CANCELLED },
+]
 
 export function getContractStatusLabel(status: ContractStatus): string {
   return contractStatusLabels[status] || status
@@ -135,12 +169,22 @@ export function getContractStatusColor(status: ContractStatus): string {
   return contractStatusColors[status] || 'grey'
 }
 
-// Type helpers
+// =============================================================================
+// Type Helpers
+// =============================================================================
+
 export const contractTypeLabels: Record<ContractType, string> = {
-  at_need_funeral: 'At-Need Funeral',
-  pre_need_funeral: 'Pre-Need Funeral',
-  cemetery: 'Cemetery',
+  [ContractType.AT_NEED_FUNERAL]: 'At-Need Funeral',
+  [ContractType.PRE_NEED_FUNERAL]: 'Pre-Need Funeral',
+  [ContractType.CEMETERY]: 'Cemetery',
 }
+
+/** Dropdown options for contract type */
+export const contractTypeOptions = [
+  { title: 'At-Need Funeral', value: ContractType.AT_NEED_FUNERAL },
+  { title: 'Pre-Need Funeral', value: ContractType.PRE_NEED_FUNERAL },
+  { title: 'Cemetery', value: ContractType.CEMETERY },
+]
 
 export function getContractTypeLabel(type: ContractType): string {
   return contractTypeLabels[type] || type

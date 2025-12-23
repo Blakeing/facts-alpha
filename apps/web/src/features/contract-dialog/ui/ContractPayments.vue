@@ -42,7 +42,7 @@
           </v-list>
 
           <FButton
-            v-if="contractId && financials.balanceDue > 0"
+            v-if="contractId && financials.balanceDue > 0 && isEditable"
             block
             class="mt-4"
             intent="primary"
@@ -62,7 +62,7 @@
         <FCard title="Payment History">
           <template #append>
             <FButton
-              v-if="contractId"
+              v-if="contractId && isEditable"
               intent="ghost"
               prepend-icon="mdi-plus"
               size="small"
@@ -100,6 +100,7 @@
 
             <template #item.actions="{ item }">
               <v-btn
+                v-if="isEditable"
                 color="error"
                 icon
                 size="small"
@@ -122,7 +123,7 @@
             />
             <p class="text-body-1 text-medium-emphasis mt-2">No payments recorded</p>
             <FButton
-              v-if="contractId"
+              v-if="contractId && isEditable"
               class="mt-4"
               intent="primary"
               prepend-icon="mdi-plus"
@@ -131,10 +132,16 @@
               Record First Payment
             </FButton>
             <p
-              v-else
+              v-else-if="!contractId"
               class="text-body-2 text-medium-emphasis mt-2"
             >
               Save the contract first to record payments
+            </p>
+            <p
+              v-else-if="!isEditable"
+              class="text-body-2 text-medium-emphasis mt-2"
+            >
+              Contract is not editable
             </p>
           </div>
         </FCard>
@@ -217,9 +224,14 @@
       amountPaid: number
       balanceDue: number
     }
+    /** Whether the contract is editable (draft status) */
+    isEditable?: boolean
   }
 
-  defineProps<Props>()
+  withDefaults(defineProps<Props>(), {
+    contractId: null,
+    isEditable: true,
+  })
 
   const emit = defineEmits<{
     add: [data: ContractPaymentFormValues]

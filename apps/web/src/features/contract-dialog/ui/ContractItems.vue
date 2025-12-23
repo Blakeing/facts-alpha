@@ -3,7 +3,7 @@
     <FCard title="Contract Items">
       <template #append>
         <FButton
-          v-if="contractId"
+          v-if="contractId && isEditable"
           intent="primary"
           prepend-icon="mdi-plus"
           size="small"
@@ -53,6 +53,7 @@
 
         <template #item.actions="{ item }">
           <v-btn
+            v-if="isEditable"
             color="error"
             icon
             size="small"
@@ -75,7 +76,7 @@
         />
         <p class="text-body-1 text-medium-emphasis mt-2">No items added yet</p>
         <FButton
-          v-if="contractId"
+          v-if="contractId && isEditable"
           class="mt-4"
           intent="primary"
           prepend-icon="mdi-plus"
@@ -84,10 +85,16 @@
           Add First Item
         </FButton>
         <p
-          v-else
+          v-else-if="!contractId"
           class="text-body-2 text-medium-emphasis mt-2"
         >
           Save the contract first to add items
+        </p>
+        <p
+          v-else-if="!isEditable"
+          class="text-body-2 text-medium-emphasis mt-2"
+        >
+          Contract is not editable
         </p>
       </div>
     </FCard>
@@ -210,9 +217,14 @@
   interface Props {
     contractId?: string | null
     items: ContractItem[]
+    /** Whether the contract is editable (draft status) */
+    isEditable?: boolean
   }
 
-  defineProps<Props>()
+  withDefaults(defineProps<Props>(), {
+    contractId: null,
+    isEditable: true,
+  })
 
   const emit = defineEmits<{
     add: [data: ContractItemFormValues]

@@ -1,9 +1,5 @@
 <template>
-  <v-card
-    :variant="computedVariant"
-    :rounded="rounded"
-    v-bind="$attrs"
-  >
+  <v-card v-bind="$attrs">
     <v-card-item v-if="title || subtitle || $slots.prepend || $slots.append">
       <template
         v-if="$slots.prepend"

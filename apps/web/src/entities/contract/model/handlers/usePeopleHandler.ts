@@ -1,0 +1,326 @@
+/**
+ * People Handler - Manages contract people (purchaser, beneficiary, co-buyers) within a session
+ *
+ * Provides reactive state for people associated with a contract.
+ * Part of the contract session - receives shared context via parameter.
+ */
+
+import type { Address, ContractPerson } from '../contract'
+import type { ContractSessionContext } from '../contractSessionContext'
+import { computed, ref } from 'vue'
+
+export interface PersonFormData {
+  firstName: string
+  middleName?: string
+  lastName: string
+  phone?: string
+  email?: string
+  address?: Address
+  relationship?: string
+  dateOfBirth?: string
+  dateOfDeath?: string
+}
+
+function createEmptyPerson(): ContractPerson {
+  return {
+    id: crypto.randomUUID(),
+    firstName: '',
+    lastName: '',
+  }
+}
+
+function createEmptyAddress(): Address {
+  return {
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
+  }
+}
+
+export function usePeopleHandler(context: ContractSessionContext) {
+  // ==========================================================================
+  // State
+  // ==========================================================================
+
+  const purchaser = ref<ContractPerson>(createEmptyPerson())
+  const beneficiary = ref<ContractPerson>(createEmptyPerson())
+  const coBuyers = ref<ContractPerson[]>([])
+  const isDirty = ref(false)
+
+  // ==========================================================================
+  // Computed
+  // ==========================================================================
+
+  const purchaserFullName = computed(() => {
+    const p = purchaser.value
+    return [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim()
+  })
+
+  const beneficiaryFullName = computed(() => {
+    const b = beneficiary.value
+    return [b.firstName, b.middleName, b.lastName].filter(Boolean).join(' ').trim()
+  })
+
+  const coBuyerCount = computed(() => coBuyers.value.length)
+
+  const hasPurchaser = computed(() => !!purchaser.value.firstName && !!purchaser.value.lastName)
+
+  const hasBeneficiary = computed(
+    () => !!beneficiary.value.firstName && !!beneficiary.value.lastName,
+  )
+
+  // ==========================================================================
+  // Purchaser Actions
+  // ==========================================================================
+
+  /**
+   * Update purchaser data
+   */
+  function updatePurchaser(data: Partial<PersonFormData>): void {
+    if (!context.isEditable.value) return
+
+    Object.assign(purchaser.value, data)
+    isDirty.value = true
+  }
+
+  /**
+   * Update purchaser address
+   */
+  function updatePurchaserAddress(data: Partial<Address>): void {
+    if (!context.isEditable.value) return
+
+    if (!purchaser.value.address) {
+      purchaser.value.address = createEmptyAddress()
+    }
+    Object.assign(purchaser.value.address, data)
+    isDirty.value = true
+  }
+
+  /**
+   * Clear purchaser data
+   */
+  function clearPurchaser(): void {
+    if (!context.isEditable.value) return
+
+    purchaser.value = createEmptyPerson()
+    isDirty.value = true
+  }
+
+  // ==========================================================================
+  // Beneficiary Actions
+  // ==========================================================================
+
+  /**
+   * Update beneficiary data
+   */
+  function updateBeneficiary(data: Partial<PersonFormData>): void {
+    if (!context.isEditable.value) return
+
+    Object.assign(beneficiary.value, data)
+    isDirty.value = true
+  }
+
+  /**
+   * Update beneficiary address
+   */
+  function updateBeneficiaryAddress(data: Partial<Address>): void {
+    if (!context.isEditable.value) return
+
+    if (!beneficiary.value.address) {
+      beneficiary.value.address = createEmptyAddress()
+    }
+    Object.assign(beneficiary.value.address, data)
+    isDirty.value = true
+  }
+
+  /**
+   * Clear beneficiary data
+   */
+  function clearBeneficiary(): void {
+    if (!context.isEditable.value) return
+
+    beneficiary.value = createEmptyPerson()
+    isDirty.value = true
+  }
+
+  /**
+   * Copy purchaser to beneficiary
+   */
+  function copyPurchaserToBeneficiary(): void {
+    if (!context.isEditable.value) return
+
+    beneficiary.value = {
+      ...purchaser.value,
+      id: beneficiary.value.id, // Keep beneficiary ID
+    }
+    isDirty.value = true
+  }
+
+  // ==========================================================================
+  // Co-Buyer Actions
+  // ==========================================================================
+
+  /**
+   * Add a co-buyer
+   */
+  function addCoBuyer(data?: PersonFormData): ContractPerson {
+    const newCoBuyer: ContractPerson = {
+      id: crypto.randomUUID(),
+      firstName: data?.firstName ?? '',
+      middleName: data?.middleName,
+      lastName: data?.lastName ?? '',
+      phone: data?.phone,
+      email: data?.email,
+      address: data?.address,
+      relationship: data?.relationship,
+    }
+
+    coBuyers.value.push(newCoBuyer)
+    isDirty.value = true
+    return newCoBuyer
+  }
+
+  /**
+   * Remove a co-buyer by ID
+   */
+  function removeCoBuyer(coBuyerId: string): boolean {
+    if (!context.isEditable.value) return false
+
+    const index = coBuyers.value.findIndex((c) => c.id === coBuyerId)
+    if (index === -1) return false
+
+    coBuyers.value.splice(index, 1)
+    isDirty.value = true
+    return true
+  }
+
+  /**
+   * Update a co-buyer
+   */
+  function updateCoBuyer(coBuyerId: string, data: Partial<PersonFormData>): boolean {
+    if (!context.isEditable.value) return false
+
+    const coBuyer = coBuyers.value.find((c) => c.id === coBuyerId)
+    if (!coBuyer) return false
+
+    Object.assign(coBuyer, data)
+    isDirty.value = true
+    return true
+  }
+
+  /**
+   * Update a co-buyer's address
+   */
+  function updateCoBuyerAddress(coBuyerId: string, data: Partial<Address>): boolean {
+    if (!context.isEditable.value) return false
+
+    const coBuyer = coBuyers.value.find((c) => c.id === coBuyerId)
+    if (!coBuyer) return false
+
+    if (!coBuyer.address) {
+      coBuyer.address = createEmptyAddress()
+    }
+    Object.assign(coBuyer.address, data)
+    isDirty.value = true
+    return true
+  }
+
+  /**
+   * Get a co-buyer by ID
+   */
+  function getCoBuyer(coBuyerId: string): ContractPerson | undefined {
+    return coBuyers.value.find((c) => c.id === coBuyerId)
+  }
+
+  // ==========================================================================
+  // Session Lifecycle
+  // ==========================================================================
+
+  /**
+   * Apply people data from server
+   */
+  function applyFromServer(
+    serverPurchaser: ContractPerson | null | undefined,
+    serverBeneficiary: ContractPerson | null | undefined,
+    serverCoBuyers: ContractPerson[] | null | undefined,
+  ): void {
+    purchaser.value = serverPurchaser ? { ...serverPurchaser } : createEmptyPerson()
+    beneficiary.value = serverBeneficiary ? { ...serverBeneficiary } : createEmptyPerson()
+    coBuyers.value = (serverCoBuyers ?? []).map((c) => ({ ...c }))
+    isDirty.value = false
+  }
+
+  /**
+   * Get form values for saving
+   */
+  function getFormValues() {
+    return {
+      purchaser: { ...purchaser.value },
+      beneficiary: { ...beneficiary.value },
+      coBuyers: coBuyers.value.map((c) => ({ ...c })),
+    }
+  }
+
+  /**
+   * Mark people as clean (after save)
+   */
+  function markClean(): void {
+    isDirty.value = false
+  }
+
+  /**
+   * Reset to empty state
+   */
+  function reset(): void {
+    purchaser.value = createEmptyPerson()
+    beneficiary.value = createEmptyPerson()
+    coBuyers.value = []
+    isDirty.value = false
+  }
+
+  // ==========================================================================
+  // Return
+  // ==========================================================================
+
+  return {
+    // State (as computed for reactivity)
+    purchaser: computed(() => purchaser.value),
+    beneficiary: computed(() => beneficiary.value),
+    coBuyers: computed(() => coBuyers.value),
+    isDirty: computed(() => isDirty.value),
+
+    // Computed
+    purchaserFullName,
+    beneficiaryFullName,
+    coBuyerCount,
+    hasPurchaser,
+    hasBeneficiary,
+
+    // Purchaser actions
+    updatePurchaser,
+    updatePurchaserAddress,
+    clearPurchaser,
+
+    // Beneficiary actions
+    updateBeneficiary,
+    updateBeneficiaryAddress,
+    clearBeneficiary,
+    copyPurchaserToBeneficiary,
+
+    // Co-buyer actions
+    addCoBuyer,
+    removeCoBuyer,
+    updateCoBuyer,
+    updateCoBuyerAddress,
+    getCoBuyer,
+
+    // Session lifecycle
+    applyFromServer,
+    getFormValues,
+    markClean,
+    reset,
+  }
+}
+
+export type PeopleHandler = ReturnType<typeof usePeopleHandler>

@@ -15,36 +15,46 @@
     />
     <template #subtitle>
       <v-chip
-        v-if="contract"
+        v-if="!session.isNewContract.value"
         class="ml-3"
-        :color="getContractStatusColor(contract.status)"
+        :color="getContractStatusColor(session.status.value)"
         size="small"
         variant="elevated"
       >
-        {{ getContractStatusLabel(contract.status) }}
+        {{ getContractStatusLabel(session.status.value) }}
       </v-chip>
     </template>
 
     <template #toolbar>
+      <!-- Save Button (hidden when executed/voided - like legacy canSaveDraftOrFinal) -->
       <FButton
-        v-if="contract || !contractId"
+        v-if="!session.isLoading.value && session.canSaveDraftOrFinal.value"
+        class="mr-2"
         :disabled="isBusy"
         prepend-icon="mdi-content-save"
         @click="handleSave"
       >
         Save
       </FButton>
+
+      <!-- Actions Menu -->
+      <FActionsMenu
+        v-if="!session.isLoading.value"
+        :disabled="isBusy"
+        :items="actionMenuItems"
+        tooltip="More Actions"
+      />
     </template>
 
     <!-- Validation errors snackbar (shows on failed save) -->
     <FFormErrorsSnackbar
       v-model="showErrors"
-      :errors="errors"
+      :errors="formErrors"
     />
 
     <!-- Contract content with tabs -->
     <div
-      v-if="contract || !contractId"
+      v-if="!session.isLoading.value"
       class="contract-dialog-content"
     >
       <FTabs v-model="activeTab">
@@ -60,10 +70,10 @@
         >
           Items
           <v-badge
-            v-if="items.length > 0"
+            v-if="session.items.itemCount.value > 0"
             class="ml-2"
             color="primary"
-            :content="items.length"
+            :content="session.items.itemCount.value"
             inline
           />
         </v-tab>
@@ -73,10 +83,10 @@
         >
           Payments
           <v-badge
-            v-if="payments.length > 0"
+            v-if="session.payments.paymentCount.value > 0"
             class="ml-2"
             color="success"
-            :content="payments.length"
+            :content="session.payments.paymentCount.value"
             inline
           />
         </v-tab>
@@ -92,7 +102,8 @@
             >
               <ContractGeneral
                 v-model="model"
-                :contract="contract"
+                :contract="existingContract"
+                :is-editable="session.isEditable.value"
               />
             </FFormProvider>
           </div>
@@ -101,8 +112,9 @@
         <v-window-item value="items">
           <div class="pa-6">
             <ContractItems
-              :contract-id="contractId"
-              :items="items"
+              :contract-id="props.contractId"
+              :is-editable="session.isEditable.value"
+              :items="session.items.items.value"
               @add="handleAddItem"
               @remove="handleRemoveItem"
             />
@@ -112,9 +124,10 @@
         <v-window-item value="payments">
           <div class="pa-6">
             <ContractPayments
-              :contract-id="contractId"
-              :financials="financials"
-              :payments="payments"
+              :contract-id="props.contractId"
+              :financials="session.financials.value"
+              :is-editable="session.isEditable.value"
+              :payments="session.payments.payments.value"
               @add="handleAddPayment"
               @remove="handleRemovePayment"
             />
@@ -123,9 +136,21 @@
       </v-window>
     </div>
 
-    <!-- Not found state -->
+    <!-- Loading state -->
     <div
-      v-else
+      v-else-if="session.isLoading.value"
+      class="d-flex flex-column align-center justify-center pa-12"
+    >
+      <v-progress-circular
+        indeterminate
+        size="48"
+      />
+      <p class="text-body-2 text-medium-emphasis mt-4">Loading contract...</p>
+    </div>
+
+    <!-- Not found / Error state -->
+    <div
+      v-else-if="session.isError.value"
       class="d-flex flex-column align-center justify-center pa-12"
     >
       <v-icon
@@ -150,10 +175,11 @@
     getContractStatusColor,
     getContractStatusLabel,
     getDefaultContractFormValues,
-    useContract,
-    useContractForm,
+    useContractSession,
   } from '@/entities/contract'
   import {
+    type ActionMenuItem,
+    FActionsMenu,
     FButton,
     FConfirmDialog,
     FFormErrorsSnackbar,
@@ -161,7 +187,6 @@
     FFullScreenDialog,
     FTabs,
     useConfirm,
-    useDirtyForm,
     useFormModel,
   } from '@/shared/ui'
   import ContractGeneral from './ContractGeneral.vue'
@@ -191,133 +216,393 @@
   // Confirmation dialog for unsaved changes
   const confirmDialog = useConfirm()
 
-  // Load contract data if editing
-  const {
-    contract,
-    items,
-    payments,
-    financials,
-    isLoading: isLoadingContract,
-  } = useContract(computed(() => props.contractId))
+  // ==========================================================================
+  // Contract Session - Main orchestration
+  // ==========================================================================
 
-  // Form state with useContractForm for API operations
-  const {
-    initialValues: loadedInitialValues,
-    save: saveContract,
-    isSaving,
-    addItem,
-    removeItem,
-    addPayment,
-    removePayment,
-    isBusy: isMutating,
-  } = useContractForm(computed(() => props.contractId))
-
-  // Live model form state
-  const { model, errors, validate, getError, touch, validateIfTouched, reset } = useFormModel(
-    contractFormSchema,
-    () => loadedInitialValues.value ?? getDefaultContractFormValues(),
+  const session = useContractSession(
+    computed(() => props.contractId),
+    {
+      onSave: () => {
+        emit('saved')
+      },
+      onSaveError: (error) => {
+        errorMessage.value = error.message
+      },
+    },
   )
+
+  // Get existing contract for display - includes financials from session
+  const existingContract = computed(() => {
+    if (session.isNewContract.value) return null
+
+    const people = session.people
+    const fin = session.financials.value
+
+    // Construct a Contract-like object for display purposes
+    return {
+      id: session.contractId.value,
+      contractNumber: session.contractId.value,
+      type: session.contractType.value,
+      status: session.status.value,
+      date: session.contractDate.value,
+      purchaser: people.purchaser.value,
+      beneficiary: people.beneficiary.value,
+      coBuyers: people.coBuyers.value,
+      subtotal: fin.subtotal,
+      taxTotal: fin.taxTotal,
+      discountTotal: fin.discountTotal,
+      grandTotal: fin.grandTotal,
+      amountPaid: fin.amountPaid,
+      balanceDue: fin.balanceDue,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+  })
+
+  // ==========================================================================
+  // Form Validation (for General tab)
+  // ==========================================================================
+
+  const initialFormValues = computed(() => {
+    if (session.isNewContract.value) {
+      return getDefaultContractFormValues()
+    }
+
+    const people = session.people
+    return {
+      type: session.contractType.value,
+      status: session.status.value,
+      date: session.contractDate.value,
+      caseId: session.caseId.value,
+      purchaser: people.purchaser.value,
+      beneficiary: people.beneficiary.value,
+      coBuyers: people.coBuyers.value,
+      notes: '',
+    } as ContractFormValues
+  })
+
+  const {
+    model,
+    errors: formErrors,
+    validate,
+    getError,
+    touch,
+    validateIfTouched,
+    reset,
+  } = useFormModel(contractFormSchema, () => initialFormValues.value)
 
   // Show errors snackbar only on failed save
   const showErrors = ref(false)
 
-  // Track dirty state for close confirmation (snapshot-based like legacy FACTS app)
-  const { takeSnapshot, canClose } = useDirtyForm(() => model.value)
+  // Combined busy state
+  const isBusy = computed(() => session.isLoading.value || session.isSaving.value)
 
-  const isBusy = computed(() => isLoadingContract.value || isSaving.value || isMutating.value)
-
-  // Reset form when dialog opens and take snapshot
+  // Reset everything when dialog opens
   watch(dialogModel, (visible: boolean) => {
     if (visible) {
       activeTab.value = 'general'
       errorMessage.value = null
-      // Reset form to loaded values
-      reset(loadedInitialValues.value ?? getDefaultContractFormValues())
-      // Take snapshot after a tick to ensure form is initialized
-      setTimeout(() => takeSnapshot(), 0)
+      showErrors.value = false
+
+      // Reset session to clear any stale data from previous dialog
+      session.reset()
+
+      // Reset form to default values (will be updated by session data watcher if editing)
+      reset(getDefaultContractFormValues())
     }
   })
 
-  // Update form when contract data loads
-  watch(loadedInitialValues, (newValues) => {
-    if (newValues && dialogModel.value) {
-      reset(newValues)
-      setTimeout(() => takeSnapshot(), 0)
-    }
-  })
+  // Reset form when session data changes
+  watch(
+    () => session.people.purchaser.value,
+    () => {
+      if (dialogModel.value && !session.isLoading.value) {
+        reset(initialFormValues.value)
+      }
+    },
+  )
+
+  // ==========================================================================
+  // Computed
+  // ==========================================================================
 
   const dialogTitle = computed(() => {
-    if (props.contractId && contract.value) {
-      return contract.value.contractNumber
+    if (session.isNewContract.value) {
+      return 'New Contract'
     }
-    return 'New Contract'
+    return `Contract ${session.contractId.value.slice(0, 8)}...`
   })
 
-  async function handleSave() {
-    // Validate all fields
+  // Actions menu items (like legacy app's save menu)
+  const actionMenuItems = computed<ActionMenuItem[]>(() => [
+    {
+      key: 'save-close',
+      label: 'Save & Close',
+      icon: 'mdi-content-save',
+      handler: handleSaveAndClose,
+      visible: session.canSaveDraftOrFinal.value,
+    },
+    {
+      key: 'finalize',
+      label: 'Finalize',
+      icon: 'mdi-check',
+      handler: handleFinalize,
+      visible: session.canFinalize.value,
+      divider: true,
+    },
+    {
+      key: 'finalize-close',
+      label: 'Finalize & Close',
+      icon: 'mdi-check',
+      handler: handleFinalizeAndClose,
+      visible: session.canFinalize.value,
+    },
+    {
+      key: 'execute',
+      label: 'Execute',
+      icon: 'mdi-check-all',
+      handler: handleExecute,
+      visible: session.canExecute.value,
+      divider: true,
+    },
+    {
+      key: 'execute-close',
+      label: 'Execute & Close',
+      icon: 'mdi-check-all',
+      handler: handleExecuteAndClose,
+      visible: session.canExecute.value,
+    },
+    {
+      key: 'back-to-draft',
+      label: 'Back to Draft',
+      icon: 'mdi-pencil',
+      handler: handleBackToDraft,
+      visible: session.canBackToDraft.value,
+      divider: true,
+    },
+    {
+      key: 'void',
+      label: 'Void Contract',
+      icon: 'mdi-cancel',
+      color: 'error',
+      handler: handleVoid,
+      visible: session.canVoid.value && !session.isNewContract.value,
+      divider: true,
+    },
+  ])
+
+  // ==========================================================================
+  // Handlers
+  // ==========================================================================
+
+  /**
+   * Validate form and sync data to session
+   * @returns true if validation passed, false otherwise
+   */
+  function validateAndSync(): boolean {
     const result = validate()
     if (!result.valid) {
       showErrors.value = true
-      return
+      return false
     }
 
-    try {
-      await saveContract(model.value as ContractFormValues)
-      // Take new snapshot after successful save (resets dirty state)
-      takeSnapshot()
-      emit('saved')
-    } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : 'An error occurred'
+    // Sync form model to session people handler
+    const formData = model.value as ContractFormValues
+    session.people.updatePurchaser(formData.purchaser)
+    session.people.updateBeneficiary(formData.beneficiary)
+
+    // Update contract metadata
+    session.contractType.value = formData.type
+    session.contractDate.value = formData.date
+    session.caseId.value = formData.caseId ?? undefined
+
+    return true
+  }
+
+  /**
+   * Save the contract (validates first)
+   * Like legacy: doSave(false, false, false, false)
+   */
+  async function handleSave() {
+    if (!validateAndSync()) return
+    await session.save()
+  }
+
+  /**
+   * Save and close the dialog
+   * Like legacy: doSave(false, false, false, true)
+   */
+  async function handleSaveAndClose() {
+    if (!validateAndSync()) return
+    await session.save()
+    if (!session.saveError.value) {
+      closeDialog()
     }
   }
 
-  async function handleAddItem(data: Parameters<typeof addItem>[0]) {
-    try {
-      await addItem(data)
-    } catch {
-      errorMessage.value = 'Failed to add item'
+  /**
+   * Finalize the contract (validates, confirms, changes status, saves)
+   */
+  async function handleFinalize() {
+    if (!validateAndSync()) return
+
+    const confirmed = await confirmDialog.confirm({
+      title: 'Finalize Contract',
+      message: 'Finalizing will lock the contract from further editing. Continue?',
+      confirmText: 'Finalize',
+      cancelText: 'Cancel',
+      confirmColor: 'warning',
+    })
+    if (!confirmed) return
+
+    session.finalize()
+    await session.save()
+  }
+
+  /**
+   * Finalize and close
+   */
+  async function handleFinalizeAndClose() {
+    if (!validateAndSync()) return
+
+    const confirmed = await confirmDialog.confirm({
+      title: 'Finalize Contract',
+      message: 'Finalizing will lock the contract from further editing. Continue?',
+      confirmText: 'Finalize',
+      cancelText: 'Cancel',
+      confirmColor: 'warning',
+    })
+    if (!confirmed) return
+
+    session.finalize()
+    await session.save()
+    if (!session.saveError.value) {
+      closeDialog()
     }
   }
 
-  async function handleRemoveItem(itemId: string) {
-    try {
-      await removeItem(itemId)
-    } catch {
-      errorMessage.value = 'Failed to remove item'
+  /**
+   * Execute the contract
+   */
+  async function handleExecute() {
+    if (!validateAndSync()) return
+
+    const confirmed = await confirmDialog.confirm({
+      title: 'Execute Contract',
+      message: 'Executing marks this contract as complete. This action is final. Continue?',
+      confirmText: 'Execute',
+      cancelText: 'Cancel',
+      confirmColor: 'success',
+    })
+    if (!confirmed) return
+
+    session.execute()
+    await session.save()
+  }
+
+  /**
+   * Execute and close
+   */
+  async function handleExecuteAndClose() {
+    if (!validateAndSync()) return
+
+    const confirmed = await confirmDialog.confirm({
+      title: 'Execute Contract',
+      message: 'Executing marks this contract as complete. This action is final. Continue?',
+      confirmText: 'Execute',
+      cancelText: 'Cancel',
+      confirmColor: 'success',
+    })
+    if (!confirmed) return
+
+    session.execute()
+    await session.save()
+    if (!session.saveError.value) {
+      closeDialog()
     }
   }
 
-  async function handleAddPayment(data: Parameters<typeof addPayment>[0]) {
-    try {
-      await addPayment(data)
-    } catch {
-      errorMessage.value = 'Failed to add payment'
+  /**
+   * Move contract back to draft status (no confirmation needed - reversible)
+   */
+  async function handleBackToDraft() {
+    session.backToDraft()
+    await session.save()
+  }
+
+  /**
+   * Void the contract - this one DOES need confirmation since it's destructive
+   * Like legacy: Contract.vue void() method with confirmation
+   */
+  async function handleVoid() {
+    const confirmed = await confirmDialog.confirm({
+      title: 'Void Contract',
+      message: 'Are you sure you want to void this contract? This action cannot be undone.',
+      confirmText: 'Void Contract',
+      cancelText: 'Cancel',
+      confirmColor: 'error',
+    })
+
+    if (!confirmed) return
+
+    session.voidContract('Voided by user')
+    await session.save()
+    if (!session.saveError.value) {
+      closeDialog()
     }
   }
 
-  async function handleRemovePayment(paymentId: string) {
-    try {
-      await removePayment(paymentId)
-    } catch {
-      errorMessage.value = 'Failed to remove payment'
-    }
+  function closeDialog() {
+    session.reset()
+    dialogModel.value = false
+    emit('closed')
+  }
+
+  function handleAddItem(data: {
+    itemNumber: string
+    description: string
+    category: 'service' | 'merchandise' | 'cash_advance'
+    quantity: number
+    unitPrice: number
+    discount: number
+    tax: number
+  }) {
+    session.items.addCustomItem(data)
+  }
+
+  function handleRemoveItem(itemId: string) {
+    session.items.removeItem(itemId)
+  }
+
+  function handleAddPayment(data: {
+    date: string
+    method: 'cash' | 'check' | 'credit_card' | 'insurance' | 'financing' | 'other'
+    amount: number
+    reference?: string
+    notes?: string
+  }) {
+    session.payments.addPayment(data)
+  }
+
+  function handleRemovePayment(paymentId: string) {
+    session.payments.removePayment(paymentId)
   }
 
   async function handleClose() {
-    const shouldClose = await canClose(() =>
-      confirmDialog.confirm({
+    if (session.isDirty.value) {
+      const shouldClose = await confirmDialog.confirm({
         title: 'Unsaved Changes',
         message: 'You have unsaved changes. Are you sure you want to close?',
         confirmText: 'Discard',
         cancelText: 'Cancel',
         confirmColor: 'error',
-      }),
-    )
+      })
 
-    if (!shouldClose) return
+      if (!shouldClose) return
+    }
 
-    dialogModel.value = false
-    emit('closed')
+    closeDialog()
   }
 </script>
 
