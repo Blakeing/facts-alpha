@@ -5,3 +5,4 @@
  */
 
 export { default as ContractDialog } from './ui/ContractDialog.vue'
+export { useContractDialogRoute, type ContractTab } from './model/useContractDialogRoute'

@@ -2,38 +2,32 @@
   <ContractDialog
     v-model="isOpen"
     :contract-id="null"
-    :initial-tab="initialTab"
+    :initial-tab="currentTab"
     @after-leave="handleAfterLeave"
     @closed="handleClosed"
     @saved="handleSaved"
+    @tab-change="handleTabChange"
   />
 </template>
 
 <script lang="ts" setup>
   import { useQueryClient } from '@tanstack/vue-query'
-  import { computed, onMounted, ref } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { ref } from 'vue'
   import { contractApi } from '@/entities/contract'
-  import { ContractDialog } from '@/features/contract-dialog'
+  import { ContractDialog, useContractDialogRoute } from '@/features/contract-dialog'
   import { useToast } from '@/shared/ui'
 
-  const router = useRouter()
-  const route = useRoute()
   const toast = useToast()
   const queryClient = useQueryClient()
 
-  const isOpen = ref(false)
   const savedContractId = ref<string | null>(null)
 
-  onMounted(() => {
-    isOpen.value = true
-  })
-
-  const initialTab = computed(() => {
-    const tab = route.query.tab as string
-    if (tab === 'items' || tab === 'payments') return tab
-    return 'general'
-  })
+  const { isOpen, currentTab, handleTabChange, handleClosed, handleAfterLeave } =
+    useContractDialogRoute({
+      basePath: '/contracts/new',
+      closePath: () =>
+        savedContractId.value ? `/contracts/${savedContractId.value}` : '/contracts',
+    })
 
   async function handleSaved(contractId?: string) {
     if (!contractId) return
@@ -48,17 +42,5 @@
     })
 
     isOpen.value = false
-  }
-
-  function handleClosed() {
-    isOpen.value = false
-  }
-
-  function handleAfterLeave() {
-    if (savedContractId.value) {
-      router.push(`/contracts/${savedContractId.value}`)
-    } else {
-      router.push('/contracts')
-    }
   }
 </script>

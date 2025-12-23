@@ -4,24 +4,9 @@
  * Entities layer - business entities the project works with
  *
  * Note: For full access to an entity's types, schemas, and composables,
- * import directly from the entity path (e.g., '@/entities/case').
+ * import directly from the entity path (e.g., '@/entities/contract').
  * This index re-exports the most commonly used items.
  */
-
-// Case entity
-export {
-  caseApi,
-  CaseCard,
-  caseFormSchema,
-  CASES_QUERY_KEY,
-  CaseStatusBadge,
-  getStatusColor,
-  getStatusLabel,
-  useCase,
-  useCaseForm,
-  useCases,
-} from './case'
-export type { Case, CaseFormValues, CaseStatus, Decedent, NextOfKin } from './case'
 
 // Contract entity
 export {

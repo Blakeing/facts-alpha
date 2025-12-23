@@ -179,6 +179,12 @@ export function useContractSession(
   )
 
   // ==========================================================================
+  // Contract Number - From loaded contract
+  // ==========================================================================
+
+  const contractNumber = computed(() => existingContract.value?.contractNumber ?? '')
+
+  // ==========================================================================
   // Computed Financials - Derived from handlers
   // ==========================================================================
 
@@ -297,7 +303,7 @@ export function useContractSession(
       // Using refetchQueries instead of invalidateQueries to wait for completion
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['contracts'] }),
-        queryClient.refetchQueries({ queryKey: ['contract', contractId.value] }),
+        queryClient.refetchQueries({ queryKey: ['contract', savedContract.id] }),
       ])
 
       options.onSave?.(savedContract)
@@ -335,6 +341,7 @@ export function useContractSession(
   return {
     // Core state
     contractId,
+    contractNumber,
     isNewContract,
     isLoading,
     isError,

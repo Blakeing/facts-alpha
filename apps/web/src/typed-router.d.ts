@@ -19,16 +19,12 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
-    '/cases/': RouteRecordInfo<'/cases/', '/cases', Record<never, never>, Record<never, never>>,
-    '/cases/[id]/': RouteRecordInfo<'/cases/[id]/', '/cases/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
-    '/cases/[id]/edit': RouteRecordInfo<'/cases/[id]/edit', '/cases/:id/edit', { id: ParamValue<true> }, { id: ParamValue<false> }>,
-    '/cases/create': RouteRecordInfo<'/cases/create', '/cases/create', Record<never, never>, Record<never, never>>,
     '/components': RouteRecordInfo<'/components', '/components', Record<never, never>, Record<never, never>>,
     '/contracts/': RouteRecordInfo<'/contracts/', '/contracts', Record<never, never>, Record<never, never>>,
     '/contracts/[id]': RouteRecordInfo<'/contracts/[id]', '/contracts/:id', { id: ParamValue<true> }, { id: ParamValue<false> }, '/contracts/[id]/' | '/contracts/[id]/edit/[[tab]]'>,
     '/contracts/[id]/': RouteRecordInfo<'/contracts/[id]/', '/contracts/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     '/contracts/[id]/edit/[[tab]]': RouteRecordInfo<'/contracts/[id]/edit/[[tab]]', '/contracts/:id/edit/:tab?', { id: ParamValue<true>, tab?: ParamValueZeroOrOne<true> }, { id: ParamValue<false>, tab?: ParamValueZeroOrOne<false> }>,
-    '/contracts/new': RouteRecordInfo<'/contracts/new', '/contracts/new', Record<never, never>, Record<never, never>>,
+    '/contracts/new/[[tab]]': RouteRecordInfo<'/contracts/new/[[tab]]', '/contracts/new/:tab?', { tab?: ParamValueZeroOrOne<true> }, { tab?: ParamValueZeroOrOne<false> }>,
     '/locations/': RouteRecordInfo<'/locations/', '/locations', Record<never, never>, Record<never, never>>,
   }
 
@@ -45,22 +41,6 @@ declare module 'vue-router/auto-routes' {
   export interface _RouteFileInfoMap {
     'src/pages/index.vue': {
       routes: '/'
-      views: never
-    }
-    'src/pages/cases/index.vue': {
-      routes: '/cases/'
-      views: never
-    }
-    'src/pages/cases/[id]/index.vue': {
-      routes: '/cases/[id]/'
-      views: never
-    }
-    'src/pages/cases/[id]/edit.vue': {
-      routes: '/cases/[id]/edit'
-      views: never
-    }
-    'src/pages/cases/create.vue': {
-      routes: '/cases/create'
       views: never
     }
     'src/pages/components.vue': {
@@ -83,8 +63,8 @@ declare module 'vue-router/auto-routes' {
       routes: '/contracts/[id]/edit/[[tab]]'
       views: never
     }
-    'src/pages/contracts/new.vue': {
-      routes: '/contracts/new'
+    'src/pages/contracts/new/[[tab]].vue': {
+      routes: '/contracts/new/[[tab]]'
       views: never
     }
     'src/pages/locations/index.vue': {

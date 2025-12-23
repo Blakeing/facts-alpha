@@ -38,9 +38,9 @@
         Save
       </FButton>
 
-      <!-- Actions Menu -->
+      <!-- Actions Menu (hidden for new contracts - only save is available) -->
       <FActionsMenu
-        v-if="!session.isLoading.value"
+        v-if="!session.isLoading.value && !session.isNewContract.value"
         :disabled="isBusy"
         :items="actionMenuItems"
         tooltip="More Actions"
@@ -53,88 +53,109 @@
       :errors="formErrors"
     />
 
-    <!-- Contract content with tabs -->
+    <!-- Contract content with vertical sidebar tabs -->
     <div
       v-if="!session.isLoading.value"
       class="contract-dialog-content"
     >
-      <FTabs v-model="activeTab">
-        <v-tab
-          rounded="0"
-          value="general"
+      <!-- Sidebar Navigation -->
+      <aside class="contract-sidebar">
+        <v-tabs
+          v-model="activeTab"
+          color="primary"
+          direction="vertical"
         >
-          General
-        </v-tab>
-        <v-tab
-          rounded="0"
-          value="items"
-        >
-          Items
-          <v-badge
-            v-if="session.items.itemCount.value > 0"
-            class="ml-2"
-            color="primary"
-            :content="session.items.itemCount.value"
-            inline
-          />
-        </v-tab>
-        <v-tab
-          rounded="0"
-          value="payments"
-        >
-          Payments
-          <v-badge
-            v-if="session.payments.paymentCount.value > 0"
-            class="ml-2"
-            color="success"
-            :content="session.payments.paymentCount.value"
-            inline
-          />
-        </v-tab>
-      </FTabs>
+          <v-tab
+            class="contract-sidebar-tab"
+            prepend-icon="mdi-file-document-outline"
+            rounded="0"
+            value="general"
+          >
+            General
+          </v-tab>
 
-      <v-window v-model="activeTab">
-        <v-window-item value="general">
-          <div class="pa-6">
-            <FFormProvider
-              :get-error="getError"
-              :touch="touch"
-              :validate-if-touched="validateIfTouched"
-            >
-              <ContractGeneral
-                v-model="model"
-                :contract="existingContract"
+          <v-tab
+            class="contract-sidebar-tab"
+            prepend-icon="mdi-package-variant"
+            rounded="0"
+            value="items"
+          >
+            Items
+            <v-badge
+              v-if="session.items.itemCount.value > 0"
+              class="ml-2"
+              color="primary"
+              :content="session.items.itemCount.value"
+              inline
+            />
+          </v-tab>
+
+          <v-tab
+            class="contract-sidebar-tab"
+            prepend-icon="mdi-credit-card-outline"
+            rounded="0"
+            value="payments"
+          >
+            Payments
+            <v-badge
+              v-if="session.payments.paymentCount.value > 0"
+              class="ml-2"
+              color="success"
+              :content="session.payments.paymentCount.value"
+              inline
+            />
+          </v-tab>
+        </v-tabs>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="contract-main-content">
+        <v-window
+          v-model="activeTab"
+          class="h-100"
+        >
+          <v-window-item value="general">
+            <div class="content-panel">
+              <FFormProvider
+                :get-error="getError"
+                :touch="touch"
+                :validate-if-touched="validateIfTouched"
+              >
+                <ContractGeneral
+                  v-model="model"
+                  :contract="existingContract"
+                  :is-editable="session.isEditable.value"
+                />
+              </FFormProvider>
+            </div>
+          </v-window-item>
+
+          <v-window-item value="items">
+            <div class="content-panel">
+              <ContractItems
+                :contract-id="props.contractId"
                 :is-editable="session.isEditable.value"
+                :items="session.items.items.value"
+                @add="handleAddItem"
+                @remove="handleRemoveItem"
               />
-            </FFormProvider>
-          </div>
-        </v-window-item>
+            </div>
+          </v-window-item>
 
-        <v-window-item value="items">
-          <div class="pa-6">
-            <ContractItems
-              :contract-id="props.contractId"
-              :is-editable="session.isEditable.value"
-              :items="session.items.items.value"
-              @add="handleAddItem"
-              @remove="handleRemoveItem"
-            />
-          </div>
-        </v-window-item>
-
-        <v-window-item value="payments">
-          <div class="pa-6">
-            <ContractPayments
-              :contract-id="props.contractId"
-              :financials="session.financials.value"
-              :is-editable="session.isEditable.value"
-              :payments="session.payments.payments.value"
-              @add="handleAddPayment"
-              @remove="handleRemovePayment"
-            />
-          </div>
-        </v-window-item>
-      </v-window>
+          <v-window-item value="payments">
+            <div class="content-panel">
+              <ContractPayments
+                :contract-id="props.contractId"
+                :financials="session.financials.value"
+                :is-editable="session.isEditable.value"
+                :payments="session.payments.payments.value"
+                @add="handleAddPayment"
+                @remove="handleRemovePayment"
+              />
+            </div>
+          </v-window-item>
+        </v-window>
+      </main>
     </div>
 
     <!-- Loading state -->
@@ -186,7 +207,6 @@
     FFormErrorsSnackbar,
     FFormProvider,
     FFullScreenDialog,
-    FTabs,
     useConfirm,
     useFormModel,
   } from '@/shared/ui'
@@ -218,13 +238,20 @@
   const dialogModel = useVModel(props, 'modelValue', emit)
   const errorMessage = ref<string | null>(null)
 
-  // Tab state - driven by prop (route) for consistency
-  const activeTab = computed({
-    get: () => props.initialTab,
-    set: (tab) => {
-      // When user clicks a tab, emit to update the route
-      emit('tab-change', tab)
+  // Tab state - internal state, initialized from prop
+  const activeTab = ref<'general' | 'items' | 'payments'>(props.initialTab)
+
+  // Sync with prop when it changes (e.g., route update)
+  watch(
+    () => props.initialTab,
+    (newTab) => {
+      activeTab.value = newTab
     },
+  )
+
+  // Emit tab changes for parent to optionally update route
+  watch(activeTab, (tab) => {
+    emit('tab-change', tab)
   })
 
   // Confirmation dialog for unsaved changes
@@ -256,7 +283,7 @@
     // Construct a Contract-like object for display purposes
     return {
       id: session.contractId.value,
-      contractNumber: session.contractId.value,
+      contractNumber: session.contractNumber.value,
       type: session.contractType.value,
       status: session.status.value,
       date: session.contractDate.value,
@@ -351,7 +378,8 @@
     if (session.isNewContract.value) {
       return 'New Contract'
     }
-    return `Contract ${session.contractId.value.slice(0, 8)}...`
+    const contractNum = session.contractNumber.value
+    return contractNum ? `Contract ${contractNum}` : 'Contract'
   })
 
   // Actions menu items (like legacy app's save menu)
@@ -619,11 +647,49 @@
     closeDialog()
   }
 </script>
-
 <style scoped>
   .contract-dialog-content {
     display: flex;
-    flex-direction: column;
     height: 100%;
+    overflow: hidden;
+  }
+
+  /* Sidebar Navigation */
+  .contract-sidebar {
+    min-width: 250px;
+    background: rgb(var(--v-theme-surface));
+    border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    overflow-y: auto;
+    padding-top: 16px;
+  }
+
+  .contract-sidebar :deep(.v-tabs) {
+    width: 100%;
+  }
+
+  /* Main Content Area */
+  .contract-main-content {
+    flex: 1;
+    overflow-y: auto;
+    background: rgb(var(--v-theme-background));
+  }
+
+  .content-panel {
+    padding: 24px;
+    /* max-width: 1200px; */
+  }
+
+  /* Window should fill height */
+  .contract-main-content :deep(.v-window) {
+    height: 100%;
+  }
+
+  .contract-main-content :deep(.v-window__container) {
+    height: 100%;
+  }
+
+  .contract-main-content :deep(.v-window-item) {
+    height: 100%;
+    overflow-y: auto;
   }
 </style>

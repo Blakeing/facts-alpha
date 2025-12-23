@@ -21,7 +21,7 @@
             <v-list-item-title class="text-subtitle-2 font-weight-bold">
               Funeral Home ERP
             </v-list-item-title>
-            <v-list-item-subtitle class="text-caption"> Case Management </v-list-item-subtitle>
+            <v-list-item-subtitle class="text-caption"> Contract Management </v-list-item-subtitle>
           </template>
         </v-list-item>
       </v-list>
