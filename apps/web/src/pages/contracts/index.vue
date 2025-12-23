@@ -3,6 +3,7 @@
     v-model:search="list.search.value"
     :busy="editDialog.isBusy.value"
     :columns="columns"
+    edit-enabled
     empty-icon="mdi-file-document-outline"
     empty-subtitle="Create your first contract to get started."
     empty-title="No contracts found"
@@ -13,7 +14,7 @@
     :searchable="true"
     subtitle="Manage funeral and cemetery contracts"
     title="Contracts"
-    @click:row="handleRowClick"
+    @edit="showEdit"
   >
     <template #commands>
       <FButton
@@ -101,26 +102,26 @@
     queryKey: (id) => ['contract', id],
   })
 
-  // Column definitions using AG Grid's ColDef API (with `key` shorthand)
+  // Column definitions
   const columns: FColumn<ContractListing>[] = [
-    { key: 'contractNumber', headerName: 'Contract #', width: 160 },
+    { key: 'contractNumber', title: 'Contract #', width: 160 },
     {
       key: 'date',
-      headerName: 'Date',
+      title: 'Date',
       width: 120,
       valueFormatter: (params) => formatDate(params.value as string),
     },
-    { key: 'purchaserName', headerName: 'Purchaser' },
-    { key: 'beneficiaryName', headerName: 'Beneficiary' },
-    { key: 'status', headerName: 'Status', width: 120 },
+    { key: 'purchaserName', title: 'Purchaser' },
+    { key: 'beneficiaryName', title: 'Beneficiary' },
+    { key: 'status', title: 'Status', width: 120 },
     {
       key: 'grandTotal',
-      headerName: 'Total',
+      title: 'Total',
       width: 120,
-      cellStyle: { textAlign: 'right' },
+      align: 'end',
       valueFormatter: (params) => formatCurrency(params.value as number),
     },
-    { key: 'balanceDue', headerName: 'Balance', width: 120, cellStyle: { textAlign: 'right' } },
+    { key: 'balanceDue', title: 'Balance', width: 120, align: 'end' },
   ]
 
   const statusFilters = computed(() => [
@@ -149,10 +150,6 @@
       count: list.contractsByStatus.value.void.length,
     },
   ])
-
-  function handleRowClick(_event: Event, { item }: { item: unknown }) {
-    showEdit(item)
-  }
 
   function handleSaved() {
     toast.success('Contract saved successfully')

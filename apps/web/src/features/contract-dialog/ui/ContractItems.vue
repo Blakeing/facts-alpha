@@ -18,27 +18,12 @@
         :columns="columns"
         :items="items"
       >
-        <template #item.category="{ item }">
-          <v-chip
-            :color="getCategoryColor(item.category)"
-            label
-            size="small"
-            variant="tonal"
-          >
-            {{ getCategoryLabel(item.category) }}
-          </v-chip>
-        </template>
-
-        <template #item.unitPrice="{ item }">
-          {{ formatCurrency(item.unitPrice) }}
-        </template>
-
-        <template #item.discount="{ item }">
+        <template #item.discount="{ item: rawItem }">
           <span
-            v-if="item.discount > 0"
+            v-if="(rawItem as ContractItem).discount > 0"
             class="text-success"
           >
-            -{{ formatCurrency(item.discount) }}
+            -{{ formatCurrency((rawItem as ContractItem).discount) }}
           </span>
           <span
             v-else
@@ -47,21 +32,15 @@
           >
         </template>
 
-        <template #item.total="{ item }">
-          <span class="font-weight-medium">{{ formatCurrency(item.total) }}</span>
-        </template>
-
-        <template #item.actions="{ item }">
+        <template #item.actions="{ item: rawItem }">
           <v-btn
             v-if="isEditable"
             color="error"
-            icon
+            icon="mdi-delete"
             size="small"
             variant="text"
-            @click="handleRemove(item.id)"
-          >
-            <v-icon size="small">mdi-delete</v-icon>
-          </v-btn>
+            @click.stop="handleRemove((rawItem as ContractItem).id)"
+          />
         </template>
       </FDataTable>
 
@@ -235,14 +214,28 @@
   const isAdding = ref(false)
 
   const columns: FColumn[] = [
-    { key: 'itemNumber', headerName: 'Item #', width: 100 },
-    { key: 'description', headerName: 'Description' },
-    { key: 'category', headerName: 'Category', width: 120 },
-    { key: 'quantity', headerName: 'Qty', width: 60, cellStyle: { textAlign: 'center' } },
-    { key: 'unitPrice', headerName: 'Price', width: 100, cellStyle: { textAlign: 'right' } },
-    { key: 'discount', headerName: 'Discount', width: 100, cellStyle: { textAlign: 'right' } },
-    { key: 'total', headerName: 'Total', width: 100, cellStyle: { textAlign: 'right' } },
-    { key: 'actions', headerName: '', width: 60, sortable: false },
+    { key: 'itemNumber', title: 'Item #' },
+    { key: 'description', title: 'Description' },
+    {
+      key: 'category',
+      title: 'Category',
+      valueFormatter: (p) => getCategoryLabel(p.value as string),
+    },
+    { key: 'quantity', title: 'Qty', align: 'center' },
+    {
+      key: 'unitPrice',
+      title: 'Price',
+      align: 'end',
+      valueFormatter: (p) => formatCurrency(p.value as number),
+    },
+    { key: 'discount', title: 'Discount', align: 'end' },
+    {
+      key: 'total',
+      title: 'Total',
+      align: 'end',
+      valueFormatter: (p) => formatCurrency(p.value as number),
+    },
+    { key: 'actions', title: '', width: 60, sortable: false },
   ]
 
   const categoryOptions = [
@@ -271,15 +264,6 @@
       cash_advance: 'Cash Advance',
     }
     return labels[category] || category
-  }
-
-  function getCategoryColor(category: string): string {
-    const colors: Record<string, string> = {
-      service: 'primary',
-      merchandise: 'info',
-      cash_advance: 'warning',
-    }
-    return colors[category] || 'grey'
   }
 
   function resetForm() {

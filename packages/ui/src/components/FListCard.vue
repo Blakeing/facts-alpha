@@ -38,11 +38,12 @@
       :empty-icon="emptyIcon"
       :empty-subtitle="emptySubtitle"
       :empty-title="emptyTitle"
-      :fill-height="fillHeight"
       :items="items"
       :loading="loading"
+      :search="searchValue"
       v-bind="$attrs"
       @click:row="handleRowClick"
+      @edit="handleEdit"
     >
       <!-- Pass through all item slots -->
       <template
@@ -72,7 +73,6 @@
    * FListCard - Data table with search, loading, and empty states
    *
    * Combines FPageCard + FDataTable for a complete list view component.
-   * Column definitions extend AG Grid's ColDef with a `key` shorthand.
    *
    * @example
    * ```vue
@@ -80,15 +80,12 @@
    *   title="Cases"
    *   :items="cases"
    *   :columns="[
-   *     { key: 'caseNumber', headerName: 'Case #', width: 120 },
-   *     {
-   *       key: 'decedentName',
-   *       headerName: 'Decedent',
-   *       valueGetter: (p) => `${p.data.decedent.lastName}, ${p.data.decedent.firstName}`,
-   *     },
-   *     { key: 'status', headerName: 'Status' },
+   *     { key: 'caseNumber', title: 'Case #', width: 120 },
+   *     { key: 'decedentName', title: 'Decedent' },
+   *     { key: 'status', title: 'Status' },
    *   ]"
-   *   @click:row="handleRowClick"
+   *   edit-enabled
+   *   @edit="showEdit"
    * >
    *   <template #item.status="{ item }">
    *     <CaseStatusBadge :status="item.status" />
@@ -152,6 +149,7 @@
     error: [message: string]
     'click:row': [event: Event, data: { item: T }]
     'update:search': [value: string]
+    edit: [item: T]
   }>()
 
   const searchValue = computed({
@@ -161,6 +159,10 @@
 
   function handleRowClick(event: Event, data: { item: unknown }) {
     emit('click:row', event, data as { item: T })
+  }
+
+  function handleEdit(item: unknown) {
+    emit('edit', item as T)
   }
 
   function handleError(message: string) {

@@ -2,6 +2,7 @@
   <FListCard
     v-model:search="search"
     :columns="columns"
+    edit-enabled
     empty-icon="mdi-folder-open-outline"
     empty-subtitle="Create your first case to get started."
     empty-title="No cases found"
@@ -14,7 +15,7 @@
     :searchable="true"
     subtitle="Manage funeral cases and services"
     title="Cases"
-    @click:row="handleRowClick"
+    @edit="handleEdit"
   >
     <template #commands>
       <FButton
@@ -75,26 +76,25 @@
 
   const selectedStatus = ref<CaseStatus | null>(null)
 
-  // Column definitions using AG Grid's ColDef API (with `key` shorthand)
+  // Column definitions (actions column auto-added by editEnabled)
   const columns: FColumn<Case>[] = [
-    { key: 'caseNumber', headerName: 'Case #', width: 120 },
+    { key: 'caseNumber', title: 'Case #' },
     {
       key: 'decedentName',
-      headerName: 'Decedent',
+      title: 'Decedent',
       valueGetter: (params) =>
         `${params.data?.decedent.lastName}, ${params.data?.decedent.firstName}`,
     },
-    { key: 'status', headerName: 'Status', width: 140 },
+    { key: 'status', title: 'Status' },
     {
       key: 'dateOfDeath',
-      headerName: 'Date of Death',
-      width: 140,
+      title: 'Date of Death',
       valueGetter: (params) => params.data?.decedent.dateOfDeath,
       valueFormatter: (params) => formatDate(params.value as string),
     },
     {
       key: 'nextOfKin',
-      headerName: 'Next of Kin',
+      title: 'Next of Kin',
       valueGetter: (params) =>
         `${params.data?.nextOfKin.firstName} ${params.data?.nextOfKin.lastName} (${params.data?.nextOfKin.relationship})`,
     },
@@ -139,8 +139,7 @@
     return filteredCases.value.filter((c: Case) => c.status === selectedStatus.value)
   })
 
-  function handleRowClick(_event: Event, { item }: { item: unknown }) {
-    const caseItem = item as Case
-    router.push(`/cases/${caseItem.id}`)
+  function handleEdit(item: Case) {
+    router.push(`/cases/${item.id}`)
   }
 </script>

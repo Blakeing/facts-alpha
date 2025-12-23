@@ -3,6 +3,7 @@
     v-model:search="list.search.value"
     :busy="editDialog.isBusy.value"
     :columns="columns"
+    edit-enabled
     empty-icon="mdi-map-marker-outline"
     empty-subtitle="Create your first location to get started."
     empty-title="No locations found"
@@ -13,7 +14,7 @@
     :searchable="true"
     subtitle="Manage funeral homes and cemetery locations"
     title="Locations"
-    @click:row="handleRowClick"
+    @edit="showEdit"
   >
     <template #commands>
       <FButton
@@ -104,12 +105,12 @@
 
   // Column definitions
   const columns: FColumn<LocationListing>[] = [
-    { key: 'identifier', headerName: 'ID', width: 100 },
-    { key: 'name', headerName: 'Name' },
-    { key: 'city', headerName: 'City', width: 150 },
-    { key: 'state', headerName: 'State', width: 80 },
-    { key: 'type', headerName: 'Type', width: 120 },
-    { key: 'active', headerName: 'Active', width: 80 },
+    { key: 'identifier', title: 'ID', width: 100 },
+    { key: 'name', title: 'Name' },
+    { key: 'city', title: 'City', width: 150 },
+    { key: 'state', title: 'State', width: 80 },
+    { key: 'type', title: 'Type', width: 120 },
+    { key: 'active', title: 'Active', width: 80 },
   ]
 
   const typeFilters = computed(() => [
@@ -132,10 +133,6 @@
       count: list.locationsByType.value.corporate.length,
     },
   ])
-
-  function handleRowClick(_event: Event, { item }: { item: unknown }) {
-    showEdit(item)
-  }
 
   function handleSaved() {
     toast.success('Location saved successfully')

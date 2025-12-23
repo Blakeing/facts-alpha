@@ -77,38 +77,15 @@
             :columns="columns"
             :items="payments"
           >
-            <template #item.date="{ item }">
-              {{ formatDate(item.date) }}
-            </template>
-
-            <template #item.method="{ item }">
-              <v-chip
-                :color="getMethodColor(item.method)"
-                label
-                size="small"
-                variant="tonal"
-              >
-                {{ getMethodLabel(item.method) }}
-              </v-chip>
-            </template>
-
-            <template #item.amount="{ item }">
-              <span class="font-weight-medium text-success">
-                {{ formatCurrency(item.amount) }}
-              </span>
-            </template>
-
-            <template #item.actions="{ item }">
+            <template #item.actions="{ item: rawItem }">
               <v-btn
                 v-if="isEditable"
                 color="error"
-                icon
+                icon="mdi-delete"
                 size="small"
                 variant="text"
-                @click="handleRemove(item.id)"
-              >
-                <v-icon size="small">mdi-delete</v-icon>
-              </v-btn>
+                @click.stop="handleRemove((rawItem as ContractPayment).id)"
+              />
             </template>
           </FDataTable>
 
@@ -242,11 +219,20 @@
   const isAdding = ref(false)
 
   const columns: FColumn[] = [
-    { key: 'date', headerName: 'Date', width: 120 },
-    { key: 'method', headerName: 'Method', width: 140 },
-    { key: 'amount', headerName: 'Amount', width: 120, cellStyle: { textAlign: 'right' } },
-    { key: 'reference', headerName: 'Reference' },
-    { key: 'actions', headerName: '', width: 60, sortable: false },
+    { key: 'date', title: 'Date', valueFormatter: (p) => formatDate(p.value as string) },
+    {
+      key: 'method',
+      title: 'Method',
+      valueFormatter: (p) => getMethodLabel(p.value as string),
+    },
+    {
+      key: 'amount',
+      title: 'Amount',
+      align: 'end',
+      valueFormatter: (p) => formatCurrency(p.value as number),
+    },
+    { key: 'reference', title: 'Reference' },
+    { key: 'actions', title: '', width: 60, sortable: false },
   ]
 
   const methodOptions = [
@@ -259,7 +245,7 @@
   ]
 
   const defaultPayment: ContractPaymentFormValues = {
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0] ?? '',
     method: 'cash',
     amount: 0,
     reference: '',
@@ -278,18 +264,6 @@
       other: 'Other',
     }
     return labels[method] || method
-  }
-
-  function getMethodColor(method: string): string {
-    const colors: Record<string, string> = {
-      cash: 'success',
-      check: 'info',
-      credit_card: 'primary',
-      insurance: 'warning',
-      financing: 'secondary',
-      other: 'grey',
-    }
-    return colors[method] || 'grey'
   }
 
   function resetForm() {

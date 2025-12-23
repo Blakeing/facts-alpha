@@ -1,42 +1,106 @@
 <template>
-  <div :class="['f-data-table', { 'f-data-table--fill': fillHeight }]">
-    <ag-grid-vue
-      :theme="gridTheme"
-      :rowData="items"
-      :columnDefs="gridColumns"
-      :defaultColDef="defaultColDef"
-      :loading="loading"
-      :getRowId="getRowId"
-      :suppressCellFocus="true"
-      :rowSelection="undefined"
-      :loadingOverlayComponent="loadingOverlay"
-      :noRowsOverlayComponent="noRowsOverlay"
-      :noRowsOverlayComponentParams="noRowsOverlayParams"
-      :domLayout="fillHeight ? 'normal' : 'autoHeight'"
-      :pagination="pagination"
-      :paginationPageSize="pageSize"
-      :paginationPageSizeSelector="pageSizeOptions"
-      @row-clicked="handleRowClick"
-      @grid-ready="onGridReady"
-    />
-  </div>
+  <v-data-table
+    v-model="selectedItems"
+    :class="['f-data-table', { 'f-data-table--clickable': hasRowClickListener }]"
+    :headers="tableHeaders"
+    :items="items"
+    :items-per-page="pagination ? itemsPerPage : -1"
+    :loading="loading"
+    :search="search"
+    :show-select="selectable"
+    :sort-by="sortBy"
+    :hide-default-footer="!pagination"
+    item-value="id"
+    return-object
+    v-on="rowClickHandler"
+  >
+    <!-- Loading slot -->
+    <template #loading>
+      <v-skeleton-loader type="table-row@5" />
+    </template>
+
+    <!-- Empty state -->
+    <template #no-data>
+      <div class="f-data-table__empty">
+        <v-icon
+          v-if="emptyIcon"
+          :icon="emptyIcon"
+          class="mb-4"
+          color="medium-emphasis"
+          size="48"
+        />
+        <p
+          v-if="emptyTitle"
+          class="text-h6 mb-1"
+        >
+          {{ emptyTitle }}
+        </p>
+        <p
+          v-if="emptySubtitle"
+          class="text-body-2 text-medium-emphasis mb-4"
+        >
+          {{ emptySubtitle }}
+        </p>
+        <slot name="empty" />
+      </div>
+    </template>
+
+    <!-- Actions column (auto-added when editEnabled) -->
+    <template
+      v-if="editEnabled"
+      #item.actions="{ item }"
+    >
+      <slot
+        name="item.actions"
+        :item="item"
+      >
+        <!-- Default: pencil icon -->
+        <v-btn
+          icon="mdi-pencil"
+          size="small"
+          variant="text"
+          @click.stop="emit('edit', item)"
+        />
+      </slot>
+    </template>
+
+    <!-- Dynamic cell slots -->
+    <template
+      v-for="col in columns"
+      :key="col.key"
+      #[`item.${col.key}`]="{ item, value }"
+    >
+      <slot
+        :name="`item.${col.key}`"
+        :item="item"
+        :value="value"
+      >
+        <!-- Default: use valueFormatter if provided, otherwise raw value -->
+        {{ formatCell(col, value, item) }}
+      </slot>
+    </template>
+  </v-data-table>
 </template>
 
 <script lang="ts" setup>
   /**
-   * FDataTable - AG Grid powered data table
+   * FDataTable - Vuetify v-data-table wrapper
    *
-   * Extends AG Grid's ColDef with a `key` shorthand and slot-based rendering.
-   * Use any ColDef property - we just add conveniences on top.
+   * Extends Vuetify's native header format with:
+   * - valueFormatter for cell formatting
+   * - valueGetter for computed values
+   * - Slot-based cell rendering
+   * - Selection support
+   * - Empty state customization
    *
    * @example
    * ```vue
    * <FDataTable
    *   :items="cases"
    *   :columns="[
-   *     { key: 'caseNumber', headerName: 'Case #', width: 120 },
-   *     { key: 'status', headerName: 'Status' },
-   *     { key: 'amount', headerName: 'Amount', filter: true, editable: true },
+   *     { key: 'caseNumber', title: 'Case #', width: 120 },
+   *     { key: 'status', title: 'Status' },
+   *     { key: 'amount', title: 'Amount', align: 'end', valueFormatter: (p) => formatCurrency(p.value) },
    *   ]"
    *   empty-icon="mdi-folder-open-outline"
    *   empty-title="No cases found"
@@ -47,65 +111,63 @@
    * </FDataTable>
    * ```
    */
-  import type {
-    ColDef,
-    GetRowIdParams,
-    GridApi,
-    GridReadyEvent,
-    ICellRendererParams,
-    RowClickedEvent,
-  } from 'ag-grid-community'
-  import { AllCommunityModule, ModuleRegistry, themeMaterial } from 'ag-grid-community'
-  import { AgGridVue } from 'ag-grid-vue3'
-  import { computed, defineComponent, h, shallowRef, useSlots, type VNode } from 'vue'
-  import { VIcon, VProgressCircular } from 'vuetify/components'
-
-  // Register AG Grid modules once
-  ModuleRegistry.registerModules([AllCommunityModule])
+  import { computed, ref, useAttrs, watch } from 'vue'
 
   // ============================================================================
   // Types
   // ============================================================================
 
+  interface ValueFormatterParams<TValue = unknown, TData = unknown> {
+    value: TValue
+    data: TData
+  }
+
   /**
-   * Extended ColDef with a `key` shorthand.
-   *
-   * - `key` sets both `colId` and `field` (unless you override them)
-   * - Slots `#item.{key}` automatically become cellRenderers
-   * - All other ColDef properties work as documented by AG Grid
+   * Column definition - extends Vuetify's DataTableHeader with formatting helpers
    */
-  export interface FColumn<TData = unknown, TValue = unknown> extends ColDef<TData, TValue> {
-    /**
-     * Shorthand that sets both `colId` and `field`.
-     * Also used for slot-based rendering: `#item.{key}`
-     */
+  export interface FColumn<TData = unknown, TValue = unknown> {
+    /** Unique key - maps to field name and slot name (Vuetify native) */
     key: string
+    /** Header text (Vuetify native) */
+    title?: string
+    /** Column width in pixels (Vuetify native) */
+    width?: number | string
+    /** Whether column is sortable (Vuetify native, default: true) */
+    sortable?: boolean
+    /** Text alignment (Vuetify native) */
+    align?: 'start' | 'center' | 'end'
+    /** Value formatter function (FDataTable extension) */
+    valueFormatter?: (params: ValueFormatterParams<TValue, TData>) => string
+    /** Value getter for computed values (FDataTable extension) */
+    valueGetter?: (params: { data: TData }) => TValue
   }
 
   export interface FDataTableProps {
     /** Row data array */
     items: unknown[]
-    /** Column definitions (extends AG Grid ColDef with `key` shorthand) */
+    /** Column definitions */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     columns: FColumn<any>[]
     /** Loading state */
     loading?: boolean
-    /** Field name to use as row ID (default: 'id') */
-    rowIdField?: string
+    /** Search/filter string - filters all columns */
+    search?: string
     /** Empty state icon */
     emptyIcon?: string
     /** Empty state title */
     emptyTitle?: string
     /** Empty state subtitle */
     emptySubtitle?: string
-    /** Fill available height (uses normal domLayout with internal scrolling) */
-    fillHeight?: boolean
-    /** Enable pagination */
+    /** Enable row selection with checkboxes */
+    selectable?: boolean
+    /** Enable pagination (default: false - shows all items) */
     pagination?: boolean
-    /** Rows per page (default: 10) */
-    pageSize?: number
-    /** Page size options for dropdown (default: [10, 25, 50, 100]) */
-    pageSizeOptions?: number[]
+    /** Items per page when pagination enabled (default: 10) */
+    itemsPerPage?: number
+    /** Enable actions column with edit button (prepended as first column) */
+    editEnabled?: boolean
+    /** Width of actions column (default: 60) */
+    actionsColumnWidth?: number | string
   }
 
   // ============================================================================
@@ -114,269 +176,122 @@
 
   const props = withDefaults(defineProps<FDataTableProps>(), {
     loading: false,
-    rowIdField: 'id',
+    search: '',
     emptyIcon: undefined,
     emptyTitle: 'No data',
     emptySubtitle: undefined,
-    fillHeight: false,
+    selectable: false,
     pagination: false,
-    pageSize: 10,
-    pageSizeOptions: () => [10, 25, 50, 100],
+    itemsPerPage: 10,
+    editEnabled: false,
+    actionsColumnWidth: 60,
   })
 
   const emit = defineEmits<{
     'click:row': [event: Event, data: { item: unknown }]
+    'update:selected': [items: unknown[]]
+    edit: [item: unknown]
   }>()
 
   // ============================================================================
-  // Theme Configuration - Material 3 Aligned
+  // Selection
   // ============================================================================
 
-  const gridTheme = themeMaterial.withParams({
-    accentColor: '#1867C0',
-    backgroundColor: '#FFFFFF',
-    foregroundColor: '#1C1B1F',
-    borderColor: '#CAC4D0',
-    headerBackgroundColor: '#FFFFFF',
-    headerTextColor: '#49454F',
-    rowHoverColor: 'rgba(28, 27, 31, 0.08)',
-    selectedRowBackgroundColor: 'rgba(24, 103, 192, 0.12)',
-    oddRowBackgroundColor: 'transparent',
-    fontFamily: 'Roboto, sans-serif',
-    fontSize: 14,
-    headerFontSize: 14,
-    headerFontWeight: 500,
-    borderRadius: 12,
-    spacing: 8,
-    cellHorizontalPadding: 16,
-    rowHeight: 52,
-    wrapperBorder: false,
-    rowBorder: true,
-    columnBorder: false,
-    headerRowBorder: true,
-    headerColumnBorder: false,
+  const selectedItems = ref<unknown[]>([])
+
+  watch(selectedItems, (newVal) => {
+    emit('update:selected', newVal)
   })
 
   // ============================================================================
-  // Grid Setup
+  // Headers
   // ============================================================================
 
-  const slots = useSlots()
-  const gridApi = shallowRef<GridApi | null>(null)
-
-  const defaultColDef = computed<ColDef>(() => ({
-    sortable: true,
-    resizable: true,
-    suppressMovable: true,
-  }))
-
-  function getRowId(params: GetRowIdParams): string {
-    const data = params.data as Record<string, unknown>
-    return String(data[props.rowIdField] ?? Math.random())
+  // Actions column definition (prepended when editEnabled)
+  const actionsColumn = {
+    key: 'actions',
+    title: '',
+    width:
+      typeof props.actionsColumnWidth === 'number'
+        ? `${props.actionsColumnWidth}px`
+        : props.actionsColumnWidth,
+    sortable: false,
+    align: 'start' as const,
   }
 
-  // ============================================================================
-  // No Rows Overlay
-  // ============================================================================
+  // Pass columns directly to Vuetify (already compatible format)
+  const tableHeaders = computed(() => {
+    const headers = props.columns.map((col) => ({
+      key: col.key,
+      title: col.title ?? col.key,
+      width: typeof col.width === 'number' ? `${col.width}px` : col.width,
+      sortable: col.sortable !== false,
+      align: col.align ?? 'start',
+    }))
 
-  interface NoRowsOverlayParams {
-    icon?: string
-    title?: string
-    subtitle?: string
-    actionSlot?: () => VNode[]
-  }
+    // Prepend actions column when editEnabled (legacy pattern)
+    if (props.editEnabled) {
+      return [actionsColumn, ...headers]
+    }
 
-  const noRowsOverlay = defineComponent({
-    props: ['params'],
-    setup(componentProps: { params: NoRowsOverlayParams }) {
-      return () => {
-        const params = componentProps.params
-
-        const children: VNode[] = []
-
-        // Icon
-        if (params.icon) {
-          children.push(
-            h(VIcon, {
-              icon: params.icon,
-              size: 48,
-              color: 'medium-emphasis',
-              class: 'mb-4',
-            }),
-          )
-        }
-
-        // Title
-        if (params.title) {
-          children.push(h('p', { class: 'text-h6 mb-1' }, params.title))
-        }
-
-        // Subtitle
-        if (params.subtitle) {
-          children.push(h('p', { class: 'text-body-2 text-medium-emphasis mb-4' }, params.subtitle))
-        }
-
-        // Action slot
-        if (params.actionSlot) {
-          children.push(...params.actionSlot())
-        }
-
-        return h(
-          'div',
-          {
-            class: 'f-data-table__empty',
-            style: {
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '32px',
-              textAlign: 'center',
-            },
-          },
-          children,
-        )
-      }
-    },
+    return headers
   })
 
-  const noRowsOverlayParams = computed<NoRowsOverlayParams>(() => ({
-    icon: props.emptyIcon,
-    title: props.emptyTitle,
-    subtitle: props.emptySubtitle,
-    actionSlot: slots.empty,
-  }))
+  // Default sort
+  const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([])
 
   // ============================================================================
-  // Loading Overlay
+  // Cell Formatting
   // ============================================================================
 
-  const loadingOverlay = defineComponent({
-    setup() {
-      return () =>
-        h(
-          'div',
-          {
-            style: {
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              width: '100%',
-            },
-          },
-          [
-            h(VProgressCircular, {
-              indeterminate: true,
-              color: 'primary',
-              size: 48,
-              width: 4,
-            }),
-          ],
-        )
-    },
-  })
+  function formatCell(col: FColumn, value: unknown, item: unknown): string {
+    // Use valueGetter if provided
+    if (col.valueGetter) {
+      value = col.valueGetter({ data: item })
+    }
 
-  // ============================================================================
-  // Cell Renderers
-  // ============================================================================
+    // Use valueFormatter if provided
+    if (col.valueFormatter) {
+      return col.valueFormatter({ value, data: item })
+    }
 
-  /**
-   * Creates a Vue cell renderer component for a column slot
-   */
-  function createSlotRenderer(slotName: string) {
-    return defineComponent({
-      props: ['params'],
-      setup(componentProps: { params: ICellRendererParams }) {
-        return () => {
-          const params = componentProps.params
-          const slot = slots[slotName]
-          if (slot) {
-            return slot({ item: params.data, value: params.value })
-          }
-          return h('span', String(params.value ?? ''))
-        }
-      },
-    })
+    // Default: convert to string
+    return value != null ? String(value) : ''
   }
 
-  /**
-   * Maps FColumn definitions to AG Grid ColDef
-   * - Spreads all ColDef properties from the column
-   * - Sets colId and field from `key` (unless explicitly provided)
-   * - Auto-wires slot-based cell renderers for #item.{key}
-   */
-  const gridColumns = computed<ColDef[]>(() =>
-    props.columns.map((col): ColDef => {
-      const { key, ...colDefProps } = col
-      const slotName = `item.${key}`
-      const hasSlot = !!slots[slotName]
+  // ============================================================================
+  // Events
+  // ============================================================================
 
-      // Build ColDef: spread user props, then apply defaults
-      const colDef: ColDef = {
-        // User-provided ColDef properties take precedence
-        ...colDefProps,
-        // Set colId and field from key (user can override via spread)
-        colId: colDefProps.colId ?? key,
-        field: colDefProps.field ?? (colDefProps.valueGetter ? undefined : key),
-        // Default flex if no width specified
-        flex: colDefProps.width ? undefined : (colDefProps.flex ?? 1),
-      }
+  // Check if parent has a click:row listener
+  const attrs = useAttrs()
+  const hasRowClickListener = computed(() => 'onClick:row' in attrs)
 
-      // Auto-wire slot-based cell renderer if slot exists
-      if (hasSlot && !colDef.cellRenderer) {
-        colDef.cellRenderer = createSlotRenderer(slotName)
-        // Disable type inference for slot-rendered columns
-        colDef.cellDataType = false
-      }
-
-      return colDef
-    }),
+  // Only bind click:row handler if parent is listening
+  const rowClickHandler = computed(() =>
+    hasRowClickListener.value ? { 'click:row': handleRowClick } : {},
   )
 
-  function onGridReady(params: GridReadyEvent) {
-    gridApi.value = params.api
+  function handleRowClick(event: Event, { item }: { item: unknown }) {
+    emit('click:row', event, { item })
   }
-
-  function handleRowClick(event: RowClickedEvent) {
-    emit('click:row', event.event as Event, { item: event.data })
-  }
-
-  // ============================================================================
-  // Expose
-  // ============================================================================
-
-  defineExpose({ gridApi })
 </script>
 
 <style scoped>
-  .f-data-table {
-    width: 100%;
+  .f-data-table__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 16px;
+    text-align: center;
   }
 
-  /*
-   * Auto-height mode: only apply min-height when empty overlay is shown
-   * Uses :has() to conditionally expand - no wasted space with data
-   */
-  .f-data-table:not(.f-data-table--fill)
-    :deep(.ag-root-wrapper:has(.ag-overlay-no-rows-wrapper))
-    .ag-body-viewport {
-    min-height: 300px;
+  /* Only show pointer cursor on rows when clickable */
+  .f-data-table :deep(tbody tr) {
+    cursor: default;
   }
 
-  /* Fill-height mode: grid fills container with internal scrolling */
-  .f-data-table--fill {
-    min-height: 0;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr);
-  }
-
-  .f-data-table--fill :deep(.ag-root-wrapper) {
-    height: 100%;
-  }
-
-  /* Clickable rows */
-  .f-data-table :deep(.ag-row) {
+  .f-data-table--clickable :deep(tbody tr) {
     cursor: pointer;
   }
 </style>
