@@ -1,26 +1,26 @@
 <template>
   <FListCard
-    v-model:search="list.search.value"
-    :busy="editDialog.isBusy.value"
+    v-model:search="search"
+    :busy="isBusy"
     :columns="columns"
     edit-enabled
     empty-icon="mdi-file-document-outline"
     empty-subtitle="Create your first contract to get started."
     empty-title="No contracts found"
     fill-height
-    :items="list.filteredContracts.value"
-    :loading="list.isLoading.value"
+    :items="filteredContracts"
+    :loading="isLoading"
     search-placeholder="Search by contract #, name..."
     :searchable="true"
     subtitle="Manage funeral and cemetery contracts"
     title="Contracts"
-    @edit="showEdit"
+    @edit="handleView"
   >
     <template #commands>
       <FButton
         intent="primary"
         prepend-icon="mdi-plus"
-        @click="showAdd"
+        @click="handleAdd"
       >
         New Contract
       </FButton>
@@ -32,11 +32,9 @@
         <v-chip
           v-for="status in statusFilters"
           :key="status.value"
-          :color="list.statusFilter.value === status.value ? status.color : undefined"
-          :variant="list.statusFilter.value === status.value ? 'flat' : 'outlined'"
-          @click="
-            list.statusFilter.value = list.statusFilter.value === status.value ? null : status.value
-          "
+          :color="statusFilter === status.value ? status.color : undefined"
+          :variant="statusFilter === status.value ? 'flat' : 'outlined'"
+          @click="statusFilter = statusFilter === status.value ? null : status.value"
         >
           {{ status.label }}
           <span
@@ -64,23 +62,18 @@
       <FButton
         intent="primary"
         prepend-icon="mdi-plus"
-        @click="showAdd"
+        @click="handleAdd"
       >
         Create First Contract
       </FButton>
     </template>
   </FListCard>
-
-  <!-- Contract Dialog -->
-  <ContractDialog
-    v-model="editDialog.visible.value"
-    :contract-id="editDialog.itemId.value"
-    @saved="handleSaved"
-  />
 </template>
 
 <script lang="ts" setup>
-  import { computed } from 'vue'
+  import { useQueryClient } from '@tanstack/vue-query'
+  import { computed, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import {
     contractApi,
     type ContractListing,
@@ -88,19 +81,17 @@
     ContractStatusBadge,
     useContracts,
   } from '@/entities/contract'
-  import { ContractDialog } from '@/features/contract-dialog'
   import { formatCurrency, formatDate } from '@/shared/lib'
-  import { FButton, type FColumn, FListCard, useListController, useToast } from '@/shared/ui'
+  import { FButton, type FColumn, FListCard } from '@/shared/ui'
 
-  const toast = useToast()
+  const router = useRouter()
+  const queryClient = useQueryClient()
 
-  // Use the list controller for standardized list/edit workflow
-  // Just pass the fetch function and query key - prefetch is automatic!
-  const { list, editDialog, showAdd, showEdit } = useListController({
-    useList: useContracts,
-    getItem: contractApi.get,
-    queryKey: (id) => ['contract', id],
-  })
+  // Contract list data
+  const { search, statusFilter, filteredContracts, contractsByStatus, isLoading } = useContracts()
+
+  // Busy state for prefetching
+  const isBusy = ref(false)
 
   // Column definitions
   const columns: FColumn<ContractListing>[] = [
@@ -129,29 +120,49 @@
       value: ContractStatus.DRAFT,
       label: 'Draft',
       color: 'grey',
-      count: list.contractsByStatus.value.draft.length,
+      count: contractsByStatus.value.draft.length,
     },
     {
       value: ContractStatus.FINALIZED,
       label: 'Finalized',
       color: 'warning',
-      count: list.contractsByStatus.value.finalized.length,
+      count: contractsByStatus.value.finalized.length,
     },
     {
       value: ContractStatus.EXECUTED,
       label: 'Executed',
       color: 'success',
-      count: list.contractsByStatus.value.executed.length,
+      count: contractsByStatus.value.executed.length,
     },
     {
       value: ContractStatus.VOID,
       label: 'Void',
       color: 'error',
-      count: list.contractsByStatus.value.void.length,
+      count: contractsByStatus.value.void.length,
     },
   ])
 
-  function handleSaved() {
-    toast.success('Contract saved successfully')
+  // Navigation handlers
+  function handleAdd() {
+    router.push('/contracts/new')
+  }
+
+  async function handleView(item: ContractListing) {
+    // Prefetch the contract data before navigating to detail page
+    try {
+      isBusy.value = true
+      await queryClient.fetchQuery({
+        queryKey: ['contract', item.id],
+        queryFn: () => contractApi.get(item.id),
+      })
+    } catch {
+      // Prefetch failed, but we can still navigate
+      // The detail page will handle loading/error states
+    } finally {
+      isBusy.value = false
+    }
+
+    // Navigate to detail page (not edit)
+    router.push(`/contracts/${item.id}`)
   }
 </script>

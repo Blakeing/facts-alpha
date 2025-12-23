@@ -293,10 +293,11 @@ export function useContractSession(
       payments.markClean()
       people.markClean()
 
-      // Invalidate queries to refresh data
+      // Refetch queries to ensure fresh data before navigation
+      // Using refetchQueries instead of invalidateQueries to wait for completion
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['contracts'] }),
-        queryClient.invalidateQueries({ queryKey: ['contract', contractId.value] }),
+        queryClient.refetchQueries({ queryKey: ['contracts'] }),
+        queryClient.refetchQueries({ queryKey: ['contract', contractId.value] }),
       ])
 
       options.onSave?.(savedContract)

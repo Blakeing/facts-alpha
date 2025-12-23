@@ -25,6 +25,10 @@ declare module 'vue-router/auto-routes' {
     '/cases/create': RouteRecordInfo<'/cases/create', '/cases/create', Record<never, never>, Record<never, never>>,
     '/components': RouteRecordInfo<'/components', '/components', Record<never, never>, Record<never, never>>,
     '/contracts/': RouteRecordInfo<'/contracts/', '/contracts', Record<never, never>, Record<never, never>>,
+    '/contracts/[id]': RouteRecordInfo<'/contracts/[id]', '/contracts/:id', { id: ParamValue<true> }, { id: ParamValue<false> }, '/contracts/[id]/' | '/contracts/[id]/edit/[[tab]]'>,
+    '/contracts/[id]/': RouteRecordInfo<'/contracts/[id]/', '/contracts/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/contracts/[id]/edit/[[tab]]': RouteRecordInfo<'/contracts/[id]/edit/[[tab]]', '/contracts/:id/edit/:tab?', { id: ParamValue<true>, tab?: ParamValueZeroOrOne<true> }, { id: ParamValue<false>, tab?: ParamValueZeroOrOne<false> }>,
+    '/contracts/new': RouteRecordInfo<'/contracts/new', '/contracts/new', Record<never, never>, Record<never, never>>,
     '/locations/': RouteRecordInfo<'/locations/', '/locations', Record<never, never>, Record<never, never>>,
   }
 
@@ -65,6 +69,22 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/contracts/index.vue': {
       routes: '/contracts/'
+      views: never
+    }
+    'src/pages/contracts/[id].vue': {
+      routes: '/contracts/[id]' | '/contracts/[id]/' | '/contracts/[id]/edit/[[tab]]' | '/contracts/[id]/edit'
+      views: 'default'
+    }
+    'src/pages/contracts/[id]/index.vue': {
+      routes: '/contracts/[id]/'
+      views: never
+    }
+    'src/pages/contracts/[id]/edit/[[tab]].vue': {
+      routes: '/contracts/[id]/edit/[[tab]]'
+      views: never
+    }
+    'src/pages/contracts/new.vue': {
+      routes: '/contracts/new'
       views: never
     }
     'src/pages/locations/index.vue': {

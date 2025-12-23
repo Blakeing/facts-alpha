@@ -4,6 +4,7 @@
     :busy="isBusy"
     :error="errorMessage"
     :title="dialogTitle"
+    @after-leave="emit('after-leave')"
     @close="handleClose"
   >
     <!-- Unsaved changes confirmation dialog -->
@@ -196,22 +197,35 @@
   interface Props {
     modelValue?: boolean
     contractId?: string | null
+    /** Initial tab to display (supports route query param: ?tab=payments) */
+    initialTab?: 'general' | 'items' | 'payments'
   }
 
   const props = withDefaults(defineProps<Props>(), {
     modelValue: false,
     contractId: null,
+    initialTab: 'general',
   })
 
   const emit = defineEmits<{
     'update:modelValue': [value: boolean]
-    saved: []
+    saved: [contractId?: string]
     closed: []
+    'tab-change': [tab: string]
+    'after-leave': []
   }>()
 
   const dialogModel = useVModel(props, 'modelValue', emit)
-  const activeTab = ref('general')
   const errorMessage = ref<string | null>(null)
+
+  // Tab state - driven by prop (route) for consistency
+  const activeTab = computed({
+    get: () => props.initialTab,
+    set: (tab) => {
+      // When user clicks a tab, emit to update the route
+      emit('tab-change', tab)
+    },
+  })
 
   // Confirmation dialog for unsaved changes
   const confirmDialog = useConfirm()
@@ -223,8 +237,8 @@
   const session = useContractSession(
     computed(() => props.contractId),
     {
-      onSave: () => {
-        emit('saved')
+      onSave: (contract) => {
+        emit('saved', contract.id)
       },
       onSaveError: (error) => {
         errorMessage.value = error.message
@@ -299,19 +313,25 @@
   const isBusy = computed(() => session.isLoading.value || session.isSaving.value)
 
   // Reset everything when dialog opens
-  watch(dialogModel, (visible: boolean) => {
-    if (visible) {
-      activeTab.value = 'general'
-      errorMessage.value = null
-      showErrors.value = false
+  watch(
+    dialogModel,
+    (visible: boolean) => {
+      if (visible) {
+        // Tab is now driven by route (initialTab prop)
+        errorMessage.value = null
+        showErrors.value = false
 
-      // Reset session to clear any stale data from previous dialog
-      session.reset()
-
-      // Reset form to default values (will be updated by session data watcher if editing)
-      reset(getDefaultContractFormValues())
-    }
-  })
+        // Only reset session for new contracts to avoid clearing cached edit data
+        if (session.isNewContract.value) {
+          session.reset()
+          reset(getDefaultContractFormValues())
+        }
+        // For existing contracts, the session data is already loaded via TanStack Query
+        // and will populate the form via the purchaser watch below
+      }
+    },
+    { immediate: true },
+  )
 
   // Reset form when session data changes
   watch(
@@ -339,14 +359,12 @@
     {
       key: 'save-close',
       label: 'Save & Close',
-      icon: 'mdi-content-save',
       handler: handleSaveAndClose,
       visible: session.canSaveDraftOrFinal.value,
     },
     {
       key: 'finalize',
       label: 'Finalize',
-      icon: 'mdi-check',
       handler: handleFinalize,
       visible: session.canFinalize.value,
       divider: true,
@@ -354,14 +372,12 @@
     {
       key: 'finalize-close',
       label: 'Finalize & Close',
-      icon: 'mdi-check',
       handler: handleFinalizeAndClose,
       visible: session.canFinalize.value,
     },
     {
       key: 'execute',
       label: 'Execute',
-      icon: 'mdi-check-all',
       handler: handleExecute,
       visible: session.canExecute.value,
       divider: true,
@@ -369,14 +385,13 @@
     {
       key: 'execute-close',
       label: 'Execute & Close',
-      icon: 'mdi-check-all',
       handler: handleExecuteAndClose,
       visible: session.canExecute.value,
     },
     {
       key: 'back-to-draft',
       label: 'Back to Draft',
-      icon: 'mdi-pencil',
+
       handler: handleBackToDraft,
       visible: session.canBackToDraft.value,
       divider: true,
@@ -384,7 +399,6 @@
     {
       key: 'void',
       label: 'Void Contract',
-      icon: 'mdi-cancel',
       color: 'error',
       handler: handleVoid,
       visible: session.canVoid.value && !session.isNewContract.value,

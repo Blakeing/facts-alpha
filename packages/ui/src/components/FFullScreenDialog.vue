@@ -5,6 +5,7 @@
     persistent
     transition="dialog-bottom-transition"
     v-bind="$attrs"
+    @after-leave="handleAfterLeave"
   >
     <v-card
       class="f-fullscreen-dialog"
@@ -110,6 +111,7 @@
   const emit = defineEmits<{
     'update:modelValue': [value: boolean]
     close: []
+    'after-leave': []
   }>()
 
   const model = useVModel(props, 'modelValue', emit)
@@ -130,6 +132,11 @@
     // Only emit close event - let parent decide whether to actually close
     // Parent should set modelValue to false to close the dialog
     emit('close')
+  }
+
+  function handleAfterLeave() {
+    // Emitted when close animation completes - useful for navigation timing
+    emit('after-leave')
   }
 
   // Keyboard support
