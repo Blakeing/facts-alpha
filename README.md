@@ -118,12 +118,82 @@ Vuetify components with simplified APIs and consistent defaults:
 
 Reusable form utilities inspired by legacy FACTS app patterns:
 
-| Composable     | Purpose                                                        |
-| -------------- | -------------------------------------------------------------- |
-| `useFormModel` | Live model state management with Zod validation                |
-| `useDirtyForm` | Snapshot-based dirty tracking for unsaved changes detection    |
-| `useConfirm`   | Promise-based confirmation dialogs (pairs with FConfirmDialog) |
-| `useFormSave`  | Standardized validate-then-save pattern with error handling    |
+| Composable          | Purpose                                                        |
+| ------------------- | -------------------------------------------------------------- |
+| `useFormModel`      | Live model state management with Zod validation                |
+| `useDirtyForm`      | Snapshot-based dirty tracking for unsaved changes detection    |
+| `useConfirm`        | Promise-based confirmation dialogs (pairs with FConfirmDialog) |
+| `useFormSave`       | Standardized validate-then-save pattern with error handling    |
+| `useListController` | Standardized list-to-edit workflow with dialog state           |
+
+### Form State Architecture
+
+Understanding how form state flows is crucial for working with our form patterns. We use a **separation of concerns** approach where source data, form state, and dirty tracking are distinct:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         EditDialog.vue                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. SOURCE DATA (read-only from server)                             │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ const { contract } = useContract(contractId)                │   │
+│  │                                                             │   │
+│  │ What's saved in the database — NEVER mutated directly       │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                              │                                      │
+│                              ▼                                      │
+│  2. INITIAL VALUES (transform for form)                             │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ const { initialValues } = useContractForm(contractId)       │   │
+│  │                                                             │   │
+│  │ Transforms server data → form-friendly shape                │   │
+│  │ (e.g., dates as strings, nested structures flattened)       │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                              │                                      │
+│                              ▼                                      │
+│  3. FORM STATE (live, editable copy)                                │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ const { model } = useFormModel(schema, initialValues)       │   │
+│  │                                                             │   │
+│  │ Reactive copy that user edits — mutated by v-model          │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                              │                                      │
+│                              ▼                                      │
+│  4. DIRTY CHECK (compare model vs snapshot)                         │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ const { canClose } = useDirtyForm(() => model.value)        │   │
+│  │                                                             │   │
+│  │ Snapshot taken on open → compared to current model          │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Variables:**
+
+| Variable        | Purpose                          | Mutated by User? |
+| --------------- | -------------------------------- | ---------------- |
+| `contract`      | Server data (TanStack Query)     | ❌ Never         |
+| `initialValues` | Form-friendly version of data    | ❌ Never         |
+| `model`         | User's working copy              | ✅ Yes           |
+| `snapshot`      | Frozen copy for dirty comparison | ❌ Never         |
+
+**Why This Pattern?**
+
+1. **Rollback is easy** — just `reset(initialValues)`
+2. **Dirty detection is reliable** — compare `model` vs `snapshot` with deep equality
+3. **No accidental mutation** — `contract` is read-only from TanStack Query cache
+4. **Clear mental model** — each variable has exactly one job
+
+**Naming Convention:**
+
+We use `model` (not `editModel`) because:
+
+- Vue 3.4's `defineModel` establishes `model` as the convention
+- In form context, it's unambiguous — the model IS for editing
+- The parent already distinguishes: `contract` (source) vs `model` (form state)
+- If explicit naming is needed, rename on destructure: `const { model: editModel } = useFormModel(...)`
 
 **Example: Live Model Pattern**
 
@@ -168,6 +238,34 @@ async function handleClose() {
   )
   if (shouldClose) closeDialog()
 }
+```
+
+**Example: List Controller Pattern**
+
+```typescript
+// Standardized list-to-edit workflow with automatic prefetch
+const { list, editDialog, showAdd, showEdit } = useListController({
+  useList: useContracts,
+  getItem: contractApi.get,           // Fetch function
+  queryKey: (id) => ['contract', id], // Cache key
+})
+
+// In template:
+<FListCard
+  :items="list.filteredContracts.value"
+  :loading="list.isLoading.value"
+  :busy="editDialog.isBusy.value"
+  @click:row="(e, { item }) => showEdit(item)"
+>
+  <template #commands>
+    <FButton @click="showAdd">New Contract</FButton>
+  </template>
+</FListCard>
+
+<ContractDialog
+  v-model="editDialog.visible.value"
+  :contract-id="editDialog.itemId.value"
+/>
 ```
 
 ### Usage
@@ -244,9 +342,9 @@ export default createVuetify({
   - [x] Full-screen dialog editing pattern (FFullScreenDialog)
   - [x] Tabbed interface (General, Items, Payments)
   - [x] Contract entity (types, schema, mock API, composables)
-  - [x] Form validation with Zod + vee-validate
+  - [x] Form validation with Zod (custom implementation, no vee-validate)
   - [x] Dirty form tracking with unsaved changes confirmation
-  - [x] Save validation with inline errors + toast feedback
+  - [x] Save validation with inline errors + snackbar + toast feedback
 - [x] Linting/formatting setup (Oxlint, ESLint, Prettier)
 - [x] VSCode configuration
 - [x] Domain-centric composable architecture:
@@ -257,10 +355,12 @@ export default createVuetify({
   - [x] Permissions composable (`usePermissions`) ready for auth
 - [x] Form utilities (inspired by legacy FACTS app):
   - [x] `useFormModel` - Live model state management with Zod validation
-  - [x] `FFormErrors` - Validation error summary component
+  - [x] `useFormContext` + `FFormProvider` - Automatic field error/blur binding
+  - [x] `FFormErrorsSnackbar` - Dismissable validation error snackbar
   - [x] `useDirtyForm` - Snapshot-based dirty tracking
   - [x] `useConfirm` + `FConfirmDialog` - Promise-based confirmations
   - [x] `useFormSave` - Validate-then-save pattern
+  - [x] `useListController` - Standardized list-to-edit workflow with prefetch
   - [x] Zod validators for common patterns (currency, dates, etc.)
 - [x] AG Grid integration for `FDataTable`:
   - [x] Slot-based cell rendering (`#item.{key}`)

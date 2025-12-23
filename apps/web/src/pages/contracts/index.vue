@@ -1,25 +1,25 @@
 <template>
   <FListCard
-    v-model:search="search"
-    :busy="isLoadingContract"
+    v-model:search="list.search.value"
+    :busy="editDialog.isBusy.value"
     :columns="columns"
     empty-icon="mdi-file-document-outline"
     empty-subtitle="Create your first contract to get started."
     empty-title="No contracts found"
     fill-height
-    :items="displayedContracts"
-    :loading="isLoading"
+    :items="list.filteredContracts.value"
+    :loading="list.isLoading.value"
     search-placeholder="Search by contract #, name..."
     :searchable="true"
     subtitle="Manage funeral and cemetery contracts"
     title="Contracts"
-    @click:row="openContract"
+    @click:row="handleRowClick"
   >
     <template #commands>
       <FButton
         intent="primary"
         prepend-icon="mdi-plus"
-        @click="createContract"
+        @click="showAdd"
       >
         New Contract
       </FButton>
@@ -31,9 +31,11 @@
         <v-chip
           v-for="status in statusFilters"
           :key="status.value"
-          :color="statusFilter === status.value ? status.color : undefined"
-          :variant="statusFilter === status.value ? 'flat' : 'outlined'"
-          @click="statusFilter = statusFilter === status.value ? null : status.value"
+          :color="list.statusFilter.value === status.value ? status.color : undefined"
+          :variant="list.statusFilter.value === status.value ? 'flat' : 'outlined'"
+          @click="
+            list.statusFilter.value = list.statusFilter.value === status.value ? null : status.value
+          "
         >
           {{ status.label }}
           <span
@@ -61,7 +63,7 @@
       <FButton
         intent="primary"
         prepend-icon="mdi-plus"
-        @click="createContract"
+        @click="showAdd"
       >
         Create First Contract
       </FButton>
@@ -70,15 +72,14 @@
 
   <!-- Contract Dialog -->
   <ContractDialog
-    v-model="dialogVisible"
-    :contract-id="selectedContractId"
+    v-model="editDialog.visible.value"
+    :contract-id="editDialog.itemId.value"
     @saved="handleSaved"
   />
 </template>
 
 <script lang="ts" setup>
-  import { useQueryClient } from '@tanstack/vue-query'
-  import { computed, ref } from 'vue'
+  import { computed } from 'vue'
   import {
     contractApi,
     type ContractListing,
@@ -88,16 +89,17 @@
   } from '@/entities/contract'
   import { ContractDialog } from '@/features/contract-dialog'
   import { formatCurrency, formatDate } from '@/shared/lib'
-  import { FButton, type FColumn, FListCard, useToast } from '@/shared/ui'
+  import { FButton, type FColumn, FListCard, useListController, useToast } from '@/shared/ui'
 
   const toast = useToast()
-  const queryClient = useQueryClient()
-  const { isLoading, filteredContracts, contractsByStatus, search, statusFilter } = useContracts()
 
-  // Dialog state
-  const dialogVisible = ref(false)
-  const selectedContractId = ref<string | null>(null)
-  const isLoadingContract = ref(false)
+  // Use the list controller for standardized list/edit workflow
+  // Just pass the fetch function and query key - prefetch is automatic!
+  const { list, editDialog, showAdd, showEdit } = useListController({
+    useList: useContracts,
+    getItem: contractApi.get,
+    queryKey: (id) => ['contract', id],
+  })
 
   // Column definitions using AG Grid's ColDef API (with `key` shorthand)
   const columns: FColumn<ContractListing>[] = [
@@ -126,55 +128,30 @@
       value: 'draft' as ContractStatus,
       label: 'Draft',
       color: 'grey',
-      count: contractsByStatus.value.draft.length,
+      count: list.contractsByStatus.value.draft.length,
     },
     {
       value: 'finalized' as ContractStatus,
       label: 'Finalized',
       color: 'warning',
-      count: contractsByStatus.value.finalized.length,
+      count: list.contractsByStatus.value.finalized.length,
     },
     {
       value: 'executed' as ContractStatus,
       label: 'Executed',
       color: 'success',
-      count: contractsByStatus.value.executed.length,
+      count: list.contractsByStatus.value.executed.length,
     },
     {
       value: 'void' as ContractStatus,
       label: 'Void',
       color: 'error',
-      count: contractsByStatus.value.void.length,
+      count: list.contractsByStatus.value.void.length,
     },
   ])
 
-  // Apply status filter
-  const displayedContracts = computed(() => filteredContracts.value)
-
-  async function openContract(_event: Event, { item }: { item: unknown }) {
-    const contract = item as ContractListing
-
-    try {
-      isLoadingContract.value = true
-
-      // Prefetch the contract data before opening dialog
-      await queryClient.fetchQuery({
-        queryKey: ['contract', contract.id],
-        queryFn: () => contractApi.get(contract.id),
-      })
-
-      selectedContractId.value = contract.id
-      dialogVisible.value = true
-    } catch {
-      toast.error('Failed to load contract')
-    } finally {
-      isLoadingContract.value = false
-    }
-  }
-
-  function createContract() {
-    selectedContractId.value = null
-    dialogVisible.value = true
+  function handleRowClick(_event: Event, { item }: { item: unknown }) {
+    showEdit(item)
   }
 
   function handleSaved() {

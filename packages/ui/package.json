@@ -28,10 +28,12 @@
     "zod": "^3.25.76"
   },
   "peerDependencies": {
+    "@tanstack/vue-query": "^5.0.0",
     "vue": "^3.5.0",
     "vuetify": "^3.10.0"
   },
   "devDependencies": {
+    "@tanstack/vue-query": "^5.80.5",
     "@types/node": "^22.9.0",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",

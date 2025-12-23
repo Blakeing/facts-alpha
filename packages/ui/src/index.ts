@@ -15,6 +15,7 @@ export * from './tokens'
 export { useTokens } from './composables'
 export { useFormModel, useFormSave, useDirtyForm, useConfirm } from './composables'
 export { provideFormContext, useFormContext, FORM_CONTEXT_KEY } from './composables'
+export { useListController } from './composables'
 export type {
   UseFormModelReturn,
   FormSaveOptions,
@@ -24,6 +25,9 @@ export type {
   ConfirmState,
   UseConfirmReturn,
   FormContext,
+  EditDialogState,
+  UseListControllerOptions,
+  UseListControllerReturn,
 } from './composables'
 
 // =============================================================================

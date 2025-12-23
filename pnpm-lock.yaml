@@ -139,6 +139,9 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@tanstack/vue-query':
+        specifier: ^5.80.5
+        version: 5.92.1(vue@3.5.26(typescript@5.9.3))
       '@types/node':
         specifier: ^22.9.0
         version: 22.19.3

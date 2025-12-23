@@ -9,3 +9,10 @@ export { useFormModel } from './useFormModel'
 export type { UseFormModelReturn } from './useFormModel'
 export { provideFormContext, useFormContext, FORM_CONTEXT_KEY } from './useFormContext'
 export type { FormContext } from './useFormContext'
+export { useListController } from './useListController'
+export type {
+  EditDialogState,
+  PrefetchQueryOptions,
+  UseListControllerOptions,
+  UseListControllerReturn,
+} from './useListController'
