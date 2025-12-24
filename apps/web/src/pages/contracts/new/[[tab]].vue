@@ -15,7 +15,16 @@
   import { ref } from 'vue'
   import { contractApi } from '@/entities/contract'
   import { ContractDialog, useContractDialogRoute } from '@/features/contract-dialog'
+  import { editRequirement, SecurityOptionKeys } from '@/shared/lib/security'
   import { useToast } from '@/shared/ui'
+
+  // Route meta - creating contracts requires edit permission
+  definePage({
+    meta: {
+      title: 'New Contract',
+      permissions: editRequirement(SecurityOptionKeys.ProcessContracts),
+    },
+  })
 
   const toast = useToast()
   const queryClient = useQueryClient()

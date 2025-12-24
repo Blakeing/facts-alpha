@@ -3,7 +3,7 @@
     v-model:search="list.search.value"
     :busy="editDialog.isBusy.value"
     :columns="columns"
-    edit-enabled
+    :edit-enabled="canEdit"
     empty-icon="mdi-map-marker-outline"
     empty-subtitle="Create your first location to get started."
     empty-title="No locations found"
@@ -18,6 +18,7 @@
   >
     <template #commands>
       <FButton
+        v-if="canEdit"
         intent="primary"
         prepend-icon="mdi-plus"
         @click="showAdd"
@@ -65,12 +66,19 @@
 
     <template #empty>
       <FButton
+        v-if="canEdit"
         intent="primary"
         prepend-icon="mdi-plus"
         @click="showAdd"
       >
         Create First Location
       </FButton>
+      <p
+        v-else
+        class="text-medium-emphasis"
+      >
+        No locations available.
+      </p>
     </template>
   </FListCard>
 
@@ -92,9 +100,23 @@
     useLocations,
   } from '@/entities/location'
   import { LocationDialog } from '@/features/location-dialog'
+  import { readRequirement, SecurityOptionKeys, usePermissions } from '@/shared/lib'
   import { FButton, type FColumn, FListCard, useListController, useToast } from '@/shared/ui'
 
+  // Route meta for permission-based access control
+  definePage({
+    meta: {
+      title: 'Locations',
+      permissions: readRequirement(SecurityOptionKeys.ManageLocations),
+    },
+  })
+
   const toast = useToast()
+
+  // Permission checking - editKey requires Edit level
+  const { canEdit } = usePermissions({
+    editKey: SecurityOptionKeys.ManageLocations,
+  })
 
   // Use the list controller for standardized list/edit workflow
   const { list, editDialog, showAdd, showEdit } = useListController({

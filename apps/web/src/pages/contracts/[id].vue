@@ -426,7 +426,16 @@
     getContractTypeLabel,
   } from '@/entities/contract'
   import { formatCurrency, formatDate, formatPhone } from '@/shared/lib'
+  import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
   import { FButton, FCard, FLoader } from '@/shared/ui'
+
+  // Route meta for permission-based access control
+  definePage({
+    meta: {
+      title: 'Contract Detail',
+      permissions: readRequirement(SecurityOptionKeys.ProcessContracts),
+    },
+  })
 
   const route = useRoute()
   const router = useRouter()

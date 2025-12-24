@@ -14,7 +14,16 @@
   import { computed } from 'vue'
   import { useRoute } from 'vue-router'
   import { ContractDialog, useContractDialogRoute } from '@/features/contract-dialog'
+  import { editRequirement, SecurityOptionKeys } from '@/shared/lib/security'
   import { useToast } from '@/shared/ui'
+
+  // Route meta - editing contracts requires edit permission
+  definePage({
+    meta: {
+      title: 'Edit Contract',
+      permissions: editRequirement(SecurityOptionKeys.ProcessContracts),
+    },
+  })
 
   const route = useRoute()
   const toast = useToast()

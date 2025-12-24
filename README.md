@@ -446,6 +446,215 @@ const initialFormValues = computed(() => {
 </script>
 ```
 
+## Permissions & Route Guards
+
+The application includes a permission system aligned with the legacy FACTS application, providing route-level and UI-level access control.
+
+### Architecture
+
+```mermaid
+flowchart TB
+    subgraph RouteGuard [Route Navigation]
+        A[User navigates] --> B{beforeEach guard}
+        B --> C{Route has meta.permissions?}
+        C -->|No| D[Allow]
+        C -->|Yes| E{userCanWithRequirement}
+        E -->|Pass| D
+        E -->|Fail| F[Log warning / block]
+    end
+
+    subgraph UI [Component Permission Checks]
+        G[usePermissions composable] --> H{canEdit.value}
+        H -->|Yes| I[Show edit UI]
+        H -->|No| J[Hide/disable]
+    end
+
+    subgraph Store [User Context Store]
+        K[userPermissions] --> L{isAdmin?}
+        L -->|Yes| M[Bypass all checks]
+        L -->|No| N[Check permissionsGranted array]
+    end
+```
+
+### Security Keys
+
+Permission keys are numeric constants aligned with the legacy app:
+
+```typescript
+import { SecurityOptionKeys, PermissionLevel } from '@/shared/lib/security'
+
+// Example keys
+SecurityOptionKeys.ProcessContracts // 25
+SecurityOptionKeys.ManageLocations // 40
+SecurityOptionKeys.ProcessPayments // 29
+```
+
+### Permission Levels
+
+- **Read** (`PermissionLevel.Read = 0`) - View-only access
+- **Edit** (`PermissionLevel.Edit = 1`) - Full read/write access
+
+Edit permission automatically includes Read access (checked with `>=` comparison).
+
+### Route Protection
+
+Routes define permission requirements using `definePage()`:
+
+```typescript
+// pages/contracts/index.vue
+import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
+
+definePage({
+  meta: {
+    title: 'Contracts',
+    permissions: readRequirement(SecurityOptionKeys.ProcessContracts),
+  },
+})
+```
+
+The router guard checks permissions before navigation:
+
+```typescript
+// app/providers/router.ts
+router.beforeEach((to, _from) => {
+  const userContext = useUserContextStore()
+
+  // Check route meta.permissions
+  if (to.meta.permissions) {
+    if (!userContext.userCanWithRequirement(to.meta.permissions)) {
+      // Log warning (development) or block (production)
+      return { path: '/' }
+    }
+  }
+
+  return true
+})
+```
+
+### UI-Level Permission Checks
+
+Use the `usePermissions` composable to gate UI elements:
+
+```vue
+<script setup>
+  import { SecurityOptionKeys, usePermissions } from '@/shared/lib'
+
+  // Check edit permission
+  const { canEdit } = usePermissions({
+    editKey: SecurityOptionKeys.ManageLocations,
+  })
+</script>
+
+<template>
+  <!-- Hide button if no edit permission -->
+  <FButton
+    v-if="canEdit"
+    @click="handleEdit"
+  >
+    Edit Location
+  </FButton>
+
+  <!-- Disable edit on list -->
+  <FListCard
+    :edit-enabled="canEdit"
+    @edit="showEdit"
+  />
+</template>
+```
+
+### User Context Store
+
+The `useUserContextStore` provides permission checking methods:
+
+```typescript
+import { useUserContextStore } from '@/stores'
+import { SecurityOptionKeys, PermissionLevel } from '@/shared/lib/security'
+
+const userContext = useUserContextStore()
+
+// Check specific permission
+const canEditContracts = userContext.userCanWithKey(
+  SecurityOptionKeys.ProcessContracts,
+  PermissionLevel.Edit,
+)
+
+// Check requirement object
+const canView = userContext.userCanWithRequirement(
+  readRequirement(SecurityOptionKeys.ManageLocations),
+)
+
+// Check multiple (user needs at least one)
+const canAccess = userContext.userCanWithAnyRequirement([
+  readRequirement(SecurityOptionKeys.ProcessContracts),
+  readRequirement(SecurityOptionKeys.ProcessPayments),
+])
+
+// Check location access
+const canAccessLocation = userContext.userCanAccessLocation('loc-001')
+```
+
+### Mock Permissions (Development)
+
+For development, mock permissions are initialized in `userContext.initMockUser()`:
+
+```typescript
+// stores/userContext.ts
+userPermissions.value = {
+  isAdmin: false, // Set to true to bypass all checks
+  permissionsGranted: [
+    { key: SecurityOptionKeys.ProcessContracts, level: PermissionLevel.Edit },
+    { key: SecurityOptionKeys.ManageLocations, level: PermissionLevel.Read },
+    // ... more permissions
+  ],
+}
+```
+
+**To test permission restrictions:**
+
+1. Set `isAdmin: false` in `initMockUser()`
+2. Remove or downgrade permissions in `getMockPermissions()`
+3. Navigate to protected routes - console warnings will show
+4. UI elements will hide/disable based on permissions
+
+### Permission Helpers
+
+```typescript
+import {
+  readRequirement,
+  editRequirement,
+  readRequirements,
+  editRequirements,
+} from '@/shared/lib/security'
+
+// Single requirement
+const req = readRequirement(SecurityOptionKeys.ProcessContracts)
+
+// Multiple requirements
+const reqs = readRequirements([
+  SecurityOptionKeys.ProcessContracts,
+  SecurityOptionKeys.ProcessPayments,
+])
+```
+
+### Location-Based Permissions
+
+When switching locations, permissions are re-evaluated. The system supports:
+
+- **Location-scoped permissions** - User may have different permissions per location
+- **Location type filtering** - Routes can filter by location type (funeral/cemetery/corporate)
+- **Location access validation** - `userCanAccessLocation()` checks if user can access a specific location
+
+### Integration with Legacy App
+
+The permission system is designed to align with the legacy FACTS application:
+
+- Same security option keys (numeric constants)
+- Same permission levels (Read/Edit)
+- Same validation logic (`SecurityValidator` pattern)
+- Compatible permission data structure from backend
+
+When integrating with the real backend, the `UserEffectivePermissions` type matches the legacy API response format.
+
 ## Current Implementation Status
 
 ### Completed
@@ -460,6 +669,14 @@ const initialFormValues = computed(() => {
   - [x] User context store with location management (`useUserContextStore`)
   - [x] Location-scoped data filtering (contracts filtered by current location)
   - [x] Location entity integration with API
+- [x] Permissions & Route Guards:
+  - [x] Security keys enum aligned with legacy FACTS app (100+ keys)
+  - [x] Permission types and helpers (Read/Edit levels, Requirement)
+  - [x] User context store with permission checking methods
+  - [x] Router guard for route-level permission validation
+  - [x] `usePermissions` composable for UI-level permission gating
+  - [x] Route meta permissions on protected routes
+  - [x] Mock permissions for development testing
 - [x] Vuetify MD3 blueprint integration
 - [x] Case Management module:
   - [x] Case list page with filtering and search
@@ -483,7 +700,6 @@ const initialFormValues = computed(() => {
   - [x] Contract domain composables (`useContracts`, `useContract`, `useContractForm`)
   - [x] Location domain composables (`locationApi`, location entity)
   - [x] Mock API client pattern (`caseApi`, `contractApi`, `locationApi`)
-  - [x] Permissions composable (`usePermissions`) ready for auth
 - [x] Form utilities (inspired by legacy FACTS app):
   - [x] `useFormModel` - Live model state management with Zod validation
   - [x] `useFormContext` + `FFormProvider` - Automatic field error/blur binding
@@ -505,7 +721,7 @@ const initialFormValues = computed(() => {
 
 ### Pending
 
-- [ ] Authentication/Authorization (usePermissions ready)
+- [ ] Authentication integration (permission system ready, needs auth service)
 - [ ] API integration (backend - mock API pattern established)
 - [ ] Additional modules (Calendar, Contacts, Settings)
 - [ ] Multi-tenant support (entity exists, not implemented)
@@ -553,7 +769,11 @@ The app runs at `http://localhost:3000` by default.
 | `apps/web/src/styles/settings.scss`                      | SASS overrides, global styles         |
 | `apps/web/src/widgets/app-shell/ui/AppShell.vue`         | Main layout with sidebar              |
 | `apps/web/src/widgets/app-shell/ui/LocationSelector.vue` | Location dropdown in toolbar          |
-| `apps/web/src/stores/userContext.ts`                     | User and location context store       |
+| `apps/web/src/stores/userContext.ts`                     | User, location, and permissions store |
+| `apps/web/src/shared/lib/security/securityKeys.ts`       | Security option keys enum             |
+| `apps/web/src/shared/lib/security/types.ts`              | Permission types and helpers          |
+| `apps/web/src/shared/lib/composables/usePermissions.ts`  | Permission checking composable        |
+| `apps/web/src/app/providers/router.ts`                   | Route permission guard                |
 | `apps/web/src/entities/case/model/useCases.ts`           | Example domain composable             |
 | `apps/web/src/entities/contract/model/useContracts.ts`   | Contract list with location filtering |
 | `packages/ui/src/tokens/colors.ts`                       | Brand color definitions               |
@@ -574,7 +794,7 @@ app → pages → widgets → features → entities → shared
 ```typescript
 // ✅ CORRECT: Import through layer public APIs
 import { FButton, FCard, useToast } from '@/shared/ui'
-import { formatDate, usePermissions } from '@/shared/lib'
+import { formatDate, usePermissions, SecurityOptionKeys, readRequirement } from '@/shared/lib'
 import { useCases, useCase, useCaseForm, CaseStatusBadge } from '@/entities/case'
 import { CaseForm } from '@/features/case-form'
 import { AppShell } from '@/widgets'
@@ -591,7 +811,9 @@ import CaseStatusBadge from '@/entities/case/ui/CaseStatusBadge.vue'
 **Re-export structure in shared layer:**
 
 - `@/shared/ui` - Re-exports `@facts/ui` + app-specific UI (toast)
-- `@/shared/lib` - Re-exports `@facts/utils` + `usePermissions`
+- `@/shared/lib` - Re-exports `@facts/utils` + security module + composables
+  - `@/shared/lib/security` - Security keys, permission types, helpers
+  - `@/shared/lib/composables` - `usePermissions` and other composables
 - `@/shared/api` - HTTP client utilities
 - `@/shared/config` - App constants
 

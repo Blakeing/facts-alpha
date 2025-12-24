@@ -82,7 +82,16 @@
     useContracts,
   } from '@/entities/contract'
   import { formatCurrency, formatDate } from '@/shared/lib'
+  import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
   import { FButton, type FColumn, FListCard } from '@/shared/ui'
+
+  // Route meta for permission-based access control
+  definePage({
+    meta: {
+      title: 'Contracts',
+      permissions: readRequirement(SecurityOptionKeys.ProcessContracts),
+    },
+  })
 
   const router = useRouter()
   const queryClient = useQueryClient()

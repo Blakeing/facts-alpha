@@ -5,4 +5,5 @@
  */
 
 export * from './composables'
+export * from './security'
 export * from '@facts/utils'
