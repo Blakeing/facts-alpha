@@ -18,12 +18,12 @@
         :columns="columns"
         :items="items"
       >
-        <template #item.discount="{ item: rawItem }">
+        <template #item.discounts="{ item: rawItem }">
           <span
-            v-if="(rawItem as ContractItem).discount > 0"
+            v-if="getItemDiscountTotal(rawItem as SaleItem) > 0"
             class="text-success"
           >
-            -{{ formatCurrency((rawItem as ContractItem).discount) }}
+            -{{ formatCurrency(getItemDiscountTotal(rawItem as SaleItem)) }}
           </span>
           <span
             v-else
@@ -39,7 +39,7 @@
             icon="mdi-delete"
             size="small"
             variant="text"
-            @click.stop="handleRemove((rawItem as ContractItem).id)"
+            @click.stop="handleRemove((rawItem as SaleItem).id)"
           />
         </template>
       </FDataTable>
@@ -93,8 +93,8 @@
           md="4"
         >
           <FTextField
-            v-model="newItem.itemNumber"
-            label="Item Number"
+            v-model="newItem.sku"
+            label="SKU"
           />
         </v-col>
         <v-col
@@ -111,9 +111,9 @@
           md="4"
         >
           <FSelect
-            v-model="newItem.category"
-            label="Category"
-            :options="categoryOptions"
+            v-model="newItem.itemType"
+            label="Item Type"
+            :options="itemTypeOptions"
           />
         </v-col>
         <v-col
@@ -140,47 +140,14 @@
             type="number"
           />
         </v-col>
-        <v-col
-          cols="12"
-          md="6"
-        >
-          <FTextField
-            v-model.number="newItem.discount"
-            label="Discount"
-            min="0"
-            prepend-inner-icon="mdi-currency-usd"
-            step="0.01"
-            type="number"
-          />
-        </v-col>
-        <v-col
-          cols="12"
-          md="6"
-        >
-          <FTextField
-            v-model.number="newItem.tax"
-            label="Tax"
-            min="0"
-            prepend-inner-icon="mdi-currency-usd"
-            step="0.01"
-            type="number"
-          />
-        </v-col>
-        <v-col cols="12">
-          <FTextarea
-            v-model="newItem.notes"
-            label="Notes"
-            :rows="2"
-          />
-        </v-col>
       </v-row>
     </FFormDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import type { ContractItem, ContractItemFormValues } from '@/entities/contract'
   import { ref } from 'vue'
+  import { itemTypeOptions, type SaleItem } from '@/entities/contract'
   import { formatCurrency } from '@/shared/lib'
   import {
     FButton,
@@ -189,13 +156,20 @@
     FDataTable,
     FFormDialog,
     FSelect,
-    FTextarea,
     FTextField,
   } from '@/shared/ui'
 
+  interface ItemFormData {
+    sku: string
+    description: string
+    itemType: 'service' | 'merchandise' | 'cash_advance' | 'property'
+    quantity: number
+    unitPrice: number
+  }
+
   interface Props {
     contractId?: string | null
-    items: ContractItem[]
+    items: SaleItem[]
     /** Whether the contract is editable (draft status) */
     isEditable?: boolean
   }
@@ -206,64 +180,61 @@
   })
 
   const emit = defineEmits<{
-    add: [data: ContractItemFormValues]
+    add: [data: ItemFormData]
     remove: [itemId: string]
   }>()
 
   const showAddDialog = ref(false)
   const isAdding = ref(false)
 
-  const columns: FColumn[] = [
-    { key: 'itemNumber', title: 'Item #' },
+  const columns: FColumn<SaleItem>[] = [
+    { key: 'sku', title: 'SKU', width: 120 },
     { key: 'description', title: 'Description' },
     {
-      key: 'category',
-      title: 'Category',
-      valueFormatter: (p) => getCategoryLabel(p.value as string),
+      key: 'itemType',
+      title: 'Type',
+      valueFormatter: (p) => getItemTypeLabel(p.value as string),
     },
-    { key: 'quantity', title: 'Qty', align: 'center' },
+    { key: 'quantity', title: 'Qty', align: 'center', width: 80 },
     {
       key: 'unitPrice',
       title: 'Price',
       align: 'end',
       valueFormatter: (p) => formatCurrency(p.value as number),
     },
-    { key: 'discount', title: 'Discount', align: 'end' },
+    { key: 'discounts', title: 'Discount', align: 'end', width: 100 },
     {
       key: 'total',
       title: 'Total',
       align: 'end',
+      valueGetter: (params) => params.data.quantity * params.data.unitPrice,
       valueFormatter: (p) => formatCurrency(p.value as number),
     },
     { key: 'actions', title: '', width: 60, sortable: false },
   ]
 
-  const categoryOptions = [
-    { title: 'Service', value: 'service' },
-    { title: 'Merchandise', value: 'merchandise' },
-    { title: 'Cash Advance', value: 'cash_advance' },
-  ]
-
-  const defaultItem: ContractItemFormValues = {
-    itemNumber: '',
+  const defaultItem: ItemFormData = {
+    sku: '',
     description: '',
-    category: 'service',
+    itemType: 'service',
     quantity: 1,
     unitPrice: 0,
-    discount: 0,
-    tax: 0,
-    notes: '',
   }
 
-  const newItem = ref<ContractItemFormValues>({ ...defaultItem })
+  const newItem = ref<ItemFormData>({ ...defaultItem })
 
-  function getCategoryLabel(category: string): string {
+  function getItemTypeLabel(itemType: string): string {
     const labels: Record<string, string> = {
       service: 'Service',
       merchandise: 'Merchandise',
       cash_advance: 'Cash Advance',
+      property: 'Property',
     }
-    return labels[category] || category
+    return labels[itemType] || itemType
+  }
+
+  function getItemDiscountTotal(item: SaleItem): number {
+    return item.discounts?.reduce((sum, d) => sum + d.amount, 0) ?? 0
   }
 
   function resetForm() {

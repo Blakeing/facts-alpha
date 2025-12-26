@@ -6,7 +6,7 @@
  */
 
 import type { ComputedRef, InjectionKey, Ref } from 'vue'
-import type { ContractStatus } from './contract'
+import type { SaleStatus } from './contract'
 
 /**
  * Context shared across all handlers in a contract session
@@ -18,8 +18,8 @@ export interface ContractSessionContext {
   /** Whether this is a new contract (not yet saved) */
   isNewContract: ComputedRef<boolean>
 
-  /** Current contract status */
-  status: ComputedRef<ContractStatus>
+  /** Current sale status (Draft, Executed, Finalized, Void) */
+  status: ComputedRef<SaleStatus>
 
   /** Whether the contract can be edited (draft status) */
   isEditable: ComputedRef<boolean>

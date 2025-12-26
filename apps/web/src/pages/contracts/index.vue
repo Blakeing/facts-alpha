@@ -48,8 +48,8 @@
     </template>
 
     <!-- Custom cell renderers via slots -->
-    <template #item.status="{ item }">
-      <ContractStatusBadge :status="(item as ContractListing).status" />
+    <template #item.saleStatus="{ item }">
+      <ContractStatusBadge :status="(item as ContractListing).saleStatus" />
     </template>
 
     <template #item.balanceDue="{ item }">
@@ -77,8 +77,8 @@
   import {
     contractApi,
     type ContractListing,
-    ContractStatus,
     ContractStatusBadge,
+    SaleStatus,
     useContracts,
   } from '@/entities/contract'
   import { formatCurrency, formatDate } from '@/shared/lib'
@@ -106,14 +106,14 @@
   const columns: FColumn<ContractListing>[] = [
     { key: 'contractNumber', title: 'Contract #', width: 160 },
     {
-      key: 'date',
+      key: 'dateSigned',
       title: 'Date',
       width: 120,
       valueFormatter: (params) => formatDate(params.value as string),
     },
-    { key: 'purchaserName', title: 'Purchaser' },
-    { key: 'beneficiaryName', title: 'Beneficiary' },
-    { key: 'status', title: 'Status', width: 120 },
+    { key: 'primaryBuyerName', title: 'Buyer' },
+    { key: 'primaryBeneficiaryName', title: 'Beneficiary' },
+    { key: 'saleStatus', title: 'Status', width: 120 },
     {
       key: 'grandTotal',
       title: 'Total',
@@ -126,25 +126,25 @@
 
   const statusFilters = computed(() => [
     {
-      value: ContractStatus.DRAFT,
+      value: SaleStatus.DRAFT,
       label: 'Draft',
       color: 'grey',
       count: contractsByStatus.value.draft.length,
     },
     {
-      value: ContractStatus.FINALIZED,
+      value: SaleStatus.FINALIZED,
       label: 'Finalized',
       color: 'warning',
       count: contractsByStatus.value.finalized.length,
     },
     {
-      value: ContractStatus.EXECUTED,
+      value: SaleStatus.EXECUTED,
       label: 'Executed',
       color: 'success',
       count: contractsByStatus.value.executed.length,
     },
     {
-      value: ContractStatus.VOID,
+      value: SaleStatus.VOID,
       label: 'Void',
       color: 'error',
       count: contractsByStatus.value.void.length,

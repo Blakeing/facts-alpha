@@ -18,11 +18,11 @@
       <v-chip
         v-if="!session.isNewContract.value"
         class="ml-3"
-        :color="getContractStatusColor(session.status.value)"
+        :color="getSaleStatusColor(session.status.value)"
         size="small"
         variant="elevated"
       >
-        {{ getContractStatusLabel(session.status.value) }}
+        {{ getSaleStatusLabel(session.status.value) }}
       </v-chip>
     </template>
 
@@ -194,9 +194,11 @@
   import {
     contractFormSchema,
     type ContractFormValues,
-    getContractStatusColor,
-    getContractStatusLabel,
+    type ContractPaymentFormValues,
     getDefaultContractFormValues,
+    getSaleStatusColor,
+    getSaleStatusLabel,
+    type PaymentMethod,
     useContractSession,
   } from '@/entities/contract'
   import {
@@ -278,20 +280,18 @@
   const existingContract = computed(() => {
     if (session.isNewContract.value) return null
 
-    const people = session.people
     const fin = session.financials.value
 
     // Construct a Contract-like object for display purposes
+    // Note: This is a partial object used only for UI display, not the full Contract type
     return {
       id: session.contractId.value,
       contractNumber: session.contractNumber.value,
-      type: session.contractType.value,
-      status: session.status.value,
+      needType: session.needType.value,
       locationId: session.locationId.value,
-      date: session.contractDate.value,
-      purchaser: people.purchaser.value,
-      beneficiary: people.beneficiary.value,
-      coBuyers: people.coBuyers.value,
+      dateSigned: session.contractDate.value,
+      isCancelled: false,
+      isConditionalSale: false,
       subtotal: fin.subtotal,
       taxTotal: fin.taxTotal,
       discountTotal: fin.discountTotal,
@@ -317,14 +317,17 @@
 
     const people = session.people
     return {
-      type: session.contractType.value,
-      status: session.status.value,
       locationId: session.locationId.value,
-      date: session.contractDate.value,
-      purchaser: people.purchaser.value,
-      beneficiary: people.beneficiary.value,
-      coBuyers: people.coBuyers.value,
+      prePrintedContractNumber: '',
+      needType: session.needType.value,
+      dateSigned: session.contractDate.value,
+      isConditionalSale: false,
       notes: '',
+      primaryBuyer: people.purchaser.value,
+      primaryBeneficiary: people.beneficiary.value,
+      coBuyers: people.coBuyers.value,
+      additionalBeneficiaries: [],
+      fundingDetails: [],
     } as ContractFormValues
   })
 
@@ -458,12 +461,12 @@
 
     // Sync form model to session people handler
     const formData = model.value as ContractFormValues
-    session.people.updatePurchaser(formData.purchaser)
-    session.people.updateBeneficiary(formData.beneficiary)
+    session.people.updatePurchaser(formData.primaryBuyer)
+    session.people.updateBeneficiary(formData.primaryBeneficiary)
 
     // Update contract metadata
-    session.contractType.value = formData.type
-    session.contractDate.value = formData.date
+    session.needType.value = formData.needType
+    session.contractDate.value = formData.dateSigned ?? ''
 
     return true
   }
@@ -608,29 +611,33 @@
   }
 
   function handleAddItem(data: {
-    itemNumber: string
+    sku: string
     description: string
-    category: 'service' | 'merchandise' | 'cash_advance'
+    itemType: 'service' | 'merchandise' | 'cash_advance' | 'property'
     quantity: number
     unitPrice: number
-    discount: number
-    tax: number
   }) {
-    session.items.addCustomItem(data)
+    session.items.addCustomItem({
+      sku: data.sku,
+      description: data.description,
+      itemType: data.itemType,
+      quantity: data.quantity,
+      unitPrice: data.unitPrice,
+    })
   }
 
   function handleRemoveItem(itemId: string) {
     session.items.removeItem(itemId)
   }
 
-  function handleAddPayment(data: {
-    date: string
-    method: 'cash' | 'check' | 'credit_card' | 'insurance' | 'financing' | 'other'
-    amount: number
-    reference?: string
-    notes?: string
-  }) {
-    session.payments.addPayment(data)
+  function handleAddPayment(data: ContractPaymentFormValues) {
+    session.payments.addPayment({
+      date: data.date,
+      method: data.method as PaymentMethod,
+      amount: data.amount,
+      reference: data.reference,
+      notes: data.notes,
+    })
   }
 
   function handleRemovePayment(paymentId: string) {

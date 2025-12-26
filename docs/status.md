@@ -12,6 +12,8 @@
   - [x] User context store with location management (`useUserContextStore`)
   - [x] Location-scoped data filtering (contracts filtered by current location)
   - [x] Location entity integration with API
+  - [x] **Backend-aligned fields** (coordinates, accounting, display settings)
+  - [x] Location form with extended backend fields
 - [x] Permissions & Route Guards:
   - [x] Security keys enum aligned with legacy FACTS app (100+ keys)
   - [x] Permission types and helpers (Read/Edit levels, Requirement)
@@ -31,6 +33,9 @@
   - [x] Full-screen dialog editing pattern (FFullScreenDialog)
   - [x] Tabbed interface (General, Items, Payments)
   - [x] Contract entity (types, schema, mock API, composables)
+  - [x] **Backend-aligned data models** (Contract/Sale/SaleItem structure)
+  - [x] **Updated enums** (NeedType, SaleStatus, PaymentMethod with ACH)
+  - [x] **Primary buyer/beneficiary** (role-based people relationships)
   - [x] Location-scoped filtering (contracts filtered by current location)
   - [x] Form validation with Zod (custom implementation, no vee-validate)
   - [x] Dirty form tracking with unsaved changes confirmation
@@ -62,11 +67,20 @@
   - [x] Lodash re-exports (cloneDeep, isEqual, debounce, etc.)
   - [x] Zod validation schemas
 
-## Pending
+## Next Priorities
 
-- [ ] Authentication integration (permission system ready, needs auth service)
-- [ ] API integration (backend - mock API pattern established)
-- [ ] Additional modules (Calendar, Contacts, Settings)
-- [ ] Multi-tenant support (entity exists, not implemented)
-- [ ] Dark mode (removed for now, tokens ready)
+- [ ] **Effect TS Integration** - Typed error handling and functional programming
+- [ ] **Architectural Patterns** - Railway, Command, Saga patterns for scalability
+- [ ] **Feature Expansion** - Financing, multi-sale, item catalog, tax calculation
+- [ ] **Authentication** - User management and login system
+- [ ] **API Integration** - Real backend connection (BFF ready)
+
+## Future Phases
+
+See **[Roadmap](./roadmap.md)** for detailed development phases and timeline.
+
+## Deprecated/Removed
+
+- [x] Dark mode (removed for now, tokens ready for future implementation)
+- [x] Multi-tenant support (entity exists, not implemented - future phase)
 

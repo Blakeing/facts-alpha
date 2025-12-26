@@ -10,18 +10,18 @@
           <v-row dense>
             <v-col cols="12">
               <FSelect
-                v-model="model.type"
-                field="type"
-                label="Contract Type"
-                :options="contractTypeOptions"
+                v-model="model.needType"
+                field="needType"
+                label="Need Type"
+                :options="needTypeOptions"
                 :readonly="!isEditable"
               />
             </v-col>
             <v-col cols="12">
               <FDatePicker
-                v-model="model.date"
-                field="date"
-                label="Contract Date"
+                v-model="model.dateSigned"
+                field="dateSigned"
+                label="Date Signed"
                 :readonly="!isEditable"
               />
             </v-col>
@@ -103,20 +103,20 @@
     </v-row>
 
     <v-row>
-      <!-- Purchaser -->
+      <!-- Primary Buyer -->
       <v-col
         cols="12"
         md="6"
       >
-        <FCard title="Purchaser">
+        <FCard title="Primary Buyer">
           <v-row dense>
             <v-col
               cols="12"
               md="6"
             >
               <FTextField
-                v-model="model.purchaser.firstName"
-                field="purchaser.firstName"
+                v-model="model.primaryBuyer.firstName"
+                field="primaryBuyer.firstName"
                 label="First Name"
                 :readonly="!isEditable"
               />
@@ -126,8 +126,8 @@
               md="6"
             >
               <FTextField
-                v-model="model.purchaser.lastName"
-                field="purchaser.lastName"
+                v-model="model.primaryBuyer.lastName"
+                field="primaryBuyer.lastName"
                 label="Last Name"
                 :readonly="!isEditable"
               />
@@ -137,8 +137,8 @@
               md="6"
             >
               <FTextField
-                v-model="model.purchaser.phone"
-                field="purchaser.phone"
+                v-model="model.primaryBuyer.phone"
+                field="primaryBuyer.phone"
                 label="Phone"
                 :readonly="!isEditable"
               />
@@ -148,40 +148,31 @@
               md="6"
             >
               <FTextField
-                v-model="model.purchaser.email"
-                field="purchaser.email"
+                v-model="model.primaryBuyer.email"
+                field="primaryBuyer.email"
                 label="Email"
                 :readonly="!isEditable"
                 type="email"
-              />
-            </v-col>
-            <v-col cols="12">
-              <FTextField
-                v-model="model.purchaser.relationship"
-                field="purchaser.relationship"
-                label="Relationship to Beneficiary"
-                placeholder="e.g., Spouse, Child, Sibling"
-                :readonly="!isEditable"
               />
             </v-col>
           </v-row>
         </FCard>
       </v-col>
 
-      <!-- Beneficiary -->
+      <!-- Primary Beneficiary -->
       <v-col
         cols="12"
         md="6"
       >
-        <FCard title="Beneficiary (Decedent)">
+        <FCard title="Primary Beneficiary (Decedent)">
           <v-row dense>
             <v-col
               cols="12"
               md="4"
             >
               <FTextField
-                v-model="model.beneficiary.firstName"
-                field="beneficiary.firstName"
+                v-model="model.primaryBeneficiary.firstName"
+                field="primaryBeneficiary.firstName"
                 label="First Name"
                 :readonly="!isEditable"
               />
@@ -191,8 +182,8 @@
               md="4"
             >
               <FTextField
-                v-model="model.beneficiary.middleName"
-                field="beneficiary.middleName"
+                v-model="model.primaryBeneficiary.middleName"
+                field="primaryBeneficiary.middleName"
                 label="Middle Name"
                 :readonly="!isEditable"
               />
@@ -202,8 +193,8 @@
               md="4"
             >
               <FTextField
-                v-model="model.beneficiary.lastName"
-                field="beneficiary.lastName"
+                v-model="model.primaryBeneficiary.lastName"
+                field="primaryBeneficiary.lastName"
                 label="Last Name"
                 :readonly="!isEditable"
               />
@@ -213,8 +204,8 @@
               md="6"
             >
               <FDatePicker
-                v-model="model.beneficiary.dateOfBirth"
-                field="beneficiary.dateOfBirth"
+                v-model="model.primaryBeneficiary.dateOfBirth"
+                field="primaryBeneficiary.dateOfBirth"
                 label="Date of Birth"
                 :readonly="!isEditable"
               />
@@ -224,8 +215,8 @@
               md="6"
             >
               <FDatePicker
-                v-model="model.beneficiary.dateOfDeath"
-                field="beneficiary.dateOfDeath"
+                v-model="model.primaryBeneficiary.dateOfDeath"
+                field="primaryBeneficiary.dateOfDeath"
                 label="Date of Death"
                 :readonly="!isEditable"
               />
@@ -253,13 +244,21 @@
 </template>
 
 <script lang="ts" setup>
-  import {
-    type Contract,
-    type ContractFormValues,
-    contractTypeOptions,
-  } from '@/entities/contract'
+  import { type ContractFormValues, needTypeOptions } from '@/entities/contract'
   import { formatCurrency } from '@/shared/lib'
   import { FCard, FDatePicker, FSelect, FTextarea, FTextField } from '@/shared/ui'
+
+  /**
+   * Contract display data for financial summary
+   */
+  interface ContractDisplayData {
+    subtotal: number
+    taxTotal: number
+    discountTotal: number
+    grandTotal: number
+    amountPaid: number
+    balanceDue: number
+  }
 
   /**
    * Uses Vue 3.4+ defineModel for proper two-way binding.
@@ -269,7 +268,7 @@
 
   defineProps<{
     /** Contract data for financial summary (read-only) */
-    contract?: Contract | null
+    contract?: ContractDisplayData | null
     /** Whether the contract is editable (draft status) */
     isEditable?: boolean
   }>()

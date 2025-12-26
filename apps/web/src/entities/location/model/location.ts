@@ -1,5 +1,8 @@
 /**
  * Location entity types
+ *
+ * Aligned with backend Facts.Entities.Location
+ * @see docs/data-models.md for field mapping details
  */
 
 export type LocationType = 'funeral' | 'cemetery' | 'corporate'
@@ -8,13 +11,24 @@ export type LocationLicenseType = 'establishment' | 'trust' | 'insurance' | 'cou
 
 export interface LocationLicense {
   id: string
+  locationId?: string // Reference to parent location
   licenseNumber: string
   licenseType: LocationLicenseType
 }
 
+/**
+ * GL Account mapping for location-specific accounting
+ * Placeholder structure - will be expanded when GL features are implemented
+ */
+export interface LocationGLAccountMapAssignment {
+  id: string
+  locationId: string
+  glAccountId: string
+}
+
 export interface Location {
   id: string
-  identifier: string // Location code/number
+  identifier: string // Location code/number (e.g., "001")
   name: string
   type: LocationType
   active: boolean
@@ -25,7 +39,10 @@ export interface Location {
   city: string
   state: string
   postalCode: string
+  county: string // Added: backend has this field
   country: string
+  latitude: number | null // Added: for mapping features
+  longitude: number | null // Added: for mapping features
 
   // Contact
   phone: string
@@ -39,18 +56,29 @@ export interface Location {
   mailingCity: string
   mailingState: string
   mailingPostalCode: string
+  mailingCounty: string // Added: backend has this field
   mailingCountry: string
+
+  // Accounting (backend fields)
+  accountingPeriod: string // ISO date string - current accounting period
+  glGroupId: string // GL group assignment
+  intercompanyGlAccountId: string | null // For intercompany transactions
+  glMaps: LocationGLAccountMapAssignment[] // GL account mappings
 
   // Licenses
   licenses: LocationLicense[]
   taxId: string
+
+  // Display settings
+  timezone: string | null // IANA timezone (e.g., "America/New_York")
+  contractDisplayName: string // Custom name for contracts
 
   // Timestamps
   createdAt: string
   updatedAt: string
 }
 
-// Lighter listing model for list views
+// Lighter listing model for list views (performance optimization)
 export interface LocationListing {
   id: string
   identifier: string
@@ -59,6 +87,7 @@ export interface LocationListing {
   state: string
   type: LocationType
   active: boolean
+  glGroupId: string // Added: needed for filtering by GL group
 }
 
 // Type helpers

@@ -3,21 +3,23 @@
  *
  * Provides reactive state for contract payments with computed totals.
  * Part of the contract session - receives shared context via parameter.
+ *
+ * @see docs/data-models.md for ContractPayment structure
  */
 
-import type { ContractPayment, PaymentAllocation } from '../contract'
+import type { ContractPayment } from '../contract'
 import type { ContractSessionContext } from '../contractSessionContext'
+import { PaymentMethod } from '../contract'
 import { computed, ref } from 'vue'
-
-export type PaymentMethod = 'cash' | 'check' | 'credit_card' | 'insurance' | 'financing' | 'other'
 
 export interface PaymentFormData {
   date: string
   method: PaymentMethod
   amount: number
+  saleId?: string
   reference?: string
+  checkNumber?: string
   notes?: string
-  allocations?: PaymentAllocation[]
 }
 
 export function usePaymentsHandler(context: ContractSessionContext) {
@@ -38,16 +40,19 @@ export function usePaymentsHandler(context: ContractSessionContext) {
 
   const paymentsByMethod = computed(() => {
     const grouped: Record<PaymentMethod, ContractPayment[]> = {
-      cash: [],
-      check: [],
-      credit_card: [],
-      insurance: [],
-      financing: [],
-      other: [],
+      [PaymentMethod.CASH]: [],
+      [PaymentMethod.CHECK]: [],
+      [PaymentMethod.CREDIT_CARD]: [],
+      [PaymentMethod.ACH]: [],
+      [PaymentMethod.INSURANCE]: [],
+      [PaymentMethod.FINANCING]: [],
+      [PaymentMethod.OTHER]: [],
     }
 
     for (const payment of payments.value) {
-      grouped[payment.method].push(payment)
+      if (grouped[payment.method]) {
+        grouped[payment.method].push(payment)
+      }
     }
 
     return grouped
@@ -55,16 +60,19 @@ export function usePaymentsHandler(context: ContractSessionContext) {
 
   const totalByMethod = computed(() => {
     const totals: Record<PaymentMethod, number> = {
-      cash: 0,
-      check: 0,
-      credit_card: 0,
-      insurance: 0,
-      financing: 0,
-      other: 0,
+      [PaymentMethod.CASH]: 0,
+      [PaymentMethod.CHECK]: 0,
+      [PaymentMethod.CREDIT_CARD]: 0,
+      [PaymentMethod.ACH]: 0,
+      [PaymentMethod.INSURANCE]: 0,
+      [PaymentMethod.FINANCING]: 0,
+      [PaymentMethod.OTHER]: 0,
     }
 
     for (const payment of payments.value) {
-      totals[payment.method] += payment.amount
+      if (totals[payment.method] !== undefined) {
+        totals[payment.method] += payment.amount
+      }
     }
 
     return totals
@@ -78,15 +86,19 @@ export function usePaymentsHandler(context: ContractSessionContext) {
    * Add a new payment
    */
   function addPayment(data: PaymentFormData): ContractPayment {
+    const now = new Date().toISOString()
     const newPayment: ContractPayment = {
       id: crypto.randomUUID(),
       contractId: context.contractId.value,
+      saleId: data.saleId,
       date: data.date,
       method: data.method,
       amount: data.amount,
       reference: data.reference,
+      checkNumber: data.checkNumber,
       notes: data.notes,
-      allocations: data.allocations,
+      createdAt: now,
+      updatedAt: now,
     }
 
     payments.value.push(newPayment)
@@ -114,6 +126,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.amount = amount
+    payment.updatedAt = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -126,6 +139,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.method = method
+    payment.updatedAt = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -138,6 +152,20 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.reference = reference
+    payment.updatedAt = new Date().toISOString()
+    isDirty.value = true
+    return true
+  }
+
+  /**
+   * Update payment check number
+   */
+  function updatePaymentCheckNumber(paymentId: string, checkNumber: string): boolean {
+    const payment = payments.value.find((p) => p.id === paymentId)
+    if (!payment) return false
+
+    payment.checkNumber = checkNumber
+    payment.updatedAt = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -150,6 +178,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.notes = notes
+    payment.updatedAt = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -162,18 +191,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.date = date
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Update payment allocations
-   */
-  function updatePaymentAllocations(paymentId: string, allocations: PaymentAllocation[]): boolean {
-    const payment = payments.value.find((p) => p.id === paymentId)
-    if (!payment) return false
-
-    payment.allocations = allocations
+    payment.updatedAt = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -240,9 +258,9 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     updatePaymentAmount,
     updatePaymentMethod,
     updatePaymentReference,
+    updatePaymentCheckNumber,
     updatePaymentNotes,
     updatePaymentDate,
-    updatePaymentAllocations,
     getPayment,
 
     // Session lifecycle

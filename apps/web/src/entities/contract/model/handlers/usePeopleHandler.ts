@@ -3,11 +3,14 @@
  *
  * Provides reactive state for people associated with a contract.
  * Part of the contract session - receives shared context via parameter.
+ *
+ * @see docs/data-models.md for ContractPerson structure
  */
 
 import type { Address, ContractPerson } from '../contract'
 import type { ContractSessionContext } from '../contractSessionContext'
 import { computed, ref } from 'vue'
+import { ContractPersonRole } from '../contract'
 
 export interface PersonFormData {
   firstName: string
@@ -16,25 +19,33 @@ export interface PersonFormData {
   phone?: string
   email?: string
   address?: Address
-  relationship?: string
   dateOfBirth?: string
   dateOfDeath?: string
 }
 
-function createEmptyPerson(): ContractPerson {
+function createEmptyPerson(role: ContractPersonRole = ContractPersonRole.PERSON): ContractPerson {
   return {
     id: crypto.randomUUID(),
+    contractId: '',
+    nameId: crypto.randomUUID(),
+    roles: [role],
+    addedAfterContractExecution: false,
     firstName: '',
     lastName: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 }
 
 function createEmptyAddress(): Address {
   return {
-    street: '',
+    address1: '',
+    address2: '',
     city: '',
     state: '',
-    zip: '',
+    postalCode: '',
+    county: '',
+    country: 'USA',
   }
 }
 
@@ -43,8 +54,8 @@ export function usePeopleHandler(context: ContractSessionContext) {
   // State
   // ==========================================================================
 
-  const purchaser = ref<ContractPerson>(createEmptyPerson())
-  const beneficiary = ref<ContractPerson>(createEmptyPerson())
+  const purchaser = ref<ContractPerson>(createEmptyPerson(ContractPersonRole.PRIMARY_BUYER))
+  const beneficiary = ref<ContractPerson>(createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY))
   const coBuyers = ref<ContractPerson[]>([])
   const isDirty = ref(false)
 
@@ -81,6 +92,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
     if (!context.isEditable.value) return
 
     Object.assign(purchaser.value, data)
+    purchaser.value.updatedAt = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -94,6 +106,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
       purchaser.value.address = createEmptyAddress()
     }
     Object.assign(purchaser.value.address, data)
+    purchaser.value.updatedAt = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -103,7 +116,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
   function clearPurchaser(): void {
     if (!context.isEditable.value) return
 
-    purchaser.value = createEmptyPerson()
+    purchaser.value = createEmptyPerson(ContractPersonRole.PRIMARY_BUYER)
     isDirty.value = true
   }
 
@@ -118,6 +131,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
     if (!context.isEditable.value) return
 
     Object.assign(beneficiary.value, data)
+    beneficiary.value.updatedAt = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -131,6 +145,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
       beneficiary.value.address = createEmptyAddress()
     }
     Object.assign(beneficiary.value.address, data)
+    beneficiary.value.updatedAt = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -140,7 +155,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
   function clearBeneficiary(): void {
     if (!context.isEditable.value) return
 
-    beneficiary.value = createEmptyPerson()
+    beneficiary.value = createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY)
     isDirty.value = true
   }
 
@@ -153,6 +168,9 @@ export function usePeopleHandler(context: ContractSessionContext) {
     beneficiary.value = {
       ...purchaser.value,
       id: beneficiary.value.id, // Keep beneficiary ID
+      nameId: beneficiary.value.nameId,
+      roles: [ContractPersonRole.PRIMARY_BENEFICIARY],
+      updatedAt: new Date().toISOString(),
     }
     isDirty.value = true
   }
@@ -165,15 +183,23 @@ export function usePeopleHandler(context: ContractSessionContext) {
    * Add a co-buyer
    */
   function addCoBuyer(data?: PersonFormData): ContractPerson {
+    const now = new Date().toISOString()
     const newCoBuyer: ContractPerson = {
       id: crypto.randomUUID(),
+      contractId: context.contractId.value,
+      nameId: crypto.randomUUID(),
+      roles: [ContractPersonRole.CO_BUYER],
+      addedAfterContractExecution: false,
       firstName: data?.firstName ?? '',
       middleName: data?.middleName,
       lastName: data?.lastName ?? '',
       phone: data?.phone,
       email: data?.email,
       address: data?.address,
-      relationship: data?.relationship,
+      dateOfBirth: data?.dateOfBirth,
+      dateOfDeath: data?.dateOfDeath,
+      createdAt: now,
+      updatedAt: now,
     }
 
     coBuyers.value.push(newCoBuyer)
@@ -205,6 +231,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
     if (!coBuyer) return false
 
     Object.assign(coBuyer, data)
+    coBuyer.updatedAt = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -222,6 +249,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
       coBuyer.address = createEmptyAddress()
     }
     Object.assign(coBuyer.address, data)
+    coBuyer.updatedAt = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -245,8 +273,12 @@ export function usePeopleHandler(context: ContractSessionContext) {
     serverBeneficiary: ContractPerson | null | undefined,
     serverCoBuyers: ContractPerson[] | null | undefined,
   ): void {
-    purchaser.value = serverPurchaser ? { ...serverPurchaser } : createEmptyPerson()
-    beneficiary.value = serverBeneficiary ? { ...serverBeneficiary } : createEmptyPerson()
+    purchaser.value = serverPurchaser
+      ? { ...serverPurchaser }
+      : createEmptyPerson(ContractPersonRole.PRIMARY_BUYER)
+    beneficiary.value = serverBeneficiary
+      ? { ...serverBeneficiary }
+      : createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY)
     coBuyers.value = (serverCoBuyers ?? []).map((c) => ({ ...c }))
     isDirty.value = false
   }
@@ -273,8 +305,8 @@ export function usePeopleHandler(context: ContractSessionContext) {
    * Reset to empty state
    */
   function reset(): void {
-    purchaser.value = createEmptyPerson()
-    beneficiary.value = createEmptyPerson()
+    purchaser.value = createEmptyPerson(ContractPersonRole.PRIMARY_BUYER)
+    beneficiary.value = createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY)
     coBuyers.value = []
     isDirty.value = false
   }

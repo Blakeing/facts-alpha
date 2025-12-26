@@ -1,68 +1,159 @@
+// =============================================================================
 // Types
+// =============================================================================
+
 export type {
   Address,
   Contract,
-  ContractItem,
+  ContractFinancing,
+  ContractFundingDetail,
   ContractListing,
   ContractPayment,
   ContractPerson,
-  PaymentAllocation,
+  Sale,
+  SaleItem,
+  SaleItemDiscount,
+  SaleItemSalesTax,
+  SaleItemTrustFund,
 } from './contract'
 
-// Re-export ContractStatus and ContractType (value + type in one export)
-export { ContractStatus, ContractType } from './contract'
+// =============================================================================
+// Enums (re-export value + type)
+// =============================================================================
 
-// Helpers and options
 export {
-  contractStatusColors,
-  contractStatusLabels,
-  contractStatusOptions,
-  contractTypeLabels,
-  contractTypeOptions,
-  getContractStatusColor,
-  getContractStatusLabel,
-  getContractTypeLabel,
+  NeedType,
+  SaleType,
+  SaleStatus,
+  SaleAdjustmentType,
+  ContractPersonRole,
+  AtNeedType,
+  PreNeedFundingType,
+  FinancingStatus,
+  LateFeeType,
+  ItemType,
+  PaymentMethod,
 } from './contract'
 
+// =============================================================================
+// Labels & Options
+// =============================================================================
+
+export {
+  // Need Type
+  needTypeLabels,
+  needTypeOptions,
+  getNeedTypeLabel,
+  // Sale Status
+  saleStatusLabels,
+  saleStatusColors,
+  saleStatusOptions,
+  getSaleStatusLabel,
+  getSaleStatusColor,
+  // At-Need Type
+  atNeedTypeLabels,
+  atNeedTypeOptions,
+  // Pre-Need Funding Type
+  preNeedFundingTypeLabels,
+  preNeedFundingTypeOptions,
+  // Contract Person Role
+  contractPersonRoleLabels,
+  getContractPersonRoleLabel,
+  // Item Type
+  itemTypeLabels,
+  itemTypeOptions,
+  getItemTypeLabel,
+  // Payment Method
+  paymentMethodLabels,
+  paymentMethodOptions,
+  getPaymentMethodLabel,
+} from './contract'
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+export {
+  getContractPersonDisplayName,
+  getPrimaryBuyer,
+  getPrimaryBeneficiary,
+  getCoBuyers,
+  calculateSaleTotals,
+  // Backend conversion helpers
+  needTypeFromBackend,
+  needTypeToBackend,
+  saleStatusFromBackend,
+  saleStatusToBackend,
+  saleTypeFromBackend,
+  saleTypeToBackend,
+} from './contract'
+
+// =============================================================================
 // Schemas
+// =============================================================================
+
 export {
   addressSchema,
   contractFormSchema,
-  contractItemSchema,
   contractPaymentSchema,
   contractPersonSchema,
+  contractFinancingSchema,
+  contractFundingDetailSchema,
+  saleSchema,
+  saleItemSchema,
+  saleItemSalesTaxSchema,
+  saleItemDiscountSchema,
+  saleItemTrustFundSchema,
+  // Default value helpers
+  getDefaultAddress,
+  getDefaultContractPerson,
+  getDefaultSaleItem,
+  getDefaultSale,
+  getDefaultFinancing,
+  getDefaultPayment,
   getDefaultContractFormValues,
 } from './contractSchema'
 
 export type {
   AddressFormValues,
   ContractFormValues,
-  ContractItemFormValues,
   ContractPaymentFormValues,
   ContractPersonFormValues,
+  ContractFinancingFormValues,
+  ContractFundingDetailFormValues,
+  SaleFormValues,
+  SaleItemFormValues,
+  SaleItemSalesTaxFormValues,
+  SaleItemDiscountFormValues,
+  SaleItemTrustFundFormValues,
 } from './contractSchema'
 
+// =============================================================================
 // Session Context
+// =============================================================================
+
 export { CONTRACT_SESSION_KEY } from './contractSessionContext'
-
 export type { ContractSessionContext } from './contractSessionContext'
+
+// =============================================================================
 // Handlers
-export { type ItemsHandler, useItemsHandler } from './handlers/useItemsHandler'
+// =============================================================================
 
-export {
-  type PaymentFormData,
-  type PaymentMethod,
-  type PaymentsHandler,
-  usePaymentsHandler,
-} from './handlers/usePaymentsHandler'
-export {
-  type PeopleHandler,
-  type PersonFormData,
-  usePeopleHandler,
-} from './handlers/usePeopleHandler'
+export { useItemsHandler } from './handlers/useItemsHandler'
+export type { ItemsHandler } from './handlers/useItemsHandler'
 
+export { usePaymentsHandler } from './handlers/usePaymentsHandler'
+export type { PaymentsHandler, PaymentFormData } from './handlers/usePaymentsHandler'
+
+export { usePeopleHandler } from './handlers/usePeopleHandler'
+export type { PeopleHandler, PersonFormData } from './handlers/usePeopleHandler'
+
+// =============================================================================
 // Composables
+// =============================================================================
+
 export { CONTRACTS_QUERY_KEY, useContracts } from './useContracts'
+
 // Session Architecture
 export { useContractSession, useContractSessionContext } from './useContractSession'
 export type {

@@ -12,18 +12,14 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
-  import {
-    type ContractStatus,
-    getContractStatusColor,
-    getContractStatusLabel,
-  } from '../model/contract'
+  import { getSaleStatusColor, getSaleStatusLabel, type SaleStatus } from '../model/contract'
 
   interface Props {
-    status: ContractStatus
+    status: SaleStatus
   }
 
   const props = defineProps<Props>()
 
-  const statusLabel = computed(() => getContractStatusLabel(props.status))
-  const statusColor = computed(() => getContractStatusColor(props.status))
+  const statusLabel = computed(() => getSaleStatusLabel(props.status))
+  const statusColor = computed(() => getSaleStatusColor(props.status))
 </script>

@@ -14,20 +14,22 @@ export {
   contractFormSchema,
   CONTRACTS_QUERY_KEY,
   ContractStatusBadge,
-  getContractStatusColor,
-  getContractStatusLabel,
-  getContractTypeLabel,
   getDefaultContractFormValues,
+  getNeedTypeLabel,
+  getSaleStatusColor,
+  getSaleStatusLabel,
+  NeedType,
+  PaymentMethod,
+  SaleStatus,
   useContracts,
 } from './contract'
 export type {
   Contract,
   ContractFormValues,
-  ContractItem,
   ContractListing,
   ContractPayment,
-  ContractStatus,
-  ContractType,
+  Sale,
+  SaleItem,
 } from './contract'
 
 // Location entity

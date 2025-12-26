@@ -145,7 +145,7 @@
           <FSelect
             v-model="newPayment.method"
             label="Payment Method"
-            :options="methodOptions"
+            :options="paymentMethodOptions"
           />
         </v-col>
         <v-col cols="12">
@@ -178,8 +178,15 @@
 </template>
 
 <script lang="ts" setup>
-  import type { ContractPayment, ContractPaymentFormValues } from '@/entities/contract'
   import { ref } from 'vue'
+  import {
+    type ContractPayment,
+    type ContractPaymentFormValues,
+    getPaymentMethodLabel,
+    type PaymentMethod,
+    PaymentMethod as PaymentMethodEnum,
+    paymentMethodOptions,
+  } from '@/entities/contract'
   import { formatCurrency, formatDate } from '@/shared/lib'
   import {
     FButton,
@@ -223,7 +230,7 @@
     {
       key: 'method',
       title: 'Method',
-      valueFormatter: (p) => getMethodLabel(p.value as string),
+      valueFormatter: (p) => getPaymentMethodLabel(p.value as PaymentMethod),
     },
     {
       key: 'amount',
@@ -235,36 +242,16 @@
     { key: 'actions', title: '', width: 60, sortable: false },
   ]
 
-  const methodOptions = [
-    { title: 'Cash', value: 'cash' },
-    { title: 'Check', value: 'check' },
-    { title: 'Credit Card', value: 'credit_card' },
-    { title: 'Insurance', value: 'insurance' },
-    { title: 'Financing', value: 'financing' },
-    { title: 'Other', value: 'other' },
-  ]
-
   const defaultPayment: ContractPaymentFormValues = {
     date: new Date().toISOString().split('T')[0] ?? '',
-    method: 'cash',
+    method: PaymentMethodEnum.CASH,
     amount: 0,
     reference: '',
+    checkNumber: '',
     notes: '',
   }
 
   const newPayment = ref<ContractPaymentFormValues>({ ...defaultPayment })
-
-  function getMethodLabel(method: string): string {
-    const labels: Record<string, string> = {
-      cash: 'Cash',
-      check: 'Check',
-      credit_card: 'Credit Card',
-      insurance: 'Insurance',
-      financing: 'Financing',
-      other: 'Other',
-    }
-    return labels[method] || method
-  }
 
   function resetForm() {
     newPayment.value = { ...defaultPayment }

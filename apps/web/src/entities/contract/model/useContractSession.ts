@@ -7,12 +7,22 @@
  * - Provides computed financials from handler data
  * - Handles save operations across all handlers
  * - Provides session context via Vue's provide/inject
+ *
+ * @see docs/data-models.md for Contract structure
  */
 
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, inject, type MaybeRefOrGetter, provide, ref, toValue, watch } from 'vue'
 import { contractApi } from '../api/contractApi'
-import { type Contract, ContractStatus, ContractType } from './contract'
+import {
+  type Contract,
+  ContractPersonRole,
+  getCoBuyers,
+  getPrimaryBeneficiary,
+  getPrimaryBuyer,
+  NeedType,
+  SaleStatus,
+} from './contract'
 import { CONTRACT_SESSION_KEY, type ContractSessionContext } from './contractSessionContext'
 import { useItemsHandler } from './handlers/useItemsHandler'
 import { usePaymentsHandler } from './handlers/usePaymentsHandler'
@@ -58,27 +68,27 @@ export function useContractSession(
   const saveError = ref<Error | null>(null)
 
   // Contract metadata
-  const contractType = ref<ContractType>(ContractType.AT_NEED_FUNERAL)
+  const needType = ref<NeedType>(NeedType.AT_NEED)
   const contractDate = ref<string>(new Date().toISOString().split('T')[0] ?? '')
   const locationId = ref<string>('')
 
   // ==========================================================================
-  // Status - Simple ref, server is source of truth (like legacy app)
+  // Status - Based on primary sale status (like backend)
   // ==========================================================================
 
-  const status = ref<ContractStatus>(ContractStatus.DRAFT)
-  const signDate = ref<string | undefined>(undefined)
+  const saleStatus = ref<SaleStatus>(SaleStatus.DRAFT)
+  const dateSigned = ref<string | undefined>(undefined)
+  const dateExecuted = ref<string | undefined>(undefined)
+  const isCancelled = ref(false)
 
   // Derived status booleans (matches legacy ContractSession pattern)
-  const isExecuted = computed(() => status.value === ContractStatus.EXECUTED)
-  const isVoided = computed(
-    () => status.value === ContractStatus.VOID || status.value === ContractStatus.CANCELLED,
-  )
+  const isExecuted = computed(() => saleStatus.value === SaleStatus.EXECUTED)
+  const isVoided = computed(() => saleStatus.value === SaleStatus.VOID || isCancelled.value)
   const isFinalized = computed(
-    () => status.value === ContractStatus.FINALIZED || status.value === ContractStatus.EXECUTED,
+    () => saleStatus.value === SaleStatus.FINALIZED || saleStatus.value === SaleStatus.EXECUTED,
   )
-  const hasFinalizedStatus = computed(() => status.value === ContractStatus.FINALIZED)
-  const hasDraftStatus = computed(() => status.value === ContractStatus.DRAFT)
+  const hasFinalizedStatus = computed(() => saleStatus.value === SaleStatus.FINALIZED)
+  const hasDraftStatus = computed(() => saleStatus.value === SaleStatus.DRAFT)
 
   // Editable = not executed and not voided (like legacy)
   const isEditable = computed(() => !isExecuted.value && !isVoided.value && hasDraftStatus.value)
@@ -88,7 +98,7 @@ export function useContractSession(
   // ==========================================================================
 
   const hasRequiredFields = computed(() => people.hasPurchaser.value && people.hasBeneficiary.value)
-  const hasSignature = computed(() => !!signDate.value)
+  const hasSignature = computed(() => !!dateSigned.value)
 
   // ==========================================================================
   // Can-do checks (like legacy: combines status + validation)
@@ -120,7 +130,7 @@ export function useContractSession(
   // ==========================================================================
 
   // Need to create a computed for status to pass to context
-  const statusComputed = computed(() => status.value)
+  const statusComputed = computed(() => saleStatus.value)
 
   const context: ContractSessionContext = {
     contractId,
@@ -160,19 +170,32 @@ export function useContractSession(
     existingContract,
     (contract) => {
       if (contract) {
+        // Get sale items from primary sale
+        const primarySale = contract.sales?.find((s) => s.saleType === 'contract')
+        const saleItems = primarySale?.items ?? []
+
         // Apply data to handlers
-        items.applyFromServer(contract.items ?? [])
+        items.applyFromServer(saleItems)
         payments.applyFromServer(contract.payments ?? [])
-        people.applyFromServer(contract.purchaser, contract.beneficiary, contract.coBuyers)
+
+        // Get people by role
+        const contractPeople = contract.people ?? []
+        const buyer = getPrimaryBuyer(contractPeople)
+        const beneficiary = getPrimaryBeneficiary(contractPeople)
+        const coBuyers = getCoBuyers(contractPeople)
+
+        people.applyFromServer(buyer, beneficiary, coBuyers)
 
         // Apply metadata
-        contractType.value = contract.type
-        contractDate.value = contract.date
+        needType.value = contract.needType
+        contractDate.value = contract.dateExecuted ?? contract.dateSigned ?? ''
         locationId.value = contract.locationId
 
-        // Apply status directly from server (source of truth)
-        status.value = contract.status
-        signDate.value = contract.signDate
+        // Apply status from primary sale or contract state
+        saleStatus.value = primarySale?.saleStatus ?? SaleStatus.DRAFT
+        dateSigned.value = contract.dateSigned
+        dateExecuted.value = contract.dateExecuted
+        isCancelled.value = contract.isCancelled
       }
     },
     { immediate: true },
@@ -214,26 +237,27 @@ export function useContractSession(
 
   function finalize() {
     if (canFinalize.value) {
-      status.value = ContractStatus.FINALIZED
+      saleStatus.value = SaleStatus.FINALIZED
     }
   }
 
   function execute() {
     if (canExecute.value) {
-      status.value = ContractStatus.EXECUTED
+      saleStatus.value = SaleStatus.EXECUTED
+      dateExecuted.value = new Date().toISOString()
     }
   }
 
   function voidContract(_reason = 'Voided by user') {
     if (canVoid.value) {
-      status.value = ContractStatus.VOID
+      saleStatus.value = SaleStatus.VOID
       // Note: voidReason would be stored separately if needed
     }
   }
 
   function backToDraft() {
     if (canBackToDraft.value) {
-      status.value = ContractStatus.DRAFT
+      saleStatus.value = SaleStatus.DRAFT
     }
   }
 
@@ -250,44 +274,76 @@ export function useContractSession(
     try {
       const peopleData = people.getFormValues()
 
+      // Build form values for API
       const data = {
-        type: contractType.value,
-        status: status.value,
         locationId: locationId.value,
-        date: contractDate.value,
-        purchaser: {
+        prePrintedContractNumber: '',
+        needType: needType.value,
+        dateSigned: contractDate.value || undefined,
+        isConditionalSale: false,
+        notes: '',
+        primaryBuyer: {
           firstName: peopleData.purchaser.firstName,
           lastName: peopleData.purchaser.lastName,
-          middleName: peopleData.purchaser.middleName,
-          phone: peopleData.purchaser.phone,
-          email: peopleData.purchaser.email,
+          middleName: peopleData.purchaser.middleName ?? '',
+          prefix: '',
+          suffix: '',
+          nickname: '',
+          companyName: '',
+          phone: peopleData.purchaser.phone ?? '',
+          email: peopleData.purchaser.email ?? '',
           address: peopleData.purchaser.address,
-          relationship: peopleData.purchaser.relationship,
-          dateOfBirth: peopleData.purchaser.dateOfBirth,
-          dateOfDeath: peopleData.purchaser.dateOfDeath,
-        },
-        beneficiary: {
-          firstName: peopleData.beneficiary.firstName,
-          lastName: peopleData.beneficiary.lastName,
-          middleName: peopleData.beneficiary.middleName,
-          phone: peopleData.beneficiary.phone,
-          email: peopleData.beneficiary.email,
-          address: peopleData.beneficiary.address,
-          relationship: peopleData.beneficiary.relationship,
-          dateOfBirth: peopleData.beneficiary.dateOfBirth,
-          dateOfDeath: peopleData.beneficiary.dateOfDeath,
+          dateOfBirth: peopleData.purchaser.dateOfBirth ?? '',
+          dateOfDeath: peopleData.purchaser.dateOfDeath ?? '',
+          nationalIdentifier: '',
+          driversLicense: '',
+          driversLicenseState: '',
+          isVeteran: false,
+          roles: [ContractPersonRole.PRIMARY_BUYER],
+          addedAfterContractExecution: false,
         },
         coBuyers: peopleData.coBuyers.map((cb) => ({
           firstName: cb.firstName,
           lastName: cb.lastName,
-          middleName: cb.middleName,
-          phone: cb.phone,
-          email: cb.email,
+          middleName: cb.middleName ?? '',
+          prefix: '',
+          suffix: '',
+          nickname: '',
+          companyName: '',
+          phone: cb.phone ?? '',
+          email: cb.email ?? '',
           address: cb.address,
-          relationship: cb.relationship,
-          dateOfBirth: cb.dateOfBirth,
-          dateOfDeath: cb.dateOfDeath,
+          dateOfBirth: cb.dateOfBirth ?? '',
+          dateOfDeath: cb.dateOfDeath ?? '',
+          nationalIdentifier: '',
+          driversLicense: '',
+          driversLicenseState: '',
+          isVeteran: false,
+          roles: [ContractPersonRole.CO_BUYER],
+          addedAfterContractExecution: false,
         })),
+        primaryBeneficiary: {
+          firstName: peopleData.beneficiary.firstName,
+          lastName: peopleData.beneficiary.lastName,
+          middleName: peopleData.beneficiary.middleName ?? '',
+          prefix: '',
+          suffix: '',
+          nickname: '',
+          companyName: '',
+          phone: peopleData.beneficiary.phone ?? '',
+          email: peopleData.beneficiary.email ?? '',
+          address: peopleData.beneficiary.address,
+          dateOfBirth: peopleData.beneficiary.dateOfBirth ?? '',
+          dateOfDeath: peopleData.beneficiary.dateOfDeath ?? '',
+          nationalIdentifier: '',
+          driversLicense: '',
+          driversLicenseState: '',
+          isVeteran: false,
+          roles: [ContractPersonRole.PRIMARY_BENEFICIARY],
+          addedAfterContractExecution: false,
+        },
+        additionalBeneficiaries: [],
+        fundingDetails: [],
       }
 
       const savedContract = await (isNewContract.value
@@ -326,12 +382,14 @@ export function useContractSession(
     items.reset()
     payments.reset()
     people.reset()
-    contractType.value = ContractType.AT_NEED_FUNERAL
+    needType.value = NeedType.AT_NEED
     contractDate.value = new Date().toISOString().split('T')[0] ?? ''
     locationId.value = ''
     saveError.value = null
-    status.value = ContractStatus.DRAFT
-    signDate.value = undefined
+    saleStatus.value = SaleStatus.DRAFT
+    dateSigned.value = undefined
+    dateExecuted.value = undefined
+    isCancelled.value = false
   }
 
   // ==========================================================================
@@ -350,7 +408,7 @@ export function useContractSession(
     saveError,
 
     // Contract metadata
-    contractType,
+    needType,
     contractDate,
     locationId,
 

@@ -2,11 +2,11 @@
  * Contract Handlers - Session composables for contract sub-entities
  */
 
-export { type ItemsHandler, useItemsHandler } from './useItemsHandler'
-export {
-  type PaymentFormData,
-  type PaymentMethod,
-  type PaymentsHandler,
-  usePaymentsHandler,
-} from './usePaymentsHandler'
-export { type PeopleHandler, type PersonFormData, usePeopleHandler } from './usePeopleHandler'
+export { useItemsHandler } from './useItemsHandler'
+export type { ItemsHandler } from './useItemsHandler'
+
+export { usePaymentsHandler } from './usePaymentsHandler'
+export type { PaymentFormData, PaymentsHandler } from './usePaymentsHandler'
+
+export { usePeopleHandler } from './usePeopleHandler'
+export type { PeopleHandler, PersonFormData } from './usePeopleHandler'

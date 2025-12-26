@@ -34,6 +34,8 @@ The app runs at `http://localhost:3000` by default.
 
 Detailed documentation is organized in the [`docs/`](./docs/) folder:
 
+### Application
+
 - **[Architecture](./docs/architecture.md)** - Feature-Sliced Design, project structure, domain composables
 - **[Design System](./docs/design-system.md)** - MD3, wrapper components, Vuetify configuration
 - **[Forms](./docs/forms.md)** - Form patterns, composables, state architecture, full-screen dialogs
@@ -41,7 +43,15 @@ Detailed documentation is organized in the [`docs/`](./docs/) folder:
 - **[Permissions](./docs/permissions.md)** - Route guards, UI-level permission checks, security keys
 - **[Conventions](./docs/conventions.md)** - FSD import rules, naming conventions, state management patterns
 - **[Development](./docs/development.md)** - Setup, commands, key files reference
-- **[Status](./docs/status.md)** - Implementation status and roadmap
+- **[Status](./docs/status.md)** - Implementation status
+- **[Roadmap](./docs/roadmap.md)** - Future development plans and phases
+
+### Backend Integration
+
+- **[Data Models](./docs/data-models.md)** - Backend/frontend field mapping, type alignment
+- **[API Integration](./docs/api-integration.md)** - BFF endpoint patterns, response handling
+- **[Effect TS](./docs/effect-ts.md)** - Typed error handling strategy (future)
+- **[Legacy Patterns](./docs/legacy-patterns.md)** - Reusable patterns from legacy facts-app
 
 ## Project Structure
 

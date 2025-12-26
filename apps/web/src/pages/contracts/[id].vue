@@ -19,11 +19,12 @@
             <h1 class="text-h4 font-weight-semibold">
               {{ contract.contractNumber }}
             </h1>
-            <ContractStatusBadge :status="contract.status" />
+            <ContractStatusBadge :status="primarySaleStatus" />
           </div>
           <p class="text-body-2 text-medium-emphasis">
-            {{ contract.beneficiary.lastName }}, {{ contract.beneficiary.firstName }} ·
-            {{ getContractTypeLabel(contract.type) }}
+            {{ primaryBeneficiary?.lastName ?? 'Unknown' }},
+            {{ primaryBeneficiary?.firstName ?? '' }} ·
+            {{ getNeedTypeLabel(contract.needType) }}
           </p>
         </div>
       </div>
@@ -46,7 +47,7 @@
 
     <!-- Completion Status Banner (if draft) -->
     <v-alert
-      v-if="contract.status === ContractStatus.DRAFT && missingFields.length > 0"
+      v-if="primarySaleStatus === SaleStatus.DRAFT && missingFields.length > 0"
       class="mb-6"
       color="warning"
       icon="mdi-alert-circle-outline"
@@ -73,7 +74,7 @@
         cols="12"
         md="6"
       >
-        <FCard title="Purchaser">
+        <FCard title="Primary Buyer">
           <v-list
             class="bg-transparent"
             density="compact"
@@ -88,11 +89,11 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Name</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ contract.purchaser.firstName }} {{ contract.purchaser.lastName }}
+                {{ primaryBuyer?.firstName ?? '' }} {{ primaryBuyer?.lastName ?? '' }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="contract.purchaser.phone">
+            <v-list-item v-if="primaryBuyer?.phone">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -102,11 +103,11 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Phone</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ formatPhone(contract.purchaser.phone) }}
+                {{ formatPhone(primaryBuyer.phone) }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="contract.purchaser.email">
+            <v-list-item v-if="primaryBuyer?.email">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -116,11 +117,11 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Email</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ contract.purchaser.email }}
+                {{ primaryBuyer.email }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="contract.purchaser.address">
+            <v-list-item v-if="primaryBuyer?.address">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -132,9 +133,9 @@
                 >Address</v-list-item-title
               >
               <v-list-item-subtitle class="text-body-1">
-                {{ contract.purchaser.address.street }}<br />
-                {{ contract.purchaser.address.city }}, {{ contract.purchaser.address.state }}
-                {{ contract.purchaser.address.zip }}
+                {{ primaryBuyer.address.address1 }}<br />
+                {{ primaryBuyer.address.city }}, {{ primaryBuyer.address.state }}
+                {{ primaryBuyer.address.postalCode }}
               </v-list-item-subtitle>
             </v-list-item>
           </v-list>
@@ -145,7 +146,7 @@
         cols="12"
         md="6"
       >
-        <FCard title="Beneficiary">
+        <FCard title="Primary Beneficiary">
           <v-list
             class="bg-transparent"
             density="compact"
@@ -160,11 +161,12 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Name</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ contract.beneficiary.firstName }} {{ contract.beneficiary.lastName }}
+                {{ primaryBeneficiary?.firstName ?? '' }}
+                {{ primaryBeneficiary?.lastName ?? '' }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="contract.beneficiary.dateOfDeath">
+            <v-list-item v-if="primaryBeneficiary?.dateOfDeath">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -176,11 +178,11 @@
                 >Date of Death</v-list-item-title
               >
               <v-list-item-subtitle class="text-body-1">
-                {{ formatDate(contract.beneficiary.dateOfDeath) }}
+                {{ formatDate(primaryBeneficiary.dateOfDeath) }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="contract.beneficiary.dateOfBirth">
+            <v-list-item v-if="primaryBeneficiary?.dateOfBirth">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -192,7 +194,7 @@
                 >Date of Birth</v-list-item-title
               >
               <v-list-item-subtitle class="text-body-1">
-                {{ formatDate(contract.beneficiary.dateOfBirth) }}
+                {{ formatDate(primaryBeneficiary.dateOfBirth) }}
               </v-list-item-subtitle>
             </v-list-item>
           </v-list>
@@ -241,14 +243,14 @@
         cols="12"
         md="6"
       >
-        <FCard :title="`Items (${contract.items?.length || 0})`">
+        <FCard :title="`Items (${allItems.length})`">
           <v-list
-            v-if="contract.items && contract.items.length > 0"
+            v-if="allItems.length > 0"
             class="bg-transparent"
             density="compact"
           >
             <v-list-item
-              v-for="item in contract.items.slice(0, 5)"
+              v-for="item in allItems.slice(0, 5)"
               :key="item.id"
             >
               <v-list-item-title>{{ item.description }}</v-list-item-title>
@@ -256,12 +258,14 @@
                 {{ item.quantity }} × {{ formatCurrency(item.unitPrice) }}
               </v-list-item-subtitle>
               <template #append>
-                <span class="text-body-2">{{ formatCurrency(item.total) }}</span>
+                <span class="text-body-2">
+                  {{ formatCurrency(item.quantity * item.unitPrice) }}
+                </span>
               </template>
             </v-list-item>
-            <v-list-item v-if="contract.items.length > 5">
+            <v-list-item v-if="allItems.length > 5">
               <v-list-item-title class="text-primary">
-                + {{ contract.items.length - 5 }} more items
+                + {{ allItems.length - 5 }} more items
               </v-list-item-title>
             </v-list-item>
           </v-list>
@@ -348,15 +352,15 @@
               cols="12"
               md="3"
             >
-              <div class="text-body-2 text-medium-emphasis">Contract Type</div>
-              <div class="text-body-1">{{ getContractTypeLabel(contract.type) }}</div>
+              <div class="text-body-2 text-medium-emphasis">Need Type</div>
+              <div class="text-body-1">{{ getNeedTypeLabel(contract.needType) }}</div>
             </v-col>
             <v-col
               cols="12"
               md="3"
             >
-              <div class="text-body-2 text-medium-emphasis">Contract Date</div>
-              <div class="text-body-1">{{ formatDate(contract.date) }}</div>
+              <div class="text-body-2 text-medium-emphasis">Date Signed</div>
+              <div class="text-body-1">{{ formatDate(contract.dateSigned) }}</div>
             </v-col>
             <v-col
               cols="12"
@@ -365,7 +369,7 @@
               <div class="text-body-2 text-medium-emphasis">Status</div>
               <ContractStatusBadge
                 class="mt-1"
-                :status="contract.status"
+                :status="primarySaleStatus"
               />
             </v-col>
             <v-col
@@ -421,9 +425,14 @@
   import { useRoute, useRouter } from 'vue-router'
   import {
     contractApi,
-    ContractStatus,
     ContractStatusBadge,
-    getContractTypeLabel,
+    getNeedTypeLabel,
+    getPaymentMethodLabel,
+    getPrimaryBeneficiary,
+    getPrimaryBuyer,
+    type PaymentMethod,
+    SaleStatus,
+    SaleType,
   } from '@/entities/contract'
   import { formatCurrency, formatDate, formatPhone } from '@/shared/lib'
   import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
@@ -452,51 +461,63 @@
     enabled: computed(() => !!contractId.value),
   })
 
+  // Get people from contract
+  const primaryBuyer = computed(() => {
+    if (!contract.value?.people) return null
+    return getPrimaryBuyer(contract.value.people)
+  })
+
+  const primaryBeneficiary = computed(() => {
+    if (!contract.value?.people) return null
+    return getPrimaryBeneficiary(contract.value.people)
+  })
+
+  // Get primary sale status
+  const primarySaleStatus = computed(() => {
+    if (!contract.value?.sales) return SaleStatus.DRAFT
+    const primarySale = contract.value.sales.find((s) => s.saleType === SaleType.CONTRACT)
+    return primarySale?.saleStatus ?? SaleStatus.DRAFT
+  })
+
+  // Get all items from all sales
+  const allItems = computed(() => {
+    if (!contract.value?.sales) return []
+    return contract.value.sales.flatMap((sale) => sale.items ?? [])
+  })
+
   // Compute missing fields for completion indicator
   const missingFields = computed(() => {
     if (!contract.value) return []
     const missing: string[] = []
 
-    if (!contract.value.purchaser.firstName || !contract.value.purchaser.lastName) {
-      missing.push('Purchaser name')
+    if (!primaryBuyer.value?.firstName || !primaryBuyer.value?.lastName) {
+      missing.push('Buyer name')
     }
-    if (!contract.value.purchaser.phone) {
-      missing.push('Purchaser phone')
+    if (!primaryBuyer.value?.phone) {
+      missing.push('Buyer phone')
     }
-    if (!contract.value.beneficiary.firstName || !contract.value.beneficiary.lastName) {
+    if (!primaryBeneficiary.value?.firstName || !primaryBeneficiary.value?.lastName) {
       missing.push('Beneficiary name')
     }
-    if (!contract.value.items || contract.value.items.length === 0) {
+    if (allItems.value.length === 0) {
       missing.push('Items')
     }
 
     return missing
   })
 
-  // Payment method helpers
-  const paymentMethodLabels: Record<string, string> = {
-    cash: 'Cash',
-    check: 'Check',
-    credit_card: 'Credit Card',
-    insurance: 'Insurance',
-    financing: 'Financing',
-    other: 'Other',
-  }
-
-  const paymentMethodIcons: Record<string, string> = {
+  // Payment method icon mapping
+  const paymentMethodIcons: Record<PaymentMethod, string> = {
     cash: 'mdi-cash',
     check: 'mdi-checkbook',
     credit_card: 'mdi-credit-card',
+    ach: 'mdi-bank-transfer',
     insurance: 'mdi-shield-check',
     financing: 'mdi-bank',
     other: 'mdi-cash-multiple',
   }
 
-  function getPaymentMethodLabel(method: string): string {
-    return paymentMethodLabels[method] || method
-  }
-
-  function getPaymentIcon(method: string): string {
+  function getPaymentIcon(method: PaymentMethod): string {
     return paymentMethodIcons[method] || 'mdi-cash'
   }
 </script>
