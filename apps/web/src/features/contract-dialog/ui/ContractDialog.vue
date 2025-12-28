@@ -298,8 +298,8 @@
       grandTotal: fin.grandTotal,
       amountPaid: fin.amountPaid,
       balanceDue: fin.balanceDue,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      dateCreated: new Date().toISOString(),
+      dateLastModified: new Date().toISOString(),
     }
   })
 

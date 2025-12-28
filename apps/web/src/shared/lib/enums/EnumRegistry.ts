@@ -45,17 +45,14 @@ export const enumRegistry = new EnumRegistry()
 export function debugEnums(): void {
   const controllers = enumRegistry.getAll()
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.group('📋 Registered Enum Controllers')
-    controllers.forEach((controller, index) => {
-      // eslint-disable-next-line no-console
+    for (const [index, controller] of controllers.entries()) {
       console.log(`${index + 1}. ${controller.constructor.name}`, {
         choices: controller.choices.length,
         values: controller.choices.map((c) => `${c.id}:${c.name}`),
       })
-    })
-    // eslint-disable-next-line no-console
+    }
+
     console.groupEnd()
   }
 }
-

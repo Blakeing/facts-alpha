@@ -33,7 +33,7 @@ import type {
 import { type ApiError, NotFoundError, toApiError } from '@facts/effect'
 import { Effect } from 'effect'
 import { apiUrls, getHttpClient } from '@/shared/api'
-import { SaleType } from '../model/contract'
+import { SaleStatus, SaleType } from '../model/contract'
 import {
   contractToListing,
   formPersonToPerson,
@@ -222,7 +222,7 @@ export const ContractApi = {
             saleNumber,
             saleDate: data.dateSigned || now,
             saleType: SaleType.CONTRACT,
-            saleStatus: 'draft',
+            saleStatus: SaleStatus.DRAFT,
             accountingPeriod: new Date(now).toISOString().split('T')[0],
             memo: '',
             subtotal: 0,
