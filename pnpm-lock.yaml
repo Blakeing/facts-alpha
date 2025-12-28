@@ -142,6 +142,9 @@ importers:
       '@types/node':
         specifier: ^22.9.0
         version: 22.19.3
+      axios:
+        specifier: ^1.7.0
+        version: 1.13.2
       oxlint:
         specifier: ^1.34.0
         version: 1.34.0

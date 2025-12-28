@@ -15,15 +15,9 @@
  * ```
  */
 
-// Type-only import - axios is a peer dependency in consuming apps
-type AxiosError = {
-  isAxiosError: boolean
-  response?: {
-    status?: number
-    data?: unknown
-  }
-  message?: string
-}
+// Axios is a peer dependency in consuming apps
+// We import axios for the isAxiosError utility function
+import axios from 'axios'
 import {
   ValidationError,
   NotFoundError,
@@ -60,26 +54,46 @@ import {
  * ```
  */
 export function toApiError(error: unknown, resourceName?: string, id?: string): ApiError {
-  // Check if it's an Axios error
-  if (isAxiosError(error)) {
-    const status = error.response?.status
+  // Check if request was cancelled (using Axios's built-in utility)
+  if (axios.isCancel(error)) {
+    return new NetworkError({
+      message: 'Request was cancelled',
+      cause: error,
+    })
+  }
+
+  // Check if it's an Axios error using Axios's built-in utility
+  if (axios.isAxiosError(error)) {
+    // Network errors (timeout, connection refused, no response, etc.)
+    if (!error.response) {
+      const message =
+        error.code === 'ECONNABORTED'
+          ? 'Request timed out'
+          : error.message || 'Network request failed'
+      return new NetworkError({
+        message,
+        cause: error,
+      })
+    }
+
+    // We have a response, extract common properties once
+    const { status, statusText, data } = error.response
 
     // 400 Bad Request - Validation errors
     if (status === 400) {
-      const data = error.response?.data
       const fields = extractValidationFields(data)
       return new ValidationError({ fields })
     }
 
     // 401 Unauthorized
     if (status === 401) {
-      const message = extractErrorMessage(error.response?.data) || 'Authentication required'
+      const message = extractErrorMessage(data) || statusText || 'Authentication required'
       return new UnauthorizedError({ message })
     }
 
     // 403 Forbidden
     if (status === 403) {
-      const permission = extractErrorMessage(error.response?.data) || 'Unknown permission'
+      const permission = extractErrorMessage(data) || statusText || 'Unknown permission'
       return new ForbiddenError({ permission })
     }
 
@@ -92,22 +106,13 @@ export function toApiError(error: unknown, resourceName?: string, id?: string): 
     }
 
     // 5xx Server Errors
-    if (status && status >= 500) {
-      const message = extractErrorMessage(error.response?.data) || 'Server error'
+    if (status >= 500) {
+      const message = extractErrorMessage(data) || statusText || 'Server error'
       return new ServerError({
         message,
         statusCode: status,
       })
     }
-  }
-
-  // Network errors (timeout, connection refused, no response, etc.)
-  if (isAxiosError(error) && !error.response) {
-    const message = error.message || 'Network request failed'
-    return new NetworkError({
-      message,
-      cause: error,
-    })
   }
 
   // Fallback for unknown errors
@@ -172,17 +177,4 @@ function extractErrorMessage(data: unknown): string | undefined {
   }
 
   return undefined
-}
-
-/**
- * Type guard for Axios errors
- */
-function isAxiosError(error: unknown): error is AxiosError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'isAxiosError' in error &&
-    typeof (error as { isAxiosError?: unknown }).isAxiosError === 'boolean' &&
-    (error as { isAxiosError: boolean }).isAxiosError === true
-  )
 }
