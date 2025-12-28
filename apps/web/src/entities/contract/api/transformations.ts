@@ -33,19 +33,40 @@ export function generateId(): string {
 // Contract Number Generation
 // =============================================================================
 
-// In-memory counter for sequential contract numbers (reset on page reload)
-// TODO: Replace with actual backend logic when connecting to BFF
-let contractCounter = 1000
-
 /**
  * Generate a contract number based on need type
  * Format: AN-YYYY-XXXX (At-Need) or PN-YYYY-XXXX (Pre-Need)
+ *
+ * This function checks existing contracts to find the next available sequence number,
+ * preventing duplicates even after page reloads.
+ *
+ * @param needType - The need type (at_need or pre_need)
+ * @param existingContracts - Array of existing contracts to check for sequence numbers
+ * @returns A unique contract number
  */
-export function generateContractNumber(needType: NeedType): string {
+export function generateContractNumber(
+  needType: NeedType,
+  existingContracts: Contract[] = [],
+): string {
   const year = new Date().getFullYear()
-  const sequence = String(contractCounter++).padStart(4, '0')
   const prefix = needType === 'at_need' ? 'AN' : 'PN'
-  return `${prefix}-${year}-${sequence}`
+  const pattern = new RegExp(String.raw`^${prefix}-${year}-(\d{4})$`)
+
+  // Find all contract numbers matching this year and need type
+  const matchingNumbers = existingContracts
+    .map((c) => c.contractNumber)
+    .filter((num) => pattern.test(num))
+    .map((num): number => {
+      if (!num) return 0
+      const match = num.match(pattern)
+      return match && match[1] ? Number.parseInt(match[1], 10) : 0
+    })
+
+  // Find the highest sequence number, or start at 1000 if none exist
+  const maxSequence = matchingNumbers.length > 0 ? Math.max(...matchingNumbers) : 999
+  const nextSequence = maxSequence + 1
+
+  return `${prefix}-${year}-${String(nextSequence).padStart(4, '0')}`
 }
 
 // =============================================================================
@@ -132,4 +153,3 @@ export function contractToListing(
     balanceDue: contract.balanceDue,
   }
 }
-

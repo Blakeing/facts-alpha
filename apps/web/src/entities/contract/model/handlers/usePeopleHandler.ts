@@ -58,7 +58,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
   const beneficiary = ref<ContractPerson>(createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY))
   const coBuyers = ref<ContractPerson[]>([])
   const isDirty = ref(false)
-  
+
   // Track original person IDs from server to distinguish new vs modified
   const originalPersonIds = ref<Set<string>>(new Set())
 
@@ -283,15 +283,16 @@ export function usePeopleHandler(context: ContractSessionContext) {
       ? { ...serverBeneficiary }
       : createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY)
     coBuyers.value = (serverCoBuyers ?? []).map((c) => ({ ...c }))
-    
+
     // Track original IDs to identify new vs modified people on save
     originalPersonIds.value = new Set()
     if (serverPurchaser?.id) originalPersonIds.value.add(serverPurchaser.id)
     if (serverBeneficiary?.id) originalPersonIds.value.add(serverBeneficiary.id)
-    serverCoBuyers?.forEach((c) => {
-      if (c.id) originalPersonIds.value.add(c.id)
-    })
-    
+    if (serverCoBuyers)
+      for (const c of serverCoBuyers) {
+        if (c.id) originalPersonIds.value.add(c.id)
+      }
+
     isDirty.value = false
   }
 

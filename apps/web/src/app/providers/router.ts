@@ -40,13 +40,17 @@ function validateRoutePermissions(
 
   // Check single permission requirement
   if (meta.permissions && !userContext.userCanWithRequirement(meta.permissions)) {
-      return false
-    }
+    return false
+  }
 
   // Check multiple permission options (need at least one)
-  if (meta.permissionsAny && meta.permissionsAny.length > 0 && !userContext.userCanWithAnyRequirement(meta.permissionsAny)) {
-      return false
-    }
+  if (
+    meta.permissionsAny &&
+    meta.permissionsAny.length > 0 &&
+    !userContext.userCanWithAnyRequirement(meta.permissionsAny)
+  ) {
+    return false
+  }
 
   return true
 }
@@ -64,6 +68,12 @@ function validateRoutePermissions(
  */
 router.beforeEach((to, _from) => {
   const userContext = useUserContextStore()
+
+  // Initialize mock user if not already initialized (development only)
+  // This ensures permissions are available before route guards run
+  if (!userContext.userPermissions && !userContext.currentUser) {
+    userContext.initMockUser()
+  }
 
   // Skip permission check for anonymous routes
   if (to.meta.allowAnonymous) {

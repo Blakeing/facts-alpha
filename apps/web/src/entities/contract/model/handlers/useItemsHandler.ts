@@ -72,14 +72,14 @@ export function useItemsHandler(context: ContractSessionContext) {
 
   const taxTotal = computed(() =>
     activeItems.value.reduce(
-      (sum, item) => sum + item.salesTax.reduce((t, tax) => t + tax.taxAmount, 0),
+      (sum, item) => sum + (item.salesTax?.reduce((t, tax) => t + tax.taxAmount, 0) ?? 0),
       0,
     ),
   )
 
   const discountTotal = computed(() =>
     activeItems.value.reduce(
-      (sum, item) => sum + item.discounts.reduce((d, disc) => d + disc.amount, 0),
+      (sum, item) => sum + (item.discounts?.reduce((d, disc) => d + disc.amount, 0) ?? 0),
       0,
     ),
   )
@@ -250,6 +250,11 @@ export function useItemsHandler(context: ContractSessionContext) {
     const item = items.value.find((i) => i.id === itemId)
     if (!item) return false
 
+    // Ensure discounts array exists
+    if (!item.discounts) {
+      item.discounts = []
+    }
+
     item.discounts.push({
       id: crypto.randomUUID(),
       saleItemId: itemId,
@@ -268,7 +273,7 @@ export function useItemsHandler(context: ContractSessionContext) {
     if (!context.isEditable.value) return false
 
     const item = items.value.find((i) => i.id === itemId)
-    if (!item) return false
+    if (!item || !item.discounts) return false
 
     const index = item.discounts.findIndex((d) => d.id === discountId)
     if (index === -1) return false
@@ -309,7 +314,7 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Recalculate item tax
    */
   function recalculateItemTax(item: SaleItem) {
-    if (!item.salesTaxEnabled || item.salesTax.length === 0) return
+    if (!item.salesTaxEnabled || !item.salesTax || item.salesTax.length === 0) return
 
     const baseAmount = item.quantity * item.unitPrice
     for (const tax of item.salesTax) {
@@ -334,7 +339,13 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Apply items from server data
    */
   function applyFromServer(serverItems: SaleItem[]) {
-    items.value = serverItems.map((item) => ({ ...item }))
+    items.value = serverItems.map((item) => ({
+      ...item,
+      // Ensure arrays are initialized if missing from server data
+      salesTax: item.salesTax ?? [],
+      discounts: item.discounts ?? [],
+      trust: item.trust ?? [],
+    }))
     // Track original IDs to identify new vs modified items on save
     originalItemIds.value = new Set(serverItems.map((item) => item.id))
     isDirty.value = false

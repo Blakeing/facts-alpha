@@ -611,14 +611,27 @@ export function useContractSession(
       const primarySale = await ensurePrimarySale(savedContract)
 
       if (primarySale) {
-        // 4. Persist new items and payments
+        // 4. Update sale status if it has changed
+        if (primarySale.saleStatus !== saleStatus.value) {
+          try {
+            await runEffect(
+              ContractApi.updateSale(savedContract.id, primarySale.id, {
+                saleStatus: saleStatus.value,
+              }),
+            )
+          } catch {
+            // Failed to update sale status - continue with other saves
+          }
+        }
+
+        // 5. Persist new items and payments
         await persistNewItems(savedContract.id, primarySale.id)
         await persistNewPayments(savedContract.id)
 
-        // 5. Persist people changes
+        // 6. Persist people changes
         await persistPeopleChanges(savedContract.id)
 
-        // 6. Refetch contract to get updated items/payments from server
+        // 7. Refetch contract to get updated items/payments/status from server
         const updatedContract = await runEffect(ContractApi.get(savedContract.id))
 
         // Update handlers with fresh server data
@@ -630,11 +643,14 @@ export function useContractSession(
           items.setSaleContext(updatedPrimarySale.id, updatedContract.needType)
           items.applyFromServer(updatedPrimarySale.items ?? [])
           payments.applyFromServer(updatedContract.payments ?? [])
+
+          // Sync status from server (in case it was updated)
+          saleStatus.value = updatedPrimarySale.saleStatus ?? SaleStatus.DRAFT
         }
       }
       // If no primary sale found, items/payments won't be saved
 
-      // 6. Mark all handlers as clean
+      // 8. Mark all handlers as clean
       items.markClean()
       payments.markClean()
       people.markClean()

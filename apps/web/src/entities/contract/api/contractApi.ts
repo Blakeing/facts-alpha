@@ -146,10 +146,16 @@ export const ContractApi = {
       const now = new Date().toISOString()
       const contractId = generateId()
 
+      // Fetch existing contracts to generate unique contract number
+      const existingContractsRes = yield* Effect.tryPromise({
+        try: () => client.get<Contract[]>(apiUrls.contracts.listing),
+        catch: (error: unknown) => toApiError(error, 'contract'),
+      })
+
       // 1. Build flat contract payload (no nested people)
       const contractPayload = {
         id: contractId,
-        contractNumber: generateContractNumber(data.needType),
+        contractNumber: generateContractNumber(data.needType, existingContractsRes.data),
         prePrintedContractNumber: data.prePrintedContractNumber || '',
         locationId: data.locationId,
         needType: data.needType,
