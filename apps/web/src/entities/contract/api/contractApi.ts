@@ -178,8 +178,8 @@ export const ContractApi = {
         grandTotal: 0,
         amountPaid: 0,
         balanceDue: 0,
-        createdAt: now,
-        updatedAt: now,
+        dateCreated: now,
+        dateLastModified: now,
       }
 
       // 2. POST contract
@@ -229,8 +229,8 @@ export const ContractApi = {
             taxTotal: 0,
             discountTotal: 0,
             grandTotal: 0,
-            createdAt: now,
-            updatedAt: now,
+            dateCreated: now,
+            dateLastModified: now,
           }),
         catch: (error: unknown) => toApiError(error, 'sale'),
       })
@@ -243,8 +243,8 @@ export const ContractApi = {
               id: generateId(),
               contractId,
               ...data.financing,
-              createdAt: now,
-              updatedAt: now,
+              dateCreated: now,
+              dateLastModified: now,
             }),
           catch: (error: unknown) => toApiError(error, 'financing'),
         })
@@ -314,7 +314,7 @@ export const ContractApi = {
           isConditionalSale: data.isConditionalSale,
         }),
         ...(data.notes !== undefined && data.notes !== '' && { notes: data.notes }),
-        updatedAt: now,
+        dateLastModified: now,
       }
 
       // Update contract with complete payload
@@ -459,7 +459,7 @@ export const ContractApi = {
         ...data,
         id: saleId, // Ensure ID is preserved
         contractId, // Ensure contractId is preserved
-        updatedAt: new Date().toISOString(),
+        dateLastModified: new Date().toISOString(),
       }
       const response = yield* Effect.tryPromise({
         try: () => client.put<Sale>(apiUrls.contracts.sales.update(contractId, saleId), mergedData),
@@ -513,7 +513,7 @@ export const ContractApi = {
         ...data,
         id: itemId, // Ensure ID is preserved
         saleId, // Ensure saleId is preserved
-        updatedAt: new Date().toISOString(),
+        dateLastModified: new Date().toISOString(),
       }
       const response = yield* Effect.tryPromise({
         try: () => client.put<SaleItem>(apiUrls.sales.items.update(saleId, itemId), mergedData),
@@ -585,7 +585,7 @@ export const ContractApi = {
         ...data,
         id: paymentId, // Ensure ID is preserved
         contractId, // Ensure contractId is preserved
-        updatedAt: new Date().toISOString(),
+        dateLastModified: new Date().toISOString(),
       }
       const response = yield* Effect.tryPromise({
         try: () =>
@@ -655,7 +655,7 @@ export const ContractApi = {
         ...data,
         id: personId, // Ensure ID is preserved
         contractId, // Ensure contractId is preserved
-        updatedAt: new Date().toISOString(),
+        dateLastModified: new Date().toISOString(),
       }
       const response = yield* Effect.tryPromise({
         try: () =>

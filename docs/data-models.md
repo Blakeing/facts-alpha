@@ -5,10 +5,16 @@ This document maps backend C# models to frontend TypeScript types to ensure mock
 ## Design Principles
 
 1. **Mock Data = Production Shape**: Mock data should have the same structure as backend responses
-2. **Frontend Conventions**: Use camelCase for property names (backend uses PascalCase/snake_case)
-3. **ID Format**: Backend uses `long` (numeric), frontend uses `string` for consistency
-4. **Date Format**: Backend uses `DateTime`, frontend uses ISO 8601 strings
-5. **Enums**: Backend uses numeric enums, frontend uses string literals for readability
+2. **BFF Handles Conversion**: The BFF automatically converts:
+   - `long` IDs → `string` (via `LongToStringConverter`)
+   - `PascalCase` → `camelCase` (via `CamelCaseNamingStrategy`)
+   - Field names: `DateCreated` → `dateCreated`, `DateLastModified` → `dateLastModified`
+3. **Frontend Matches BFF**: Facts Alpha uses the exact format the BFF sends:
+   - String IDs (BFF converts from backend `long`)
+   - camelCase field names (BFF converts from backend `PascalCase`)
+   - Numeric enums (BFF sends C# enum values directly)
+   - ISO 8601 date strings (BFF converts from `DateTime`)
+4. **No Mapping Layer**: Since BFF format = Frontend format, no conversion is needed
 
 ## Location Entity
 
@@ -91,7 +97,7 @@ public enum LocationType {
 | `Phone`                   | `phone`                                     |                                           |
 | `Website`                 | `website`                                   |                                           |
 | `Email`                   | `email`                                     |                                           |
-| `Type` (enum 0,1,2)       | `type` ('funeral'\|'cemetery'\|'corporate') | Map numeric to string                     |
+| `Type` (enum 0,1,2)       | `type` (LocationType enum: FUNERAL=0, CEMETERY=1, CORPORATE=2) | BFF sends numeric, frontend uses numeric enum |
 | `Active`                  | `active`                                    |                                           |
 | `IntercompanyGLAccountId` | `intercompanyGlAccountId`                   | **Add to frontend**                       |
 | `AccountingPeriod`        | `accountingPeriod`                          | **Add to frontend** (ISO string)          |

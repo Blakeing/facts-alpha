@@ -79,13 +79,6 @@ export {
   getContractPersonDisplayName,
   getPrimaryBeneficiary,
   getPrimaryBuyer,
-  // Backend conversion helpers
-  needTypeFromBackend,
-  needTypeToBackend,
-  saleStatusFromBackend,
-  saleStatusToBackend,
-  saleTypeFromBackend,
-  saleTypeToBackend,
 } from './contract'
 
 // =============================================================================

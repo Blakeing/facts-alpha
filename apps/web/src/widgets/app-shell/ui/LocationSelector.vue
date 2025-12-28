@@ -50,9 +50,8 @@
 </template>
 
 <script lang="ts" setup>
-  import type { LocationType } from '@/entities/location'
   import { computed } from 'vue'
-  import { getLocationTypeColor } from '@/entities/location'
+  import { getLocationTypeColor, LocationType } from '@/entities/location'
   import { useUserContextStore } from '@/stores'
 
   const userContext = useUserContextStore()
@@ -70,13 +69,13 @@
 
   function getLocationIcon(type: LocationType): string {
     switch (type) {
-      case 'funeral': {
+      case LocationType.FUNERAL: {
         return 'mdi-home-city'
       }
-      case 'cemetery': {
+      case LocationType.CEMETERY: {
         return 'mdi-grave-stone'
       }
-      case 'corporate': {
+      case LocationType.CORPORATE: {
         return 'mdi-office-building'
       }
       default: {

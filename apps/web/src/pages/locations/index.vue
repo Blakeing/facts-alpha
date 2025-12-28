@@ -96,7 +96,7 @@
   import {
     LocationApi,
     type LocationListing,
-    type LocationType,
+    LocationType,
     LocationTypeBadge,
     useLocations,
   } from '@/entities/location'
@@ -138,22 +138,22 @@
 
   const typeFilters = computed(() => [
     {
-      value: 'funeral' as LocationType,
+      value: LocationType.FUNERAL,
       label: 'Funeral',
       color: 'primary',
-      count: list.locationsByType.value.funeral.length,
+      count: list.locationsByType.value[LocationType.FUNERAL].length,
     },
     {
-      value: 'cemetery' as LocationType,
+      value: LocationType.CEMETERY,
       label: 'Cemetery',
       color: 'success',
-      count: list.locationsByType.value.cemetery.length,
+      count: list.locationsByType.value[LocationType.CEMETERY].length,
     },
     {
-      value: 'corporate' as LocationType,
+      value: LocationType.CORPORATE,
       label: 'Corporate',
       color: 'info',
-      count: list.locationsByType.value.corporate.length,
+      count: list.locationsByType.value[LocationType.CORPORATE].length,
     },
   ])
 

@@ -6,13 +6,14 @@
  */
 
 import { z } from 'zod'
+import { LocationLicenseType, LocationType } from './location'
 
 // License schema
 export const locationLicenseSchema = z.object({
   id: z.string().optional(),
   locationId: z.string().optional(),
   licenseNumber: z.string().min(1, 'License number is required'),
-  licenseType: z.enum(['establishment', 'trust', 'insurance', 'coupon_book_id']),
+  licenseType: z.nativeEnum(LocationLicenseType),
 })
 
 // GL Account mapping schema (placeholder for future)
@@ -26,7 +27,7 @@ export const locationGLAccountMapSchema = z.object({
 export const locationFormSchema = z.object({
   identifier: z.string().min(1, 'Location ID is required').max(25, 'Max 25 characters'),
   name: z.string().min(1, 'Location name is required').max(255, 'Max 255 characters'),
-  type: z.enum(['funeral', 'cemetery', 'corporate']),
+  type: z.nativeEnum(LocationType),
   active: z.boolean(),
 
   // Physical address
@@ -94,7 +95,7 @@ export function getDefaultLocationFormValues(): LocationFormValues {
   return {
     identifier: '',
     name: '',
-    type: 'funeral',
+    type: LocationType.FUNERAL,
     active: true,
 
     // Physical address
@@ -145,6 +146,6 @@ export function getDefaultLicenseFormValues(): LocationLicenseFormValues {
     id: '',
     locationId: '',
     licenseNumber: '',
-    licenseType: 'establishment',
+    licenseType: LocationLicenseType.ESTABLISHMENT,
   }
 }

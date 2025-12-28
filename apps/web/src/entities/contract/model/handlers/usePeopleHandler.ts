@@ -32,8 +32,8 @@ function createEmptyPerson(role: ContractPersonRole = ContractPersonRole.PERSON)
     addedAfterContractExecution: false,
     firstName: '',
     lastName: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    dateCreated: new Date().toISOString(),
+    dateLastModified: new Date().toISOString(),
   }
 }
 
@@ -95,7 +95,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
     if (!context.isEditable.value) return
 
     Object.assign(purchaser.value, data)
-    purchaser.value.updatedAt = new Date().toISOString()
+    purchaser.value.dateLastModified = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -109,7 +109,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
       purchaser.value.address = createEmptyAddress()
     }
     Object.assign(purchaser.value.address, data)
-    purchaser.value.updatedAt = new Date().toISOString()
+    purchaser.value.dateLastModified = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -134,7 +134,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
     if (!context.isEditable.value) return
 
     Object.assign(beneficiary.value, data)
-    beneficiary.value.updatedAt = new Date().toISOString()
+    beneficiary.value.dateLastModified = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -148,7 +148,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
       beneficiary.value.address = createEmptyAddress()
     }
     Object.assign(beneficiary.value.address, data)
-    beneficiary.value.updatedAt = new Date().toISOString()
+    beneficiary.value.dateLastModified = new Date().toISOString()
     isDirty.value = true
   }
 
@@ -173,7 +173,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
       id: beneficiary.value.id, // Keep beneficiary ID
       nameId: beneficiary.value.nameId,
       roles: [ContractPersonRole.PRIMARY_BENEFICIARY],
-      updatedAt: new Date().toISOString(),
+      dateLastModified: new Date().toISOString(),
     }
     isDirty.value = true
   }
@@ -201,8 +201,8 @@ export function usePeopleHandler(context: ContractSessionContext) {
       address: data?.address,
       dateOfBirth: data?.dateOfBirth,
       dateOfDeath: data?.dateOfDeath,
-      createdAt: now,
-      updatedAt: now,
+      dateCreated: now,
+      dateLastModified: now,
     }
 
     coBuyers.value.push(newCoBuyer)
@@ -234,7 +234,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
     if (!coBuyer) return false
 
     Object.assign(coBuyer, data)
-    coBuyer.updatedAt = new Date().toISOString()
+    coBuyer.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -252,7 +252,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
       coBuyer.address = createEmptyAddress()
     }
     Object.assign(coBuyer.address, data)
-    coBuyer.updatedAt = new Date().toISOString()
+    coBuyer.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }

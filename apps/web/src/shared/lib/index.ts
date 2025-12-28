@@ -6,4 +6,6 @@
 
 export * from './composables'
 export * from './security'
+export * from './entity'
+export * from './enums'
 export * from '@facts/utils'

@@ -377,14 +377,14 @@
               md="3"
             >
               <div class="text-body-2 text-medium-emphasis">Created</div>
-              <div class="text-body-1">{{ formatDate(contract.createdAt) }}</div>
+              <div class="text-body-1">{{ formatDate(contract.dateCreated) }}</div>
             </v-col>
             <v-col
               cols="12"
               md="3"
             >
               <div class="text-body-2 text-medium-emphasis">Last Updated</div>
-              <div class="text-body-1">{{ formatDate(contract.updatedAt) }}</div>
+              <div class="text-body-1">{{ formatDate(contract.dateLastModified) }}</div>
             </v-col>
           </v-row>
         </FCard>

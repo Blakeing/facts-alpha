@@ -535,20 +535,25 @@ connection.on('LocationChanged', (event: EntityChangeEvent<Location>) => {
 
 When connecting to real API:
 
-- [ ] Configure environment variables for API URL
-- [ ] Implement auth service with OIDC
-- [ ] Add request interceptor for auth headers
-- [ ] Replace mock API calls with real HTTP requests
-- [ ] Add enum conversion (backend numeric → frontend string)
-- [ ] Add date handling (backend DateTime → frontend ISO string)
+- [x] Configure environment variables for API URL
+- [x] Implement auth service with OIDC
+- [x] Add request interceptor for auth headers
+- [x] Replace mock API calls with real HTTP requests
+- [x] ~~Add enum conversion (backend numeric → frontend string)~~ **REMOVED** - Frontend now uses numeric enums matching backend
+- [x] ~~Add date handling (backend DateTime → frontend ISO string)~~ **HANDLED BY BFF** - BFF sends ISO strings
+- [x] ~~Add ID conversion (backend long → frontend string)~~ **HANDLED BY BFF** - BFF sends string IDs
+- [x] ~~Add field name conversion~~ **HANDLED BY BFF** - BFF sends camelCase field names
 - [ ] Implement error handling middleware
 - [ ] Add SignalR connection for real-time updates
 - [ ] Test permission-gated endpoints
 - [ ] Verify location-scoped data filtering
+
+**Note:** The frontend now matches the BFF format exactly. No conversion layer is needed. See [BFF Alignment Refactor](./bff-alignment-refactor.md) for details.
 
 ## See Also
 
 - [Data Models](./data-models.md) - Field mapping between backend and frontend
 - [Legacy Patterns](./legacy-patterns.md) - Patterns from legacy app
 - [Effect TS](./effect-ts.md) - Typed error handling strategy
+- [BFF Alignment Refactor](./bff-alignment-refactor.md) - Complete overview of BFF format alignment
 

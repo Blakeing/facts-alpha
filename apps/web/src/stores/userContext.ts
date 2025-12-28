@@ -10,7 +10,7 @@
 import { runEffect } from '@facts/effect'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { LocationApi, type LocationListing, type LocationType } from '@/entities/location'
+import { LocationApi, type LocationListing, LocationType } from '@/entities/location'
 import {
   type GrantedPermission,
   PermissionLevel,
@@ -92,7 +92,7 @@ export const useUserContextStore = defineStore('userContext', () => {
 
   // Only show active, non-corporate locations for selection
   const selectableLocations = computed(() =>
-    availableLocations.value.filter((l) => l.type !== 'corporate'),
+    availableLocations.value.filter((l) => l.type !== LocationType.CORPORATE),
   )
 
   // ============================================================

@@ -2,13 +2,11 @@
  * useLocations - List composable for locations with Effect-based error handling
  */
 
-import type { LocationListing, LocationType } from './location'
 import { errorMessage, handleError, runEffectQuery } from '@facts/effect'
-
 import { useQuery } from '@tanstack/vue-query'
-
 import { computed, ref } from 'vue'
 import { LocationApi } from '../api'
+import { type LocationListing, LocationType } from './location'
 
 export const LOCATIONS_QUERY_KEY = ['locations'] as const
 
@@ -65,9 +63,9 @@ export function useLocations() {
   // Group by type for counts
   const locationsByType = computed(() => {
     const grouped: Record<LocationType, LocationListing[]> = {
-      funeral: [],
-      cemetery: [],
-      corporate: [],
+      [LocationType.FUNERAL]: [],
+      [LocationType.CEMETERY]: [],
+      [LocationType.CORPORATE]: [],
     }
 
     for (const location of locations.value) {
@@ -80,9 +78,9 @@ export function useLocations() {
   // Summary stats
   const stats = computed(() => ({
     total: locations.value.length,
-    funeral: locationsByType.value.funeral.length,
-    cemetery: locationsByType.value.cemetery.length,
-    corporate: locationsByType.value.corporate.length,
+    funeral: locationsByType.value[LocationType.FUNERAL].length,
+    cemetery: locationsByType.value[LocationType.CEMETERY].length,
+    corporate: locationsByType.value[LocationType.CORPORATE].length,
     active: locations.value.filter((l) => l.active).length,
     inactive: locations.value.filter((l) => !l.active).length,
   }))

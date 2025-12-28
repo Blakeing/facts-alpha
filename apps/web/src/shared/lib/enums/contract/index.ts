@@ -1,0 +1,26 @@
+// Import all controllers (triggers registration)
+import './saleStatus'
+import './needType'
+import './saleType'
+import './saleAdjustmentType'
+import './contractPersonRole'
+import './atNeedType'
+import './preNeedFundingType'
+import './financingStatus'
+import './lateFeeType'
+import './itemType'
+import './paymentMethod'
+
+// Re-export controllers
+export { saleStatusController } from './saleStatus'
+export { needTypeController } from './needType'
+export { saleTypeController } from './saleType'
+export { saleAdjustmentTypeController } from './saleAdjustmentType'
+export { contractPersonRoleController } from './contractPersonRole'
+export { atNeedTypeController } from './atNeedType'
+export { preNeedFundingTypeController } from './preNeedFundingType'
+export { financingStatusController } from './financingStatus'
+export { lateFeeTypeController } from './lateFeeType'
+export { itemTypeController } from './itemType'
+export { paymentMethodController } from './paymentMethod'
+

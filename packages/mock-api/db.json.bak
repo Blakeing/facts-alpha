@@ -85,20 +85,20 @@
           "id": "lic-003",
           "locationId": "loc-002",
           "licenseNumber": "CEM-2024-009876",
-          "licenseType": 1
+          "licenseType": "establishment"
         }
       ],
       "taxId": "98-7654321",
       "timezone": "America/Los_Angeles",
       "contractDisplayName": "Peaceful Valley",
-      "dateCreated": "2023-06-01T08:00:00Z",
-      "dateLastModified": "2024-03-15T11:45:00Z"
+      "createdAt": "2023-06-01T08:00:00Z",
+      "updatedAt": "2024-03-15T11:45:00Z"
     },
     {
       "id": "loc-003",
       "identifier": "FH002",
       "name": "Sunrise Chapel & Crematory",
-      "type": 0,
+      "type": "funeral",
       "active": true,
       "address1": "789 Sunrise Boulevard",
       "address2": "",
@@ -129,26 +129,26 @@
           "id": "lic-004",
           "locationId": "loc-003",
           "licenseNumber": "FH-2024-002345",
-          "licenseType": 1
+          "licenseType": "establishment"
         },
         {
           "id": "lic-005",
           "locationId": "loc-003",
           "licenseNumber": "TR-2024-003456",
-          "licenseType": 2
+          "licenseType": "trust"
         }
       ],
       "taxId": "45-6789012",
       "timezone": "America/Phoenix",
       "contractDisplayName": "Sunrise Chapel",
-      "dateCreated": "2024-02-20T09:30:00Z",
-      "dateLastModified": "2024-07-10T16:20:00Z"
+      "createdAt": "2024-02-20T09:30:00Z",
+      "updatedAt": "2024-07-10T16:20:00Z"
     },
     {
       "id": "loc-004",
       "identifier": "CORP01",
       "name": "Memorial Services Corporate Office",
-      "type": 2,
+      "type": "corporate",
       "active": true,
       "address1": "100 Corporate Plaza",
       "address2": "15th Floor",
@@ -178,14 +178,14 @@
       "taxId": "56-7890123",
       "timezone": "America/Chicago",
       "contractDisplayName": "Memorial Services Corp",
-      "dateCreated": "2022-01-01T00:00:00Z",
-      "dateLastModified": "2024-01-15T10:00:00Z"
+      "createdAt": "2022-01-01T00:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z"
     },
     {
       "id": "loc-005",
       "identifier": "CEM002",
       "name": "Garden of Memories",
-      "type": 1,
+      "type": "cemetery",
       "active": true,
       "address1": "2000 Memorial Drive",
       "address2": "",
@@ -216,20 +216,20 @@
           "id": "lic-006",
           "locationId": "loc-005",
           "licenseNumber": "CEM-2024-004567",
-          "licenseType": 1
+          "licenseType": "establishment"
         }
       ],
       "taxId": "67-8901234",
       "timezone": "America/Chicago",
       "contractDisplayName": "Garden of Memories",
-      "dateCreated": "2023-09-15T14:00:00Z",
-      "dateLastModified": "2024-05-22T09:15:00Z"
+      "createdAt": "2023-09-15T14:00:00Z",
+      "updatedAt": "2024-05-22T09:15:00Z"
     },
     {
       "id": "loc-006",
       "identifier": "FH003",
       "name": "Heritage Funeral Home",
-      "type": 0,
+      "type": "funeral",
       "active": false,
       "address1": "456 Heritage Lane",
       "address2": "",
@@ -260,14 +260,14 @@
           "id": "lic-007",
           "locationId": "loc-006",
           "licenseNumber": "FH-2023-005678",
-          "licenseType": 1
+          "licenseType": "establishment"
         }
       ],
       "taxId": "78-9012345",
       "timezone": "America/Denver",
       "contractDisplayName": "Heritage Funeral",
-      "dateCreated": "2020-03-10T12:00:00Z",
-      "dateLastModified": "2024-08-01T08:00:00Z"
+      "createdAt": "2020-03-10T12:00:00Z",
+      "updatedAt": "2024-08-01T08:00:00Z"
     }
   ],
   "contracts": [
@@ -291,8 +291,8 @@
       "amountPaid": 5000,
       "balanceDue": 1156,
       "notes": "Family requested oak casket. Visitation on Dec 12.",
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-20T14:30:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-20T14:30:00Z"
     },
     {
       "id": "contract-2",
@@ -314,8 +314,8 @@
       "amountPaid": 3700,
       "balanceDue": 0,
       "notes": "",
-      "dateCreated": "2024-12-15T09:00:00Z",
-      "dateLastModified": "2024-12-15T09:00:00Z"
+      "createdAt": "2024-12-15T09:00:00Z",
+      "updatedAt": "2024-12-15T09:00:00Z"
     },
     {
       "id": "contract-3",
@@ -334,8 +334,8 @@
       "amountPaid": 0,
       "balanceDue": 0,
       "notes": "",
-      "dateCreated": "2024-12-20T08:00:00Z",
-      "dateLastModified": "2024-12-20T08:00:00Z"
+      "createdAt": "2024-12-20T08:00:00Z",
+      "updatedAt": "2024-12-20T08:00:00Z"
     },
     {
       "id": "contract-4",
@@ -357,8 +357,8 @@
       "amountPaid": 2000,
       "balanceDue": 6425,
       "notes": "Pre-planned funeral. Financing over 36 months.",
-      "dateCreated": "2024-11-01T10:00:00Z",
-      "dateLastModified": "2024-11-01T15:00:00Z"
+      "createdAt": "2024-11-01T10:00:00Z",
+      "updatedAt": "2024-11-01T15:00:00Z"
     },
     {
       "id": "5GH-s0yaAyfyBm13ApWhK",
@@ -375,8 +375,8 @@
       "grandTotal": 0,
       "amountPaid": 0,
       "balanceDue": 0,
-      "dateCreated": "2025-12-28T05:38:28.106Z",
-      "dateLastModified": "2025-12-28T05:38:28.106Z"
+      "createdAt": "2025-12-28T05:38:28.106Z",
+      "updatedAt": "2025-12-28T05:38:28.106Z"
     },
     {
       "id": "pwJdssy3V4awoLSwvITZp",
@@ -393,8 +393,8 @@
       "grandTotal": 0,
       "amountPaid": 0,
       "balanceDue": 0,
-      "dateCreated": "2025-12-28T05:38:52.741Z",
-      "dateLastModified": "2025-12-28T05:39:41.136Z"
+      "createdAt": "2025-12-28T05:38:52.741Z",
+      "updatedAt": "2025-12-28T05:39:41.136Z"
     }
   ],
   "sales": [
@@ -411,8 +411,8 @@
       "taxTotal": 231,
       "discountTotal": 200,
       "grandTotal": 6156,
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-10T10:30:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-10T10:30:00Z"
     },
     {
       "id": "sale-2",
@@ -427,8 +427,8 @@
       "taxTotal": 0,
       "discountTotal": 0,
       "grandTotal": 3700,
-      "dateCreated": "2024-12-15T09:00:00Z",
-      "dateLastModified": "2024-12-15T09:30:00Z"
+      "createdAt": "2024-12-15T09:00:00Z",
+      "updatedAt": "2024-12-15T09:30:00Z"
     },
     {
       "id": "sale-3",
@@ -443,8 +443,8 @@
       "taxTotal": 425,
       "discountTotal": 500,
       "grandTotal": 8425,
-      "dateCreated": "2024-11-01T10:00:00Z",
-      "dateLastModified": "2024-11-01T10:30:00Z"
+      "createdAt": "2024-11-01T10:00:00Z",
+      "updatedAt": "2024-11-01T10:30:00Z"
     },
     {
       "id": "HWcQo1eTD6Hd6MNyEtmM_",
@@ -459,8 +459,8 @@
       "taxTotal": 0,
       "discountTotal": 0,
       "grandTotal": 0,
-      "dateCreated": "2025-12-28T05:38:28.106Z",
-      "dateLastModified": "2025-12-28T05:38:28.106Z",
+      "createdAt": "2025-12-28T05:38:28.106Z",
+      "updatedAt": "2025-12-28T05:38:28.106Z",
       "apiId": "v1"
     },
     {
@@ -476,8 +476,8 @@
       "taxTotal": 0,
       "discountTotal": 0,
       "grandTotal": 0,
-      "dateCreated": "2025-12-28T05:38:52.741Z",
-      "dateLastModified": "2025-12-28T05:39:41.194Z",
+      "createdAt": "2025-12-28T05:38:52.741Z",
+      "updatedAt": "2025-12-28T05:39:41.194Z",
       "apiId": "v1"
     }
   ],
@@ -501,8 +501,8 @@
       "salesTax": [],
       "discounts": [],
       "trust": [],
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-10T10:00:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-10T10:00:00Z"
     },
     {
       "id": "item-2",
@@ -523,8 +523,8 @@
       "salesTax": [],
       "discounts": [],
       "trust": [],
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-10T10:00:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-10T10:00:00Z"
     },
     {
       "id": "item-3",
@@ -545,8 +545,8 @@
       "salesTax": [],
       "discounts": [],
       "trust": [],
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-10T10:00:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-10T10:00:00Z"
     },
     {
       "id": "item-4",
@@ -567,8 +567,8 @@
       "salesTax": [],
       "discounts": [],
       "trust": [],
-      "dateCreated": "2024-12-15T09:00:00Z",
-      "dateLastModified": "2024-12-15T09:00:00Z"
+      "createdAt": "2024-12-15T09:00:00Z",
+      "updatedAt": "2024-12-15T09:00:00Z"
     },
     {
       "id": "item-5",
@@ -589,8 +589,8 @@
       "salesTax": [],
       "discounts": [],
       "trust": [],
-      "dateCreated": "2024-12-15T09:00:00Z",
-      "dateLastModified": "2024-12-15T09:00:00Z"
+      "createdAt": "2024-12-15T09:00:00Z",
+      "updatedAt": "2024-12-15T09:00:00Z"
     },
     {
       "id": "item-6",
@@ -611,8 +611,8 @@
       "salesTax": [],
       "discounts": [],
       "trust": [],
-      "dateCreated": "2024-11-01T10:00:00Z",
-      "dateLastModified": "2024-11-01T10:00:00Z"
+      "createdAt": "2024-11-01T10:00:00Z",
+      "updatedAt": "2024-11-01T10:00:00Z"
     }
   ],
   "people": [
@@ -625,7 +625,9 @@
       "middleName": "",
       "phone": "555-123-4567",
       "email": "mary.johnson@email.com",
-      "roles": ["primary_buyer"],
+      "roles": [
+        "primary_buyer"
+      ],
       "address": {
         "address1": "123 Oak Street",
         "city": "Springfield",
@@ -634,8 +636,8 @@
         "country": "USA"
       },
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-10T10:00:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-10T10:00:00Z"
     },
     {
       "id": "person-2",
@@ -646,10 +648,12 @@
       "lastName": "Johnson",
       "dateOfBirth": "1945-03-15",
       "dateOfDeath": "2024-12-08",
-      "roles": ["primary_beneficiary"],
+      "roles": [
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-10T10:00:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-10T10:00:00Z"
     },
     {
       "id": "person-3",
@@ -660,10 +664,12 @@
       "middleName": "",
       "phone": "555-987-6543",
       "email": "thomas.w@email.com",
-      "roles": ["primary_buyer"],
+      "roles": [
+        "primary_buyer"
+      ],
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-12-15T09:00:00Z",
-      "dateLastModified": "2024-12-15T09:00:00Z"
+      "createdAt": "2024-12-15T09:00:00Z",
+      "updatedAt": "2024-12-15T09:00:00Z"
     },
     {
       "id": "person-4",
@@ -672,10 +678,12 @@
       "firstName": "Susan",
       "lastName": "Williams",
       "middleName": "",
-      "roles": ["additional_beneficiary"],
+      "roles": [
+        "additional_beneficiary"
+      ],
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-12-15T09:00:00Z",
-      "dateLastModified": "2024-12-15T09:00:00Z"
+      "createdAt": "2024-12-15T09:00:00Z",
+      "updatedAt": "2024-12-15T09:00:00Z"
     },
     {
       "id": "person-5",
@@ -686,10 +694,12 @@
       "middleName": "",
       "dateOfBirth": "1938-07-22",
       "dateOfDeath": "2024-12-14",
-      "roles": ["primary_beneficiary"],
+      "roles": [
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-12-15T09:00:00Z",
-      "dateLastModified": "2024-12-15T09:00:00Z"
+      "createdAt": "2024-12-15T09:00:00Z",
+      "updatedAt": "2024-12-15T09:00:00Z"
     },
     {
       "id": "person-6",
@@ -699,10 +709,12 @@
       "lastName": "Brown",
       "middleName": "",
       "phone": "555-456-7890",
-      "roles": ["primary_buyer"],
+      "roles": [
+        "primary_buyer"
+      ],
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-12-20T08:00:00Z",
-      "dateLastModified": "2024-12-20T08:00:00Z"
+      "createdAt": "2024-12-20T08:00:00Z",
+      "updatedAt": "2024-12-20T08:00:00Z"
     },
     {
       "id": "person-7",
@@ -712,10 +724,12 @@
       "lastName": "Brown",
       "middleName": "",
       "dateOfDeath": "2024-12-19",
-      "roles": ["primary_beneficiary"],
+      "roles": [
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-12-20T08:00:00Z",
-      "dateLastModified": "2024-12-20T08:00:00Z"
+      "createdAt": "2024-12-20T08:00:00Z",
+      "updatedAt": "2024-12-20T08:00:00Z"
     },
     {
       "id": "person-8",
@@ -727,16 +741,21 @@
       "phone": "555-111-2222",
       "email": "r.davis@email.com",
       "dateOfBirth": "1955-09-10",
-      "roles": ["primary_buyer", "primary_beneficiary"],
+      "roles": [
+        "primary_buyer",
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
-      "dateCreated": "2024-11-01T10:00:00Z",
-      "dateLastModified": "2024-11-01T10:00:00Z"
+      "createdAt": "2024-11-01T10:00:00Z",
+      "updatedAt": "2024-11-01T10:00:00Z"
     },
     {
       "id": "aYUwoPThvUrdLbcpR8MLq",
       "contractId": "5GH-s0yaAyfyBm13ApWhK",
       "nameId": "RwQhSXJtCxEdrJAHwldiH",
-      "roles": ["primary_buyer"],
+      "roles": [
+        "primary_buyer"
+      ],
       "addedAfterContractExecution": false,
       "firstName": "Blake",
       "middleName": "",
@@ -753,15 +772,17 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "dateCreated": "2025-12-28T05:38:28.129Z",
-      "dateLastModified": "2025-12-28T05:38:28.129Z",
+      "createdAt": "2025-12-28T05:38:28.129Z",
+      "updatedAt": "2025-12-28T05:38:28.129Z",
       "apiId": "v1"
     },
     {
       "id": "k9tX9ZQ-Hv-wFHFdy4iem",
       "contractId": "5GH-s0yaAyfyBm13ApWhK",
       "nameId": "mW-8kkNwhmFCfLC5eyhwJ",
-      "roles": ["primary_beneficiary"],
+      "roles": [
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
       "firstName": "Doug",
       "middleName": "",
@@ -778,8 +799,8 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "dateCreated": "2025-12-28T05:38:28.129Z",
-      "dateLastModified": "2025-12-28T05:38:28.129Z",
+      "createdAt": "2025-12-28T05:38:28.129Z",
+      "updatedAt": "2025-12-28T05:38:28.129Z",
       "apiId": "v1"
     },
     {
@@ -798,7 +819,9 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "roles": ["primary_buyer"],
+      "roles": [
+        "primary_buyer"
+      ],
       "addedAfterContractExecution": false,
       "id": "vwolpTs"
     },
@@ -818,7 +841,9 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "roles": ["primary_beneficiary"],
+      "roles": [
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
       "id": "eoou1j6"
     },
@@ -826,7 +851,9 @@
       "id": "pqtLsefpRZgLxCsXTucqA",
       "contractId": "pwJdssy3V4awoLSwvITZp",
       "nameId": "DhodmgBijmduWDVV2dwr1",
-      "roles": ["primary_buyer"],
+      "roles": [
+        "primary_buyer"
+      ],
       "addedAfterContractExecution": false,
       "firstName": "Billy",
       "middleName": "",
@@ -843,15 +870,17 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "dateCreated": "2025-12-28T05:38:52.769Z",
-      "dateLastModified": "2025-12-28T05:39:41.202Z",
+      "createdAt": "2025-12-28T05:38:52.769Z",
+      "updatedAt": "2025-12-28T05:39:41.202Z",
       "apiId": "v1"
     },
     {
       "id": "B-tNMBTHRfOdBTbRU7Cdc",
       "contractId": "pwJdssy3V4awoLSwvITZp",
       "nameId": "c0m0_lZ4XXT2R9t9GhTUB",
-      "roles": ["primary_beneficiary"],
+      "roles": [
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
       "firstName": "Timmy",
       "middleName": "",
@@ -868,8 +897,8 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "dateCreated": "2025-12-28T05:38:52.769Z",
-      "dateLastModified": "2025-12-28T05:39:41.213Z",
+      "createdAt": "2025-12-28T05:38:52.769Z",
+      "updatedAt": "2025-12-28T05:39:41.213Z",
       "apiId": "v1"
     },
     {
@@ -888,7 +917,9 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "roles": ["primary_buyer"],
+      "roles": [
+        "primary_buyer"
+      ],
       "addedAfterContractExecution": false,
       "id": "D81Q6RQ"
     },
@@ -908,7 +939,9 @@
       "driversLicense": "",
       "driversLicenseState": "",
       "isVeteran": false,
-      "roles": ["primary_beneficiary"],
+      "roles": [
+        "primary_beneficiary"
+      ],
       "addedAfterContractExecution": false,
       "id": "_VYSlWz"
     }
@@ -923,8 +956,8 @@
       "amount": 3000,
       "reference": "CC-4532",
       "notes": "Initial deposit",
-      "dateCreated": "2024-12-15T14:00:00Z",
-      "dateLastModified": "2024-12-15T14:00:00Z"
+      "createdAt": "2024-12-15T14:00:00Z",
+      "updatedAt": "2024-12-15T14:00:00Z"
     },
     {
       "id": "pay-2",
@@ -936,8 +969,8 @@
       "reference": "",
       "checkNumber": "1234",
       "notes": "",
-      "dateCreated": "2024-12-20T10:00:00Z",
-      "dateLastModified": "2024-12-20T10:00:00Z"
+      "createdAt": "2024-12-20T10:00:00Z",
+      "updatedAt": "2024-12-20T10:00:00Z"
     },
     {
       "id": "pay-3",
@@ -948,8 +981,8 @@
       "amount": 3700,
       "reference": "Policy #ABC123",
       "notes": "Full payment from life insurance",
-      "dateCreated": "2024-12-18T11:00:00Z",
-      "dateLastModified": "2024-12-18T11:00:00Z"
+      "createdAt": "2024-12-18T11:00:00Z",
+      "updatedAt": "2024-12-18T11:00:00Z"
     },
     {
       "id": "pay-4",
@@ -960,8 +993,8 @@
       "amount": 2000,
       "checkNumber": "5678",
       "notes": "Down payment",
-      "dateCreated": "2024-11-01T10:30:00Z",
-      "dateLastModified": "2024-11-01T10:30:00Z"
+      "createdAt": "2024-11-01T10:30:00Z",
+      "updatedAt": "2024-11-01T10:30:00Z"
     }
   ],
   "financing": [
@@ -979,8 +1012,8 @@
       "receivesStatement": true,
       "interestRebateDays": 0,
       "lateFeeType": 0,
-      "dateCreated": "2024-12-10T10:00:00Z",
-      "dateLastModified": "2024-12-10T10:00:00Z"
+      "createdAt": "2024-12-10T10:00:00Z",
+      "updatedAt": "2024-12-10T10:00:00Z"
     },
     {
       "id": "fin-2",
@@ -1005,8 +1038,8 @@
       "lateFeeType": 1,
       "lateFeeAmount": 25,
       "lateFeeGracePeriod": 10,
-      "dateCreated": "2024-11-01T10:00:00Z",
-      "dateLastModified": "2024-11-01T10:00:00Z"
+      "createdAt": "2024-11-01T10:00:00Z",
+      "updatedAt": "2024-11-01T10:00:00Z"
     }
   ]
 }

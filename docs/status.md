@@ -40,6 +40,7 @@
   - [x] Form validation with Zod (custom implementation, no vee-validate)
   - [x] Dirty form tracking with unsaved changes confirmation
   - [x] Save validation with inline errors + snackbar + toast feedback
+  - [x] **BFF Alignment** - Numeric enums, Entity base type, field name standardization
 - [x] Linting/formatting setup (Oxlint, ESLint, Prettier)
 - [x] VSCode configuration
 - [x] Domain-centric composable architecture:
@@ -66,6 +67,14 @@
   - [x] Date/currency/number formatters
   - [x] Lodash re-exports (cloneDeep, isEqual, debounce, etc.)
   - [x] Zod validation schemas
+- [x] **BFF Alignment & Entity System**:
+  - [x] Entity base type system (matching legacy app pattern)
+  - [x] Numeric enums matching C# backend exactly
+  - [x] Field name standardization (`dateCreated`/`dateLastModified`)
+  - [x] Removed mapping layer (BFF format = Frontend format)
+  - [x] Updated all form schemas to use `z.nativeEnum()`
+  - [x] Updated mock data to match production format
+  - [x] Simplified EnumController (removed conversion methods)
 
 ## Next Priorities
 
@@ -73,7 +82,7 @@
 - [ ] **Architectural Patterns** - Railway, Command, Saga patterns for scalability
 - [ ] **Feature Expansion** - Financing, multi-sale, item catalog, tax calculation
 - [ ] **Authentication** - User management and login system
-- [ ] **API Integration** - Real backend connection (BFF ready)
+- [x] **API Integration** - Real backend connection (BFF ready - format aligned, just needs URL change)
 
 ## Future Phases
 

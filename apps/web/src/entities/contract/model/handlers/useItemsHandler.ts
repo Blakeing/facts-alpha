@@ -40,8 +40,8 @@ function createEmptySaleItem(saleId: string, needType: NeedType, ordinal: number
     salesTax: [],
     discounts: [],
     trust: [],
-    createdAt: now,
-    updatedAt: now,
+    dateCreated: now,
+    dateLastModified: now,
   }
 }
 
@@ -141,8 +141,8 @@ export function useItemsHandler(context: ContractSessionContext) {
           : [],
       discounts: [],
       trust: [],
-      createdAt: now,
-      updatedAt: now,
+      dateCreated: now,
+      dateLastModified: now,
     }
 
     items.value.push(newItem)
@@ -154,7 +154,7 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Add a custom item (not from catalog)
    */
   function addCustomItem(
-    data: Partial<Omit<SaleItem, 'id' | 'saleId' | 'createdAt' | 'updatedAt'>>,
+    data: Partial<Omit<SaleItem, 'id' | 'saleId' | 'dateCreated' | 'dateLastModified'>>,
   ): SaleItem | null {
     if (!context.isEditable.value) return null
 
@@ -171,8 +171,8 @@ export function useItemsHandler(context: ContractSessionContext) {
     const newItem: SaleItem = {
       ...baseItem,
       ...data,
-      createdAt: now,
-      updatedAt: now,
+      dateCreated: now,
+      dateLastModified: now,
     }
 
     items.value.push(newItem)
@@ -190,7 +190,7 @@ export function useItemsHandler(context: ContractSessionContext) {
     if (!item) return false
 
     item.isCancelled = true
-    item.updatedAt = new Date().toISOString()
+    item.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -220,7 +220,7 @@ export function useItemsHandler(context: ContractSessionContext) {
 
     item.quantity = quantity
     recalculateItemTax(item)
-    item.updatedAt = new Date().toISOString()
+    item.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -236,7 +236,7 @@ export function useItemsHandler(context: ContractSessionContext) {
 
     item.unitPrice = unitPrice
     recalculateItemTax(item)
-    item.updatedAt = new Date().toISOString()
+    item.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -261,7 +261,7 @@ export function useItemsHandler(context: ContractSessionContext) {
       description,
       amount,
     })
-    item.updatedAt = new Date().toISOString()
+    item.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -279,7 +279,7 @@ export function useItemsHandler(context: ContractSessionContext) {
     if (index === -1) return false
 
     item.discounts.splice(index, 1)
-    item.updatedAt = new Date().toISOString()
+    item.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -294,7 +294,7 @@ export function useItemsHandler(context: ContractSessionContext) {
     if (!item) return false
 
     item.description = description
-    item.updatedAt = new Date().toISOString()
+    item.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }

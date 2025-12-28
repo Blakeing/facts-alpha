@@ -10,12 +10,11 @@ import type {
   ContractListing,
   ContractPerson,
   ContractPersonRole,
-  NeedType,
   Sale,
-  SaleStatus,
 } from '../model/contract'
 import type { ContractPersonFormValues } from '../model/contractSchema'
 import { nanoid } from 'nanoid'
+import { NeedType, SaleStatus, SaleType } from '../model/contract'
 
 // =============================================================================
 // ID Generation (temporary - will be replaced with /api/v1/nextid endpoint)
@@ -49,7 +48,7 @@ export function generateContractNumber(
   existingContracts: Contract[] = [],
 ): string {
   const year = new Date().getFullYear()
-  const prefix = needType === 'at_need' ? 'AN' : 'PN'
+  const prefix = needType === NeedType.AT_NEED ? 'AN' : 'PN'
   const pattern = new RegExp(String.raw`^${prefix}-${year}-(\d{4})$`)
 
   // Find all contract numbers matching this year and need type
@@ -104,8 +103,8 @@ export function formPersonToPerson(
     driversLicense: formData.driversLicense,
     driversLicenseState: formData.driversLicenseState,
     isVeteran: formData.isVeteran,
-    createdAt: now,
-    updatedAt: now,
+    dateCreated: now,
+    dateLastModified: now,
   }
 }
 
@@ -129,7 +128,7 @@ export function contractToListing(
 
   // Find primary sale for this contract
   const sales = allSales.filter((s) => s.contractId === contract.id)
-  const primarySale = sales.find((s) => s.saleType === 'contract') || sales[0]
+  const primarySale = sales.find((s) => s.saleType === SaleType.CONTRACT) || sales[0]
 
   return {
     id: contract.id,
@@ -137,7 +136,7 @@ export function contractToListing(
     prePrintedContractNumber: contract.prePrintedContractNumber,
     locationId: contract.locationId,
     needType: contract.needType,
-    saleStatus: (primarySale?.saleStatus as SaleStatus) || 'draft',
+    saleStatus: (primarySale?.saleStatus as SaleStatus) || SaleStatus.DRAFT,
     isCancelled: contract.isCancelled,
     dateExecuted: contract.dateExecuted,
     dateSigned: contract.dateSigned,

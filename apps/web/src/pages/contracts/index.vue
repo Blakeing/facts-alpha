@@ -130,25 +130,25 @@
       value: SaleStatus.DRAFT,
       label: 'Draft',
       color: 'grey',
-      count: contractsByStatus.value.draft.length,
+      count: contractsByStatus.value[SaleStatus.DRAFT]?.length ?? 0,
     },
     {
       value: SaleStatus.FINALIZED,
       label: 'Finalized',
       color: 'warning',
-      count: contractsByStatus.value.finalized.length,
+      count: contractsByStatus.value[SaleStatus.FINALIZED]?.length ?? 0,
     },
     {
       value: SaleStatus.EXECUTED,
       label: 'Executed',
       color: 'success',
-      count: contractsByStatus.value.executed.length,
+      count: contractsByStatus.value[SaleStatus.EXECUTED]?.length ?? 0,
     },
     {
       value: SaleStatus.VOID,
       label: 'Void',
       color: 'error',
-      count: contractsByStatus.value.void.length,
+      count: contractsByStatus.value[SaleStatus.VOID]?.length ?? 0,
     },
   ])
 

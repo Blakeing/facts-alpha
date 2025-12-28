@@ -5,9 +5,30 @@
  * @see docs/data-models.md for field mapping details
  */
 
-export type LocationType = 'funeral' | 'cemetery' | 'corporate'
+import type { Entity } from '@/shared/lib/entity'
 
-export type LocationLicenseType = 'establishment' | 'trust' | 'insurance' | 'coupon_book_id'
+/**
+ * Location Type
+ * Backend: LocationType (Funeral=0, Cemetery=1, Corporate=2)
+ * Matches BFF exactly - numeric enum
+ */
+export enum LocationType {
+  FUNERAL = 0,
+  CEMETERY = 1,
+  CORPORATE = 2,
+}
+
+/**
+ * Location License Type
+ * Backend: LocationLicenseType (Establishment=1, Trust=2, Insurance=3, CouponBookId=4)
+ * Matches BFF exactly - numeric enum
+ */
+export enum LocationLicenseType {
+  ESTABLISHMENT = 1,
+  TRUST = 2,
+  INSURANCE = 3,
+  COUPON_BOOK_ID = 4,
+}
 
 export interface LocationLicense {
   id: string
@@ -26,8 +47,7 @@ export interface LocationGLAccountMapAssignment {
   glAccountId: string
 }
 
-export interface Location {
-  id: string
+export interface Location extends Entity {
   identifier: string // Location code/number (e.g., "001")
   name: string
   type: LocationType
@@ -72,10 +92,6 @@ export interface Location {
   // Display settings
   timezone: string | null // IANA timezone (e.g., "America/New_York")
   contractDisplayName: string // Custom name for contracts
-
-  // Timestamps
-  createdAt: string
-  updatedAt: string
 }
 
 // Lighter listing model for list views (performance optimization)
@@ -92,19 +108,19 @@ export interface LocationListing {
 
 // Type helpers
 export const locationTypeLabels: Record<LocationType, string> = {
-  funeral: 'Funeral',
-  cemetery: 'Cemetery',
-  corporate: 'Corporate',
+  [LocationType.FUNERAL]: 'Funeral',
+  [LocationType.CEMETERY]: 'Cemetery',
+  [LocationType.CORPORATE]: 'Corporate',
 }
 
 export const locationTypeColors: Record<LocationType, string> = {
-  funeral: 'primary',
-  cemetery: 'success',
-  corporate: 'info',
+  [LocationType.FUNERAL]: 'primary',
+  [LocationType.CEMETERY]: 'success',
+  [LocationType.CORPORATE]: 'info',
 }
 
 export function getLocationTypeLabel(type: LocationType): string {
-  return locationTypeLabels[type] || type
+  return locationTypeLabels[type] || String(type)
 }
 
 export function getLocationTypeColor(type: LocationType): string {
@@ -113,29 +129,30 @@ export function getLocationTypeColor(type: LocationType): string {
 
 // License type helpers
 export const locationLicenseTypeLabels: Record<LocationLicenseType, string> = {
-  establishment: 'Establishment',
-  trust: 'Trust',
-  insurance: 'Insurance',
-  coupon_book_id: 'Coupon Book ID',
+  [LocationLicenseType.ESTABLISHMENT]: 'Establishment',
+  [LocationLicenseType.TRUST]: 'Trust',
+  [LocationLicenseType.INSURANCE]: 'Insurance',
+  [LocationLicenseType.COUPON_BOOK_ID]: 'Coupon Book ID',
 }
 
 export function getLocationLicenseTypeLabel(type: LocationLicenseType): string {
-  return locationLicenseTypeLabels[type] || type
+  return locationLicenseTypeLabels[type] || String(type)
 }
 
 // Location type options for select fields
-export const locationTypeOptions = Object.entries(locationTypeLabels).map(([value, title]) => ({
-  value: value as LocationType,
-  title,
-}))
+export const locationTypeOptions = [
+  { value: LocationType.FUNERAL, title: 'Funeral' },
+  { value: LocationType.CEMETERY, title: 'Cemetery' },
+  { value: LocationType.CORPORATE, title: 'Corporate' },
+]
 
 // License type options for select fields
-export const locationLicenseTypeOptions = Object.entries(locationLicenseTypeLabels).map(
-  ([value, title]) => ({
-    value: value as LocationLicenseType,
-    title,
-  }),
-)
+export const locationLicenseTypeOptions = [
+  { value: LocationLicenseType.ESTABLISHMENT, title: 'Establishment' },
+  { value: LocationLicenseType.TRUST, title: 'Trust' },
+  { value: LocationLicenseType.INSURANCE, title: 'Insurance' },
+  { value: LocationLicenseType.COUPON_BOOK_ID, title: 'Coupon Book ID' },
+]
 
 // Display name helper (like legacy app)
 export function getLocationDisplayName(location: {

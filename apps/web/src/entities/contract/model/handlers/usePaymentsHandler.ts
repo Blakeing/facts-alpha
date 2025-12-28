@@ -100,8 +100,8 @@ export function usePaymentsHandler(context: ContractSessionContext) {
       reference: data.reference,
       checkNumber: data.checkNumber,
       notes: data.notes,
-      createdAt: now,
-      updatedAt: now,
+      dateCreated: now,
+      dateLastModified: now,
     }
 
     payments.value.push(newPayment)
@@ -129,7 +129,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.amount = amount
-    payment.updatedAt = new Date().toISOString()
+    payment.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -142,7 +142,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.method = method
-    payment.updatedAt = new Date().toISOString()
+    payment.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -155,7 +155,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.reference = reference
-    payment.updatedAt = new Date().toISOString()
+    payment.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -168,7 +168,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.checkNumber = checkNumber
-    payment.updatedAt = new Date().toISOString()
+    payment.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -181,7 +181,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.notes = notes
-    payment.updatedAt = new Date().toISOString()
+    payment.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }
@@ -194,7 +194,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     if (!payment) return false
 
     payment.date = date
-    payment.updatedAt = new Date().toISOString()
+    payment.dateLastModified = new Date().toISOString()
     isDirty.value = true
     return true
   }

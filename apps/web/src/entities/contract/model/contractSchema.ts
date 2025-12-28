@@ -77,7 +77,7 @@ export const saleItemSchema = z.object({
   saleId: z.string().optional(),
   itemId: z.string().min(1, 'Item is required'),
   description: z.string().min(1, 'Description is required').max(255),
-  needType: z.enum([NeedType.AT_NEED, NeedType.PRE_NEED]),
+  needType: z.nativeEnum(NeedType),
   quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
   unitPrice: z.number().min(0, 'Price cannot be negative'),
   bookPrice: z.number().min(0).optional().default(0),
@@ -114,22 +114,9 @@ export const saleSchema = z.object({
   contractId: z.string().optional(),
   saleNumber: z.string().max(50).optional(),
   saleDate: z.string().optional(),
-  saleType: z.enum([SaleType.CONTRACT, SaleType.CONTRACT_ADJUSTMENT, SaleType.MISC_CASH]),
-  saleStatus: z.enum([SaleStatus.DRAFT, SaleStatus.EXECUTED, SaleStatus.FINALIZED, SaleStatus.VOID]),
-  saleAdjustmentType: z
-    .enum([
-      SaleAdjustmentType.SALES_TAX,
-      SaleAdjustmentType.DISCOUNT,
-      SaleAdjustmentType.CANCELLATION,
-      SaleAdjustmentType.EXCHANGE,
-      SaleAdjustmentType.TRANSFER,
-      SaleAdjustmentType.ADDENDUM,
-      SaleAdjustmentType.NEED_TYPE_SWAP,
-      SaleAdjustmentType.LATE_FEE,
-      SaleAdjustmentType.PROPERTY_EXCHANGE,
-      SaleAdjustmentType.ITEM_CREDIT,
-    ])
-    .optional(),
+  saleType: z.nativeEnum(SaleType),
+  saleStatus: z.nativeEnum(SaleStatus),
+  saleAdjustmentType: z.nativeEnum(SaleAdjustmentType).optional(),
   cancellationTypeId: z.string().optional(),
   accountingPeriod: z.string().optional(),
   memo: z.string().max(2000).optional().default(''),
@@ -148,17 +135,7 @@ export const contractPersonSchema = z.object({
   id: z.string().optional(),
   contractId: z.string().optional(),
   nameId: z.string().optional(), // Reference to Name entity
-  roles: z
-    .array(
-      z.enum([
-        ContractPersonRole.PERSON,
-        ContractPersonRole.PRIMARY_BUYER,
-        ContractPersonRole.CO_BUYER,
-        ContractPersonRole.PRIMARY_BENEFICIARY,
-        ContractPersonRole.ADDITIONAL_BENEFICIARY,
-      ]),
-    )
-    .default([ContractPersonRole.PERSON]),
+  roles: z.array(z.nativeEnum(ContractPersonRole)).default([ContractPersonRole.PERSON]),
   addedAfterContractExecution: z.boolean().optional().default(false),
 
   // Name fields
@@ -200,14 +177,12 @@ export const contractFinancingSchema = z.object({
   useManualPaymentAmount: z.boolean().default(false),
   totalFinanceCharges: z.number().min(0).optional(),
   useManualFinanceCharges: z.boolean().default(false),
-  status: z.enum([FinancingStatus.PENDING, FinancingStatus.CALCULATED]).default(FinancingStatus.PENDING),
+  status: z.nativeEnum(FinancingStatus).default(FinancingStatus.PENDING),
   receivesCouponBook: z.boolean().default(false),
   receivesStatement: z.boolean().default(true),
 
   // Late fees
-  lateFeeType: z
-    .enum([LateFeeType.NONE, LateFeeType.FIXED_AMOUNT, LateFeeType.PERCENTAGE_OF_PAYMENT])
-    .default(LateFeeType.NONE),
+  lateFeeType: z.nativeEnum(LateFeeType).default(LateFeeType.NONE),
   lateFeeAmount: z.number().min(0).optional(),
   lateFeeMax: z.number().min(0).optional(),
   lateFeeGracePeriod: z.number().int().min(0).optional(),
@@ -238,15 +213,7 @@ export const contractPaymentSchema = z.object({
   contractId: z.string().optional(),
   saleId: z.string().optional(),
   date: z.string().min(1, 'Date is required'),
-  method: z.enum([
-    PaymentMethod.CASH,
-    PaymentMethod.CHECK,
-    PaymentMethod.CREDIT_CARD,
-    PaymentMethod.ACH,
-    PaymentMethod.INSURANCE,
-    PaymentMethod.FINANCING,
-    PaymentMethod.OTHER,
-  ]),
+  method: z.nativeEnum(PaymentMethod),
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
   reference: z.string().max(255).optional().default(''),
   checkNumber: z.string().max(50).optional().default(''),
@@ -265,12 +232,12 @@ export const contractFormSchema = z.object({
   prePrintedContractNumber: z.string().max(50).optional().default(''),
 
   // Type classification
-  needType: z.enum([NeedType.AT_NEED, NeedType.PRE_NEED]),
+  needType: z.nativeEnum(NeedType),
   contractTypeId: z.string().optional(),
   contractSaleTypeId: z.string().optional(),
   leadSourceId: z.string().optional(),
-  atNeedType: z.enum([AtNeedType.WALK_IN, AtNeedType.PN_MATURITY]).optional(),
-  preNeedFundingType: z.enum([PreNeedFundingType.TRUST, PreNeedFundingType.INSURANCE]).optional(),
+  atNeedType: z.nativeEnum(AtNeedType).optional(),
+  preNeedFundingType: z.nativeEnum(PreNeedFundingType).optional(),
 
   // Sales person
   salesPersonId: z.string().optional(),

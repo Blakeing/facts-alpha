@@ -5,6 +5,8 @@
  * @see docs/data-models.md for field mapping details
  */
 
+import type { Entity } from '@/shared/lib/entity'
+
 // =============================================================================
 // Backend-Aligned Enums
 // =============================================================================
@@ -12,53 +14,53 @@
 /**
  * Need Type - At-Need vs Pre-Need
  * Backend: NeedType (AN=1, PN=2)
+ * Matches BFF exactly - numeric enum
  */
-export const NeedType = {
-  AT_NEED: 'at_need',
-  PRE_NEED: 'pre_need',
-} as const
-export type NeedType = (typeof NeedType)[keyof typeof NeedType]
+export enum NeedType {
+  AT_NEED = 1,
+  PRE_NEED = 2,
+}
 
 /**
  * Sale Type - What kind of sale record
  * Backend: SaleType (Contract=0, ContractAdjustment=1, MiscCash=2)
+ * Matches BFF exactly - numeric enum
  */
-export const SaleType = {
-  CONTRACT: 'contract',
-  CONTRACT_ADJUSTMENT: 'contract_adjustment',
-  MISC_CASH: 'misc_cash',
-} as const
-export type SaleType = (typeof SaleType)[keyof typeof SaleType]
+export enum SaleType {
+  CONTRACT = 0,
+  CONTRACT_ADJUSTMENT = 1,
+  MISC_CASH = 2,
+}
 
 /**
  * Sale Status - Lifecycle state of a sale
  * Backend: SaleStatus (Draft=0, Executed=1, Finalized=2, Void=3)
+ * Matches BFF exactly - numeric enum
  */
-export const SaleStatus = {
-  DRAFT: 'draft',
-  EXECUTED: 'executed',
-  FINALIZED: 'finalized',
-  VOID: 'void',
-} as const
-export type SaleStatus = (typeof SaleStatus)[keyof typeof SaleStatus]
+export enum SaleStatus {
+  DRAFT = 0,
+  EXECUTED = 1,
+  FINALIZED = 2,
+  VOID = 3,
+}
 
 /**
  * Sale Adjustment Type - Type of adjustment being made
  * Backend: SaleAdjustmentType
+ * Matches BFF exactly - numeric enum
  */
-export const SaleAdjustmentType = {
-  SALES_TAX: 'sales_tax',
-  DISCOUNT: 'discount',
-  CANCELLATION: 'cancellation',
-  EXCHANGE: 'exchange',
-  TRANSFER: 'transfer',
-  ADDENDUM: 'addendum',
-  NEED_TYPE_SWAP: 'need_type_swap',
-  LATE_FEE: 'late_fee',
-  PROPERTY_EXCHANGE: 'property_exchange',
-  ITEM_CREDIT: 'item_credit',
-} as const
-export type SaleAdjustmentType = (typeof SaleAdjustmentType)[keyof typeof SaleAdjustmentType]
+export enum SaleAdjustmentType {
+  SALES_TAX = 0,
+  DISCOUNT = 1,
+  CANCELLATION = 2,
+  EXCHANGE = 3,
+  TRANSFER = 4,
+  ADDENDUM = 5,
+  NEED_TYPE_SWAP = 6,
+  LATE_FEE = 7,
+  PROPERTY_EXCHANGE = 8,
+  ITEM_CREDIT = 9,
+}
 
 /**
  * Contract Person Role - Flags enum for person's role(s) on contract
@@ -76,22 +78,22 @@ export type ContractPersonRole = (typeof ContractPersonRole)[keyof typeof Contra
 /**
  * At-Need Type - How an at-need contract was initiated
  * Backend: AtNeedType (WalkIn=0, PN_Maturity=1)
+ * Matches BFF exactly - numeric enum
  */
-export const AtNeedType = {
-  WALK_IN: 'walk_in',
-  PN_MATURITY: 'pn_maturity',
-} as const
-export type AtNeedType = (typeof AtNeedType)[keyof typeof AtNeedType]
+export enum AtNeedType {
+  WALK_IN = 0,
+  PN_MATURITY = 1,
+}
 
 /**
  * Pre-Need Funding Type - How a pre-need contract is funded
  * Backend: PreNeedFundingType (Trust=0, Insurance=1)
+ * Matches BFF exactly - numeric enum
  */
-export const PreNeedFundingType = {
-  TRUST: 'trust',
-  INSURANCE: 'insurance',
-} as const
-export type PreNeedFundingType = (typeof PreNeedFundingType)[keyof typeof PreNeedFundingType]
+export enum PreNeedFundingType {
+  TRUST = 0,
+  INSURANCE = 1,
+}
 
 /**
  * Financing Status
@@ -230,9 +232,9 @@ export interface SaleItem {
   discounts: SaleItemDiscount[]
   trust: SaleItemTrustFund[]
 
-  // Timestamps
-  createdAt: string
-  updatedAt: string
+  // Timestamps (matches BFF field names)
+  dateCreated: string
+  dateLastModified: string
 }
 
 // =============================================================================
@@ -243,8 +245,7 @@ export interface SaleItem {
  * A sale record within a contract (can be original sale or adjustment)
  * Backend: Facts.Entities.Sale
  */
-export interface Sale {
-  id: string
+export interface Sale extends Omit<Entity, 'createdByUserId' | 'version'> {
   contractId: string
   saleNumber: string
   saleDate?: string
@@ -263,10 +264,6 @@ export interface Sale {
 
   // Child collections
   items: SaleItem[]
-
-  // Timestamps
-  createdAt: string
-  updatedAt: string
 }
 
 // =============================================================================
@@ -277,8 +274,7 @@ export interface Sale {
  * A person associated with a contract (buyer, beneficiary, etc.)
  * Backend: Facts.Entities.ContractPerson -> Name
  */
-export interface ContractPerson {
-  id: string
+export interface ContractPerson extends Omit<Entity, 'createdByUserId' | 'version'> {
   contractId: string
   nameId: string // Reference to Name entity
   roles: ContractPersonRole[] // Can have multiple roles
@@ -302,9 +298,9 @@ export interface ContractPerson {
   driversLicenseState?: string
   isVeteran?: boolean
 
-  // Timestamps
-  createdAt: string
-  updatedAt: string
+  // Timestamps (matches BFF field names)
+  dateCreated: string
+  dateLastModified: string
 }
 
 // =============================================================================
@@ -315,8 +311,7 @@ export interface ContractPerson {
  * Financing/payment terms for a contract
  * Backend: Facts.Entities.ContractFinancing
  */
-export interface ContractFinancing {
-  id: string
+export interface ContractFinancing extends Omit<Entity, 'createdByUserId' | 'version'> {
   contractId: string
   isFinanced: boolean
   downPayment: number
@@ -346,10 +341,6 @@ export interface ContractFinancing {
   // Imputed interest (for pre-need)
   imputedInterestRate?: number
   totalImputedInterest?: number
-
-  // Timestamps
-  createdAt: string
-  updatedAt: string
 }
 
 // =============================================================================
@@ -368,8 +359,7 @@ export interface ContractFundingDetail {
 // Payment (for tracking payments received)
 // =============================================================================
 
-export interface ContractPayment {
-  id: string
+export interface ContractPayment extends Omit<Entity, 'createdByUserId' | 'version'> {
   contractId: string
   saleId?: string
   date: string
@@ -378,10 +368,6 @@ export interface ContractPayment {
   reference?: string
   checkNumber?: string
   notes?: string
-
-  // Timestamps
-  createdAt: string
-  updatedAt: string
 }
 
 // =============================================================================
@@ -444,9 +430,9 @@ export interface Contract {
   // Notes
   notes?: string
 
-  // Timestamps
-  createdAt: string
-  updatedAt: string
+  // Timestamps (matches BFF field names)
+  dateCreated: string
+  dateLastModified: string
 }
 
 // =============================================================================
@@ -576,11 +562,11 @@ export const paymentMethodOptions = [
 // =============================================================================
 
 export function getNeedTypeLabel(type: NeedType): string {
-  return needTypeLabels[type] || type
+  return needTypeLabels[type] || String(type)
 }
 
 export function getSaleStatusLabel(status: SaleStatus): string {
-  return saleStatusLabels[status] || status
+  return saleStatusLabels[status] || String(status)
 }
 
 export function getSaleStatusColor(status: SaleStatus): string {
@@ -659,51 +645,10 @@ export function calculateSaleTotals(items: SaleItem[]): {
 // =============================================================================
 // Enum Conversion Helpers (for API integration)
 // =============================================================================
-
-export function needTypeFromBackend(value: number): NeedType {
-  const map: Record<number, NeedType> = { 1: NeedType.AT_NEED, 2: NeedType.PRE_NEED }
-  return map[value] ?? NeedType.AT_NEED
-}
-
-export function needTypeToBackend(value: NeedType): number {
-  const map: Record<NeedType, number> = { [NeedType.AT_NEED]: 1, [NeedType.PRE_NEED]: 2 }
-  return map[value]
-}
-
-export function saleStatusFromBackend(value: number): SaleStatus {
-  const map: Record<number, SaleStatus> = {
-    0: SaleStatus.DRAFT,
-    1: SaleStatus.EXECUTED,
-    2: SaleStatus.FINALIZED,
-    3: SaleStatus.VOID,
-  }
-  return map[value] ?? SaleStatus.DRAFT
-}
-
-export function saleStatusToBackend(value: SaleStatus): number {
-  const map: Record<SaleStatus, number> = {
-    [SaleStatus.DRAFT]: 0,
-    [SaleStatus.EXECUTED]: 1,
-    [SaleStatus.FINALIZED]: 2,
-    [SaleStatus.VOID]: 3,
-  }
-  return map[value]
-}
-
-export function saleTypeFromBackend(value: number): SaleType {
-  const map: Record<number, SaleType> = {
-    0: SaleType.CONTRACT,
-    1: SaleType.CONTRACT_ADJUSTMENT,
-    2: SaleType.MISC_CASH,
-  }
-  return map[value] ?? SaleType.CONTRACT
-}
-
-export function saleTypeToBackend(value: SaleType): number {
-  const map: Record<SaleType, number> = {
-    [SaleType.CONTRACT]: 0,
-    [SaleType.CONTRACT_ADJUSTMENT]: 1,
-    [SaleType.MISC_CASH]: 2,
-  }
-  return map[value]
-}
+//
+// NOTE: Old conversion helpers have been removed.
+// Use enum controllers from @/shared/lib/enums instead:
+//
+// import { needTypeController, saleStatusController } from '@/shared/lib/enums/contract'
+// const needType = yield* needTypeController.fromApi(backendValue)
+// const backendValue = yield* needTypeController.toApi(frontendValue)

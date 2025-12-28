@@ -4,16 +4,15 @@
  * Tenant type definitions
  */
 
-export interface Tenant {
-  id: string
+import type { Entity } from '@/shared/lib/entity'
+
+export interface Tenant extends Entity {
   name: string
   slug: string
   address?: TenantAddress
   phone?: string
   email?: string
   settings: TenantSettings
-  createdAt: string
-  updatedAt: string
 }
 
 export interface TenantAddress {
