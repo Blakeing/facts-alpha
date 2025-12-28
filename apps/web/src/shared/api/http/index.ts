@@ -1,3 +1,3 @@
 export { createHttpClient, getHttpClient, resetHttpClient } from './client'
-export { type ApiType, getApiConfig, type HttpClientConfig } from './config'
+export { getApiConfig, type HttpClientConfig } from './config'
 

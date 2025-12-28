@@ -19,11 +19,10 @@
             <h1 class="text-h4 font-weight-semibold">
               {{ contract.contractNumber }}
             </h1>
-            <ContractStatusBadge :status="primarySaleStatus" />
+            <ContractStatusBadge :status="primarySaleStatusString" />
           </div>
           <p class="text-body-2 text-medium-emphasis">
-            {{ primaryBeneficiary?.lastName ?? 'Unknown' }},
-            {{ primaryBeneficiary?.firstName ?? '' }} ·
+            {{ getLastFirstName(primaryBeneficiary?.name) || 'Unknown' }} ·
             {{ getNeedTypeLabel(contract.needType) }}
           </p>
         </div>
@@ -32,7 +31,7 @@
         <FButton
           intent="primary"
           prepend-icon="mdi-pencil"
-          @click="router.push(`/contracts/${contract.id}/edit/general`)"
+          @click="router.push(`/contracts/${contractId}/edit/general`)"
         >
           Edit Contract
         </FButton>
@@ -61,7 +60,7 @@
         <FButton
           intent="tonal"
           size="small"
-          @click="router.push(`/contracts/${contract.id}/edit/general`)"
+          @click="router.push(`/contracts/${contractId}/edit/general`)"
         >
           Complete Now
         </FButton>
@@ -89,11 +88,11 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Name</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ primaryBuyer?.firstName ?? '' }} {{ primaryBuyer?.lastName ?? '' }}
+                {{ getFullName(primaryBuyer?.name) }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="primaryBuyer?.phone">
+            <v-list-item v-if="getPrimaryPhoneNumber(primaryBuyer?.name)">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -103,11 +102,11 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Phone</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ formatPhone(primaryBuyer.phone) }}
+                {{ formatPhone(getPrimaryPhoneNumber(primaryBuyer?.name)) }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="primaryBuyer?.email">
+            <v-list-item v-if="getPrimaryEmailAddress(primaryBuyer?.name)">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -117,11 +116,11 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Email</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ primaryBuyer.email }}
+                {{ getPrimaryEmailAddress(primaryBuyer?.name) }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="primaryBuyer?.address">
+            <v-list-item v-if="getPrimaryAddress(primaryBuyer?.name)">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -133,9 +132,7 @@
                 >Address</v-list-item-title
               >
               <v-list-item-subtitle class="text-body-1">
-                {{ primaryBuyer.address.address1 }}<br />
-                {{ primaryBuyer.address.city }}, {{ primaryBuyer.address.state }}
-                {{ primaryBuyer.address.postalCode }}
+                {{ formatAddressSingleLine(getPrimaryAddress(primaryBuyer?.name)) }}
               </v-list-item-subtitle>
             </v-list-item>
           </v-list>
@@ -161,12 +158,11 @@
               </template>
               <v-list-item-title class="text-body-2 text-medium-emphasis">Name</v-list-item-title>
               <v-list-item-subtitle class="text-body-1">
-                {{ primaryBeneficiary?.firstName ?? '' }}
-                {{ primaryBeneficiary?.lastName ?? '' }}
+                {{ getFullName(primaryBeneficiary?.name) }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="primaryBeneficiary?.dateOfDeath">
+            <v-list-item v-if="primaryBeneficiary?.name?.deathDate">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -178,11 +174,11 @@
                 >Date of Death</v-list-item-title
               >
               <v-list-item-subtitle class="text-body-1">
-                {{ formatDate(primaryBeneficiary.dateOfDeath) }}
+                {{ formatDate(primaryBeneficiary.name.deathDate) }}
               </v-list-item-subtitle>
             </v-list-item>
 
-            <v-list-item v-if="primaryBeneficiary?.dateOfBirth">
+            <v-list-item v-if="primaryBeneficiary?.name?.birthDate">
               <template #prepend>
                 <v-icon
                   class="mr-2"
@@ -194,7 +190,7 @@
                 >Date of Birth</v-list-item-title
               >
               <v-list-item-subtitle class="text-body-1">
-                {{ formatDate(primaryBeneficiary.dateOfBirth) }}
+                {{ formatDate(primaryBeneficiary.name.birthDate) }}
               </v-list-item-subtitle>
             </v-list-item>
           </v-list>
@@ -279,7 +275,7 @@
             <FButton
               intent="text"
               size="small"
-              @click="router.push(`/contracts/${contract.id}/edit/items`)"
+              @click="router.push(`/contracts/${contractId}/edit/items`)"
             >
               View All Items
             </FButton>
@@ -329,7 +325,7 @@
             <FButton
               intent="text"
               size="small"
-              @click="router.push(`/contracts/${contract.id}/edit/payments`)"
+              @click="router.push(`/contracts/${contractId}/edit/payments`)"
             >
               Manage Payments
             </FButton>
@@ -369,7 +365,7 @@
               <div class="text-body-2 text-medium-emphasis">Status</div>
               <ContractStatusBadge
                 class="mt-1"
-                :status="primarySaleStatus"
+                :status="primarySaleStatusString"
               />
             </v-col>
             <v-col
@@ -428,11 +424,20 @@
     getPaymentMethodLabel,
     getPrimaryBeneficiary,
     getPrimaryBuyer,
+    getSaleStatusLabel,
     type PaymentMethod,
     SaleStatus,
     SaleType,
     useContract,
   } from '@/entities/contract'
+  import {
+    formatAddressSingleLine,
+    getFullName,
+    getLastFirstName,
+    getPrimaryAddress,
+    getPrimaryEmailAddress,
+    getPrimaryPhoneNumber,
+  } from '@/entities/name'
   import { formatCurrency, formatDate, formatPhone } from '@/shared/lib'
   import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
   import { FButton, FCard, FLoader } from '@/shared/ui'
@@ -467,11 +472,16 @@
     return getPrimaryBeneficiary(contract.value.people)
   })
 
-  // Get primary sale status
+  // Get primary sale status (as enum for logic)
   const primarySaleStatus = computed(() => {
     if (!contract.value?.sales) return SaleStatus.DRAFT
     const primarySale = contract.value.sales.find((s) => s.saleType === SaleType.CONTRACT)
     return primarySale?.saleStatus ?? SaleStatus.DRAFT
+  })
+
+  // Get primary sale status as string (for display)
+  const primarySaleStatusString = computed(() => {
+    return getSaleStatusLabel(primarySaleStatus.value)
   })
 
   // Get all items from all sales
@@ -485,13 +495,16 @@
     if (!contract.value) return []
     const missing: string[] = []
 
-    if (!primaryBuyer.value?.firstName || !primaryBuyer.value?.lastName) {
+    const buyerName = primaryBuyer.value?.name
+    if (!buyerName?.first || !buyerName?.last) {
       missing.push('Buyer name')
     }
-    if (!primaryBuyer.value?.phone) {
+    if (!getPrimaryPhoneNumber(buyerName)) {
       missing.push('Buyer phone')
     }
-    if (!primaryBeneficiary.value?.firstName || !primaryBeneficiary.value?.lastName) {
+
+    const beneficiaryName = primaryBeneficiary.value?.name
+    if (!beneficiaryName?.first || !beneficiaryName?.last) {
       missing.push('Beneficiary name')
     }
     if (allItems.value.length === 0) {

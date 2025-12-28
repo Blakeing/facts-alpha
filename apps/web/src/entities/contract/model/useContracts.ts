@@ -15,23 +15,53 @@ import { computed, ref } from 'vue'
 
 import { useUserContextStore } from '@/stores'
 import { ContractApi } from '../api'
-import { SaleStatus } from './contract'
 
 export const CONTRACTS_QUERY_KEY = ['contracts'] as const
+
+/** Status string values from BFF */
+export type ContractStatusString = 'Draft' | 'Executed' | 'Finalized' | 'Void' | 'Cancelled'
+
+export interface DateRange {
+  from?: string
+  to?: string
+}
 
 export function useContracts() {
   const userContext = useUserContextStore()
 
   const search = ref('')
-  const statusFilter = ref<SaleStatus | null>(null)
+  const statusFilter = ref<ContractStatusString | null>(null)
   const needTypeFilter = ref<NeedType | null>(null)
+  const dateRange = ref<DateRange | null>(null)
 
-  // Query key includes locationId for cache separation per location
-  const queryKey = computed(() => ['contracts', userContext.currentLocationId] as const)
+  // Query key includes locationId, needType, and dateRange for cache separation
+  const queryKey = computed(
+    () =>
+      [
+        'contracts',
+        userContext.currentLocationId,
+        needTypeFilter.value,
+        dateRange.value?.from,
+        dateRange.value?.to,
+      ] as const,
+  )
 
   const query = useQuery<ContractListing[], Error>({
     queryKey,
-    queryFn: runEffectQuery(ContractApi.list()),
+    queryFn: () => {
+      const locationId = userContext.currentLocationId
+      if (!locationId) {
+        return Promise.resolve([])
+      }
+      return runEffectQuery(
+        ContractApi.list(locationId, {
+          fromDate: dateRange.value?.from,
+          toDate: dateRange.value?.to,
+          needType: needTypeFilter.value ?? undefined,
+        }),
+      )()
+    },
+    enabled: computed(() => !!userContext.currentLocationId),
   })
 
   const contracts = computed<ContractListing[]>(() => query.data.value ?? [])
@@ -46,33 +76,60 @@ export function useContracts() {
     })
   })
 
-  // Filter by current location first
-  const locationFilteredContracts = computed<ContractListing[]>(() => {
-    const locationId = userContext.currentLocationId
-    if (!locationId) return []
-    return contracts.value.filter((c: ContractListing) => c.locationId === locationId)
-  })
+  // BFF already filters by locationId, so contracts are already location-filtered
+  const locationFilteredContracts = computed<ContractListing[]>(() => contracts.value)
 
-  // Filter by search term
+  /**
+   * Normalize text by removing diacritics/accents (matches legacy normalizeText)
+   * Example: "José" -> "Jose"
+   */
+  function normalizeText(text: string): string {
+    return text.normalize('NFD').replace(/[\u0300-\u036F]/g, '')
+  }
+
+  // Filter by search term (matches legacy ContractList.vue search logic)
   const searchedContracts = computed<ContractListing[]>(() => {
     if (!search.value) return locationFilteredContracts.value
 
-    const term = search.value.toLowerCase()
-    return locationFilteredContracts.value.filter(
-      (c: ContractListing) =>
-        c.contractNumber.toLowerCase().includes(term) ||
-        c.primaryBuyerName.toLowerCase().includes(term) ||
-        c.primaryBeneficiaryName.toLowerCase().includes(term) ||
-        c.prePrintedContractNumber?.toLowerCase().includes(term),
-    )
+    const s = search.value.toLowerCase()
+    const normalizedSearch = normalizeText(s)
+
+    return locationFilteredContracts.value.filter((c: ContractListing) => {
+      // Normalized purchaser match (legacy uses normalizeText for purchaser)
+      const purchaser = c.purchaser?.toLowerCase() || ''
+      if (normalizeText(purchaser).includes(normalizedSearch)) return true
+
+      // Direct string matches
+      if (c.contractNumber?.toLowerCase().includes(s)) return true
+      if (c.prePrintedContractNumber?.toLowerCase().includes(s)) return true
+      if (c.purchaser?.toLowerCase().includes(s)) return true
+      if (c.beneficiary?.toLowerCase().includes(s)) return true
+      if (c.status?.toLowerCase().includes(s)) return true
+      if (c.salesPerson?.toLowerCase().includes(s)) return true
+
+      // Co-buyers array search
+      if (c.cobuyers?.some((b: string) => b.toLowerCase().includes(s))) return true
+
+      // Date searches (formatted as MM/DD/YYYY)
+      if (c.date) {
+        const dateStr = new Date(c.date).toLocaleDateString('en-US')
+        if (dateStr.includes(s)) return true
+      }
+      if (c.beneficiaryDateOfDeath) {
+        const dodStr = new Date(c.beneficiaryDateOfDeath).toLocaleDateString('en-US')
+        if (dodStr.includes(s)) return true
+      }
+
+      return false
+    })
   })
 
   // Filter by status and need type
   const filteredContracts = computed<ContractListing[]>(() => {
     let result = searchedContracts.value
 
-    if (statusFilter.value) {
-      result = result.filter((c: ContractListing) => c.saleStatus === statusFilter.value)
+    if (statusFilter.value !== null) {
+      result = result.filter((c: ContractListing) => c.status === statusFilter.value)
     }
 
     if (needTypeFilter.value) {
@@ -82,17 +139,18 @@ export function useContracts() {
     return result
   })
 
-  // Group by status for counts (uses location-filtered contracts)
+  // Group by status string for counts (uses location-filtered contracts)
   const contractsByStatus = computed(() => {
-    const grouped: Record<SaleStatus, ContractListing[]> = {
-      [SaleStatus.DRAFT]: [],
-      [SaleStatus.EXECUTED]: [],
-      [SaleStatus.FINALIZED]: [],
-      [SaleStatus.VOID]: [],
+    const grouped: Record<ContractStatusString, ContractListing[]> = {
+      Draft: [],
+      Executed: [],
+      Finalized: [],
+      Void: [],
+      Cancelled: [],
     }
 
     for (const contract of locationFilteredContracts.value) {
-      const status = contract.saleStatus as SaleStatus
+      const status = (contract.status || 'Draft') as ContractStatusString
       if (grouped[status]) {
         grouped[status].push(contract)
       }
@@ -104,11 +162,11 @@ export function useContracts() {
   // Summary stats (uses location-filtered contracts)
   const stats = computed(() => ({
     total: locationFilteredContracts.value.length,
-    draft: contractsByStatus.value[SaleStatus.DRAFT]?.length ?? 0,
-    executed: contractsByStatus.value[SaleStatus.EXECUTED]?.length ?? 0,
-    finalized: contractsByStatus.value[SaleStatus.FINALIZED]?.length ?? 0,
+    draft: contractsByStatus.value.Draft?.length ?? 0,
+    executed: contractsByStatus.value.Executed?.length ?? 0,
+    finalized: contractsByStatus.value.Finalized?.length ?? 0,
     totalBalance: locationFilteredContracts.value.reduce(
-      (sum: number, c: ContractListing) => sum + c.balanceDue,
+      (sum: number, c: ContractListing) => sum + (c.balanceDue ?? 0),
       0,
     ),
   }))
@@ -118,6 +176,7 @@ export function useContracts() {
     search,
     statusFilter,
     needTypeFilter,
+    dateRange,
 
     // Data
     contracts: locationFilteredContracts,

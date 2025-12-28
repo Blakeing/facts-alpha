@@ -11,8 +11,9 @@ import { runEffect } from '@facts/effect'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { LocationApi, type LocationListing, LocationType } from '@/entities/location'
+import { usersApi } from '@/shared/api'
+import { authService } from '@/shared/lib/auth'
 import {
-  type GrantedPermission,
   PermissionLevel,
   type Requirement,
   type SecurityOptionKey,
@@ -46,9 +47,13 @@ export const useUserContextStore = defineStore('userContext', () => {
   const locationsLoaded = ref(false)
 
   /**
+   * Tenant ID from OIDC user profile
+   */
+  const tenantId = ref<string | undefined>(undefined)
+
+  /**
    * User's effective permissions.
-   * In production, this comes from the backend after authentication.
-   * For development, initialized with mock data.
+   * Fetched from BFF after authentication.
    */
   const userPermissions = ref<UserEffectivePermissions | null>(null)
 
@@ -174,6 +179,10 @@ export const useUserContextStore = defineStore('userContext', () => {
     userPermissions.value = permissions
   }
 
+  function setTenantId(id: string | undefined) {
+    tenantId.value = id
+  }
+
   // ============================================================
   // Actions - Location
   // ============================================================
@@ -201,6 +210,7 @@ export const useUserContextStore = defineStore('userContext', () => {
     availableLocations.value = []
     locationsLoaded.value = false
     userPermissions.value = null
+    tenantId.value = undefined
   }
 
   /**
@@ -237,61 +247,59 @@ export const useUserContextStore = defineStore('userContext', () => {
   }
 
   // ============================================================
-  // Mock Data Initialization (Development Only)
+  // Authentication Integration
   // ============================================================
 
   /**
-   * Initialize with mock user data for development.
-   * Set isAdmin to false to test permission guards.
+   * Initialize user context from OIDC authentication.
+   * This is the production authentication flow.
    */
-  function initMockUser() {
-    currentUser.value = {
-      id: 'user-1',
-      email: 'john.doe@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      role: 'admin',
+  async function initFromAuth(): Promise<void> {
+    try {
+      // Get user from OIDC
+      const oidcUser = await authService.getUser()
+      if (!oidcUser) {
+        console.warn('No OIDC user found')
+        return
+      }
+
+      // Extract user details from profile
+      const profile = oidcUser.profile as any
+      currentUser.value = {
+        id: profile.sub,
+        email: profile.email || '',
+        firstName: profile.given_name || profile.name?.split(' ')[0] || 'User',
+        lastName: profile.family_name || profile.name?.split(' ')[1] || '',
+        role: 'user', // Default role, may be determined from permissions
+      }
+
+      // Set tenant ID from profile
+      tenantId.value = (profile.tenantId || profile.tenant_id) as string | undefined
+
+      // Fetch permissions from BFF
+      try {
+        const permissions = await usersApi.getUserPermissions()
+        userPermissions.value = permissions
+
+        // Update role if admin
+        if (permissions.isAdmin && currentUser.value) {
+          currentUser.value.role = 'admin'
+        }
+      } catch (error) {
+        console.error('Failed to load user permissions:', error)
+        // Continue with empty permissions
+        userPermissions.value = {
+          isAdmin: false,
+          permissionsGranted: [],
+        }
+      }
+
+      // Load available locations
+      await loadLocations()
+    } catch (error) {
+      console.error('Failed to initialize user context from auth:', error)
+      throw error
     }
-
-    // Mock permissions - set isAdmin: false to test guards
-    userPermissions.value = {
-      isAdmin: true, // Toggle to false to test permission restrictions
-      permissionsGranted: getMockPermissions(),
-    }
-  }
-
-  /**
-   * Returns a set of common permissions for development testing.
-   * When isAdmin is false, these determine what the user can access.
-   */
-  function getMockPermissions(): GrantedPermission[] {
-    return [
-      // Contracts - full access
-      { key: SecurityOptionKeys.ProcessContracts, level: PermissionLevel.Edit },
-      { key: SecurityOptionKeys.ExecuteContracts, level: PermissionLevel.Edit },
-      { key: SecurityOptionKeys.ProcessContractComments, level: PermissionLevel.Edit },
-      { key: SecurityOptionKeys.ProcessContractAttachments, level: PermissionLevel.Edit },
-
-      // Payments - read only
-      { key: SecurityOptionKeys.ProcessPayments, level: PermissionLevel.Read },
-      { key: SecurityOptionKeys.ProcessPaymentDrafts, level: PermissionLevel.Read },
-
-      // Locations - read only
-      { key: SecurityOptionKeys.ManageLocations, level: PermissionLevel.Read },
-
-      // Items - full access
-      { key: SecurityOptionKeys.ManageItems, level: PermissionLevel.Edit },
-      { key: SecurityOptionKeys.ManageCategories, level: PermissionLevel.Edit },
-      { key: SecurityOptionKeys.ManagePackages, level: PermissionLevel.Edit },
-
-      // Property - read only
-      { key: SecurityOptionKeys.ManageProperty, level: PermissionLevel.Read },
-      { key: SecurityOptionKeys.ProcessInterments, level: PermissionLevel.Read },
-
-      // Reports & Exports - read only
-      { key: SecurityOptionKeys.ManageReports, level: PermissionLevel.Read },
-      { key: SecurityOptionKeys.ManageDataExports, level: PermissionLevel.Read },
-    ]
   }
 
   return {
@@ -302,6 +310,7 @@ export const useUserContextStore = defineStore('userContext', () => {
     locationsLoading,
     locationsLoaded,
     userPermissions,
+    tenantId,
 
     // Computed - User Info
     isAuthenticated,
@@ -327,11 +336,12 @@ export const useUserContextStore = defineStore('userContext', () => {
     // Actions
     setUser,
     setUserPermissions,
+    setTenantId,
     setCurrentLocation,
     setAvailableLocations,
     switchLocation,
     logout,
     loadLocations,
-    initMockUser,
+    initFromAuth,
   }
 })

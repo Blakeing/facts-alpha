@@ -44,32 +44,29 @@
 
 ## Phase 0: API Development Foundation ✅ COMPLETED
 
-### 🎯 **Status**: JSON Server Implementation Complete
+### 🎯 **Status**: BFF Integration Complete
 
 ### **Completed**:
-1. **JSON Server Package** (`@facts/mock-api`) - Local HTTP-based development
-2. **Centralized URLs** (`shared/api/urls.ts`) - Type-safe endpoint definitions
-3. **HTTP Client Factory** (`shared/api/http/client.ts`) - Axios with tenant/auth headers
-4. **Data Source Abstraction** - Environment-based switching (mock/JSON Server/BFF)
-5. **Entity Integration** - Contract and Location APIs support all modes
+1. **BFF Integration** - Connected to production Backend for Frontend
+2. **Single-Payload Contract Save** - Implemented `ContractSessionSaveModel` pattern from legacy app
+3. **ContractSaveModelBuilder** - Builds nested payload with role gathering/distribution
+4. **Simplified Save Logic** - Removed JSON Server workarounds (originalIds tracking, separate API calls)
+5. **Effect TS Integration** - Typed error handling across all API operations
 
 ### **Benefits Delivered**:
-- ✅ HTTP data flow testing without backend dependency
-- ✅ BFF-aligned endpoint structure for smooth migration
-- ✅ Environment variable configuration (`.env.example`, `.env.json-server`, `.env.bff`)
-- ✅ Concurrent dev scripts (`pnpm dev:all`) for full-stack development
+- ✅ Single atomic transaction for contract saves
+- ✅ Simplified codebase (removed ~500+ lines of JSON Server workarounds)
+- ✅ Aligned with legacy app patterns (ContractSaveModelBuilder, apply/gatherRoles)
+- ✅ BFF handles CREATE vs UPDATE logic - no frontend tracking needed
+- ✅ Type-safe error handling with Effect TS
 
-### **Development Modes**:
+**Development Modes**:
 ```bash
-# Full stack: Web app + JSON Server (Turborepo runs all dev scripts)
+# Web app with BFF (production mode)
 pnpm dev
 
-# Web app only (uses in-memory mocks by default)
-pnpm dev:web
-
-# BFF mode (production, requires backend)
-# Set VITE_API_TYPE=bff in .env.local
-pnpm dev:web
+# BFF endpoint configuration in .env.local
+VITE_API_URL=https://api.facts.com/api/v1
 ```
 
 ### **Future Enhancements** (Deferred):
@@ -256,17 +253,12 @@ pnpm dev:web
 
 ## Next Steps
 
-**Current Status**: JSON Server implementation complete, ready for BFF integration when authentication is available.
+**Current Status**: BFF integration complete. Ready for feature expansion and production hardening.
 
 **Immediate Priorities**:
-1. **Authentication Setup** - Required for BFF connection
-2. **Additional Entities** - Extend JSON Server and APIs to cover more backend models
-3. **Feature Expansion** - Build out contract financing, multi-sale support, catalog
-4. **Real-Time Features** - SignalR integration once BFF is connected
-
-**BFF Migration Tasks** (When connecting to real backend):
-- **Contract Save Pattern**: Update `ContractApi.create()` to send nested `ContractSessionSaveModel` payload (contract + sales + items + payments) in one request instead of separate calls. See [API Integration](./api-integration.md#save-contract-draft) for details.
-
-**Decision Point**: Continue feature development with JSON Server while authentication is being developed.
+1. **Feature Expansion** - Build out contract financing, multi-sale support, item catalog
+2. **Testing** - Add comprehensive test coverage for critical paths
+3. **Performance** - Optimize for production workloads
+4. **Real-Time Features** - SignalR integration for live data updates
 
 **Timeline Estimate**: 6-12 months for full migration depending on scope and resources.

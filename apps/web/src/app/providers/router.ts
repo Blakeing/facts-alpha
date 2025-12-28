@@ -14,6 +14,7 @@ import { setupLayouts } from 'virtual:generated-layouts'
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes } from 'vue-router/auto-routes'
 import { useUserContextStore } from '@/stores'
+import { authService } from '@/shared/lib/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,53 +57,93 @@ function validateRoutePermissions(
 }
 
 /**
- * Navigation guard for permission checking.
- *
- * Currently operates in "soft" mode during development:
- * - Logs permission failures to console
- * - Does not block navigation (allows testing)
- *
- * TODO: When auth is integrated, switch to "hard" mode:
- * - Redirect unauthenticated users to login
- * - Block and redirect unauthorized users
+ * Flag to track if login redirect is in progress
+ * Prevents multiple redirects during navigation
  */
-router.beforeEach((to, _from) => {
+let loginInProgress = false
+
+/**
+ * Navigation guard for authentication and permission checking.
+ *
+ * Flow:
+ * 1. Check if route allows anonymous access
+ * 2. Check authentication status
+ * 3. Initialize user context if authenticated
+ * 4. Validate permissions for the route
+ */
+router.beforeEach(async (to, _from) => {
   const userContext = useUserContextStore()
 
-  // Initialize mock user if not already initialized (development only)
-  // This ensures permissions are available before route guards run
-  if (!userContext.userPermissions && !userContext.currentUser) {
-    userContext.initMockUser()
-  }
-
-  // Skip permission check for anonymous routes
+  // Skip auth check for anonymous routes
   if (to.meta.allowAnonymous) {
     return true
   }
 
-  // TODO: When auth is integrated, check authentication here
-  // if (!userContext.isAuthenticated) {
-  //   return { name: 'login', query: { redirect: to.fullPath } }
-  // }
+  // Check authentication status
+  let isAuthenticated = false
+  try {
+    isAuthenticated = await authService.isAuthenticated()
+  } catch (error) {
+    console.warn('[Router Guard] Error checking authentication:', error)
+  }
+
+  if (!isAuthenticated) {
+    // Prevent multiple login redirects
+    if (loginInProgress) {
+      console.log('[Router Guard] Login already in progress, waiting...')
+      return false
+    }
+
+    // Redirect to login, preserving the intended destination
+    loginInProgress = true
+
+    try {
+      await authService.login(to.fullPath)
+    } catch (error) {
+      console.error('[Router Guard] Failed to redirect to login:', error)
+      loginInProgress = false
+      // Show error to user instead of infinite loop
+      alert(
+        'Unable to connect to authentication server. Please check your network connection and try again.',
+      )
+    }
+    return false
+  }
+
+  // Reset login flag on successful auth
+  loginInProgress = false
+
+  // Initialize user context if not already done
+  if (!userContext.currentUser) {
+    try {
+      await userContext.initFromAuth()
+    } catch (error) {
+      console.error('[Router Guard] Failed to initialize user context:', error)
+      // If initialization fails, try login again
+      try {
+        await authService.login(to.fullPath)
+      } catch {
+        alert('Failed to load user data. Please try logging in again.')
+      }
+      return false
+    }
+  }
 
   // Validate permissions
   const hasPermission = validateRoutePermissions(userContext, to.meta)
 
   if (!hasPermission) {
-    // Development mode: log and allow (for testing)
     console.warn(
       `[Router Guard] Permission denied for route "${to.path}"`,
       '\nRequired:',
       to.meta.permissions || to.meta.permissionsAny,
       '\nUser admin:',
       userContext.isAdmin,
-      '\nUser permissions:',
-      userContext.userPermissions,
     )
 
-    // TODO: When auth is integrated, uncomment to enforce:
-    // alert('You do not have permission to access this resource.')
-    // return { path: '/' }
+    // Block access and redirect to home
+    alert('You do not have permission to access this resource.')
+    return { path: '/' }
   }
 
   return true

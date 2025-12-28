@@ -147,7 +147,7 @@ export type { PeopleHandler, PersonFormData } from './handlers/usePeopleHandler'
 
 export { useContract } from './useContract'
 export { useContractMutations } from './useContractMutations'
-export { CONTRACTS_QUERY_KEY, useContracts } from './useContracts'
+export { CONTRACTS_QUERY_KEY, type ContractStatusString, useContracts } from './useContracts'
 
 // Session Architecture
 export { useContractSession, useContractSessionContext } from './useContractSession'

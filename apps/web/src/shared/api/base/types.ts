@@ -3,7 +3,7 @@ import type { Effect } from 'effect'
 
 /**
  * Data source interface for Promise-based implementations
- * (mock APIs, HTTP clients, etc.)
+ * (HTTP clients, etc.)
  */
 export interface DataSource<TListing, TEntity, TForm> {
   list: (locationId?: string) => Promise<TListing[]>

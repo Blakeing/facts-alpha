@@ -21,21 +21,28 @@
   - [x] Router guard for route-level permission validation
   - [x] `usePermissions` composable for UI-level permission gating
   - [x] Route meta permissions on protected routes
-  - [x] Mock permissions for development testing
+  - [x] Real permissions from BFF after authentication
 - [x] Vuetify MD3 blueprint integration
 - [x] Case Management module:
   - [x] Case list page with filtering and search
   - [x] Case detail page
   - [x] Case create/edit form
-  - [x] Case entity (types, store, mock data)
+  - [x] Case entity (types, store)
 - [x] Contract Management module:
   - [x] Contract list page with FListCard + AG Grid
   - [x] Full-screen dialog editing pattern (FFullScreenDialog)
-  - [x] Tabbed interface (General, Items, Payments)
-  - [x] Contract entity (types, schema, mock API, composables)
+  - [x] Tabbed interface (General, Items, Payments, **People**)
+  - [x] Contract entity (types, schema, API, composables)
   - [x] **Backend-aligned data models** (Contract/Sale/SaleItem structure)
   - [x] **Updated enums** (NeedType, SaleStatus, PaymentMethod with ACH)
   - [x] **Primary buyer/beneficiary** (role-based people relationships)
+  - [x] **People Management Tab** - Full UI for managing contract people
+    - [x] Vertical tabs for person selection
+    - [x] Support for buyer, co-buyers, beneficiary, additional beneficiaries, generic people
+    - [x] Role management (change person types, remove people)
+    - [x] Permission-based UI (draft vs executed contracts)
+    - [x] Integration with NamePanel for inline editing
+    - [x] NameEditorDialog for modal editing
   - [x] Location-scoped filtering (contracts filtered by current location)
   - [x] Form validation with Zod (custom implementation, no vee-validate)
   - [x] Dirty form tracking with unsaved changes confirmation
@@ -48,7 +55,7 @@
   - [x] Case domain composables (`useCases`, `useCase`, `useCaseForm`)
   - [x] Contract domain composables (`useContracts`, `useContract`, `useContractForm`)
   - [x] Location domain composables (`locationApi`, location entity)
-  - [x] Mock API client pattern (`caseApi`, `contractApi`, `locationApi`)
+  - [x] BFF API client pattern (`caseApi`, `contractApi`, `locationApi`)
 - [x] Form utilities (inspired by legacy FACTS app):
   - [x] `useFormModel` - Live model state management with Zod validation
   - [x] `useFormContext` + `FFormProvider` - Automatic field error/blur binding
@@ -73,16 +80,23 @@
   - [x] Field name standardization (`dateCreated`/`dateLastModified`)
   - [x] Removed mapping layer (BFF format = Frontend format)
   - [x] Updated all form schemas to use `z.nativeEnum()`
-  - [x] Updated mock data to match production format
   - [x] Simplified EnumController (removed conversion methods)
+- [x] **Name Entity & Reusable Components**:
+  - [x] Name entity model (matching BFF structure with nested arrays)
+  - [x] Reusable NamePanel component (composite of NamePart* components)
+  - [x] NameEditorDialog for modal editing
+  - [x] Granular NamePart* components (Name, Addresses, Phones, Emails, etc.)
+  - [x] All components use Vuetify defaults (no custom styles)
+  - [x] Safe array accessors with fallbacks
 
 ## Next Priorities
 
-- [ ] **Effect TS Integration** - Typed error handling and functional programming
-- [ ] **Architectural Patterns** - Railway, Command, Saga patterns for scalability
+- [x] **Effect TS Integration** - Typed error handling and functional programming
+- [x] **Architectural Patterns** - Railway, Command, Saga patterns for scalability
 - [ ] **Feature Expansion** - Financing, multi-sale, item catalog, tax calculation
-- [ ] **Authentication** - User management and login system
-- [x] **API Integration** - Real backend connection (BFF ready - format aligned, just needs URL change)
+- [x] **Authentication** - OIDC authentication with Identity Server, user context initialization
+- [x] **API Integration** - Fully integrated with BFF, all endpoints connected
+- [x] **Single-Payload Contract Save** - BFF integration complete with nested `ContractSessionSaveModel`
 
 ## Future Phases
 

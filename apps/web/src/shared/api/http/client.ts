@@ -1,5 +1,7 @@
 import type { HttpClientConfig } from './config'
-import axios, { type AxiosInstance } from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
+import { AuthService } from '@/shared/lib/auth'
+import { useUserContextStore } from '@/stores/userContext'
 import { getApiConfig } from './config'
 
 /**
@@ -13,18 +15,46 @@ export function createHttpClient(config: HttpClientConfig): AxiosInstance {
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...(config.tenantId && { 'Tenant-Id': config.tenantId }),
-      ...(config.token && { Authorization: `Bearer ${config.token}` }),
     },
   })
+
+  // Request interceptor for adding auth headers dynamically
+  client.interceptors.request.use(
+    async (reqConfig: InternalAxiosRequestConfig) => {
+      // Get fresh token and tenant ID on each request
+      const token = await AuthService.getAccessToken()
+      const userContext = useUserContextStore()
+      const tenantId = userContext.tenantId
+
+      if (token) {
+        reqConfig.headers.Authorization = `Bearer ${token}`
+      }
+
+      if (tenantId) {
+        reqConfig.headers['Tenant-Id'] = tenantId
+      }
+
+      return reqConfig
+    },
+    (error) => {
+      throw error
+    },
+  )
 
   // Response interceptor for error handling
   client.interceptors.response.use(
     (response) => response,
-    (error) => {
-      // TODO: Add refresh token logic here when auth is implemented
+    async (error) => {
+      // Handle 401 Unauthorized - token expired or invalid
+      if (error.response?.status === 401) {
+        console.warn('[HttpClient] 401 Unauthorized - redirecting to login')
+        // Import authService dynamically to avoid circular dependency
+        const { authService } = await import('@/shared/lib/auth')
+        await authService.login(window.location.pathname)
+      }
+
       // TODO: Add global error handling/toasts here
-      return Promise.reject(error)
+      throw error
     },
   )
 
@@ -37,9 +67,10 @@ export function createHttpClient(config: HttpClientConfig): AxiosInstance {
  */
 let httpClient: AxiosInstance | null = null
 
-export function getHttpClient(): AxiosInstance {
+export async function getHttpClient(): Promise<AxiosInstance> {
   if (!httpClient) {
-    httpClient = createHttpClient(getApiConfig())
+    const config = await getApiConfig()
+    httpClient = createHttpClient(config)
   }
   return httpClient
 }

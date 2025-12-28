@@ -1,17 +1,16 @@
 <template>
   <FListCard
-    v-model:search="search"
     :busy="isBusy"
     :columns="columns"
     edit-enabled
     empty-icon="mdi-file-document-outline"
     empty-subtitle="Create your first contract to get started."
     empty-title="No contracts found"
-    fill-height
     :items="filteredContracts"
+    :items-per-page="10"
     :loading="isLoading"
-    search-placeholder="Search by contract #, name..."
-    :searchable="true"
+    pagination
+    :searchable="false"
     subtitle="Manage funeral and cemetery contracts"
     title="Contracts"
     @edit="handleView"
@@ -26,36 +25,88 @@
       </FButton>
     </template>
 
-    <!-- Status Filter Chips -->
+    <!-- Filters -->
     <template #filters>
-      <div class="d-flex ga-2 mb-4">
-        <v-chip
-          v-for="status in statusFilters"
-          :key="status.value"
-          :color="statusFilter === status.value ? status.color : undefined"
-          variant="tonal"
-          @click="statusFilter = statusFilter === status.value ? null : status.value"
-        >
-          {{ status.label }}
-          <template
-            v-if="status.count > 0"
-            #append
+      <div class="mb-4">
+        <!-- Search field (custom - not using FListCard's built-in search to avoid double filtering) -->
+        <v-text-field
+          v-model="search"
+          class="mb-3"
+          clearable
+          density="compact"
+          hide-details
+          label="Search"
+          prepend-inner-icon="mdi-magnify"
+          style="max-width: 400px"
+          variant="outlined"
+        />
+
+        <!-- NeedType Filter Chips -->
+        <div class="d-flex ga-2 mb-3">
+          <v-chip
+            v-for="needType in needTypeFilters"
+            :key="needType.label"
+            :color="needTypeFilter === needType.value ? 'primary' : undefined"
+            variant="tonal"
+            @click="needTypeFilter = needTypeFilter === needType.value ? null : needType.value"
           >
-            <span class="ml-1"> ({{ status.count }}) </span>
-          </template>
-        </v-chip>
+            {{ needType.label }}
+          </v-chip>
+        </div>
+
+        <!-- Status Filter Chips -->
+        <div class="d-flex ga-2">
+          <v-chip
+            v-for="status in statusFilters"
+            :key="status.value"
+            :color="statusFilter === status.value ? status.color : undefined"
+            variant="tonal"
+            @click="statusFilter = statusFilter === status.value ? null : status.value"
+          >
+            {{ status.label }}
+            <template
+              v-if="status.count > 0"
+              #append
+            >
+              <span class="ml-1"> ({{ status.count }}) </span>
+            </template>
+          </v-chip>
+        </div>
       </div>
     </template>
 
     <!-- Custom cell renderers via slots -->
-    <template #item.saleStatus="{ item }">
-      <ContractStatusBadge :status="(item as ContractListing).saleStatus" />
+    <template #item.status="{ item }">
+      <ContractStatusBadge :status="(item as ContractListing).status" />
     </template>
 
-    <template #item.balanceDue="{ item }">
-      <span :class="{ 'text-error': (item as ContractListing).balanceDue > 0 }">
-        {{ formatCurrency((item as ContractListing).balanceDue) }}
-      </span>
+    <!-- Purchaser with co-buyers (aligned with legacy) -->
+    <template #item.primaryBuyerName="{ item }">
+      <div>
+        {{ (item as ContractListing).primaryBuyerName || (item as ContractListing).purchaser }}
+        <div
+          v-if="
+            (item as ContractListing).cobuyers && (item as ContractListing).cobuyers!.length > 0
+          "
+          class="text-caption text-medium-emphasis"
+        >
+          <div
+            v-for="cobuyer in (item as ContractListing).cobuyers"
+            :key="cobuyer"
+          >
+            {{ cobuyer }}
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Beneficiary (support both field names) -->
+    <template #item.primaryBeneficiaryName="{ item }">
+      {{
+        (item as ContractListing).primaryBeneficiaryName ||
+        (item as ContractListing).beneficiary ||
+        ''
+      }}
     </template>
 
     <template #empty>
@@ -79,10 +130,10 @@
     ContractApi,
     type ContractListing,
     ContractStatusBadge,
-    SaleStatus,
+    NeedType,
     useContracts,
   } from '@/entities/contract'
-  import { formatCurrency, formatDate } from '@/shared/lib'
+  import { formatDate } from '@/shared/lib'
   import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
   import { FButton, type FColumn, FListCard } from '@/shared/ui'
 
@@ -98,57 +149,72 @@
   const queryClient = useQueryClient()
 
   // Contract list data
-  const { search, statusFilter, filteredContracts, contractsByStatus, isLoading } = useContracts()
+  const { search, statusFilter, needTypeFilter, filteredContracts, contractsByStatus, isLoading } =
+    useContracts()
 
   // Busy state for prefetching
   const isBusy = ref(false)
 
-  // Column definitions
+  // Column definitions (aligned with legacy app)
   const columns: FColumn<ContractListing>[] = [
     { key: 'contractNumber', title: 'Contract #', width: 160 },
     {
-      key: 'dateSigned',
+      key: 'date',
       title: 'Date',
       width: 120,
-      valueFormatter: (params) => formatDate(params.value as string),
+      valueFormatter: (params) => {
+        const date = params.value as string | undefined
+        return date ? formatDate(date) : ''
+      },
+      valueGetter: (params) => {
+        const item = params.data as ContractListing
+        return item.date || item.dateSigned || item.dateExecuted || ''
+      },
     },
-    { key: 'primaryBuyerName', title: 'Buyer' },
+    { key: 'primaryBuyerName', title: 'Purchaser' },
     { key: 'primaryBeneficiaryName', title: 'Beneficiary' },
-    { key: 'saleStatus', title: 'Status', width: 120 },
-    {
-      key: 'grandTotal',
-      title: 'Total',
-      width: 120,
-      align: 'end',
-      valueFormatter: (params) => formatCurrency(params.value as number),
-    },
-    { key: 'balanceDue', title: 'Balance', width: 120, align: 'end' },
+    { key: 'status', title: 'Status', width: 120 },
   ]
+
+  const needTypeFilters = computed(() => [
+    {
+      value: NeedType.AT_NEED,
+      label: 'At-Need Funeral',
+    },
+    {
+      value: NeedType.PRE_NEED,
+      label: 'Pre-Need Funeral',
+    },
+    {
+      value: null,
+      label: 'Cemetery',
+    },
+  ])
 
   const statusFilters = computed(() => [
     {
-      value: SaleStatus.DRAFT,
+      value: 'Draft' as const,
       label: 'Draft',
       color: 'grey',
-      count: contractsByStatus.value[SaleStatus.DRAFT]?.length ?? 0,
+      count: contractsByStatus.value.Draft?.length ?? 0,
     },
     {
-      value: SaleStatus.FINALIZED,
+      value: 'Finalized' as const,
       label: 'Finalized',
       color: 'warning',
-      count: contractsByStatus.value[SaleStatus.FINALIZED]?.length ?? 0,
+      count: contractsByStatus.value.Finalized?.length ?? 0,
     },
     {
-      value: SaleStatus.EXECUTED,
+      value: 'Executed' as const,
       label: 'Executed',
       color: 'success',
-      count: contractsByStatus.value[SaleStatus.EXECUTED]?.length ?? 0,
+      count: contractsByStatus.value.Executed?.length ?? 0,
     },
     {
-      value: SaleStatus.VOID,
+      value: 'Void' as const,
       label: 'Void',
       color: 'error',
-      count: contractsByStatus.value[SaleStatus.VOID]?.length ?? 0,
+      count: contractsByStatus.value.Void?.length ?? 0,
     },
   ])
 
@@ -158,6 +224,12 @@
   }
 
   async function handleView(item: ContractListing) {
+    // Guard against missing ID
+    if (!item.id) {
+      console.error('Contract listing has no ID:', item)
+      return
+    }
+
     // Prefetch the contract data before navigating to detail page
     try {
       isBusy.value = true

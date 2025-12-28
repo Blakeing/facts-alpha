@@ -1,4 +1,6 @@
-export type ApiType = 'mock' | 'json-server' | 'bff'
+import { EndpointsProvider } from '@/shared/config/endpoints'
+import { AuthService } from '@/shared/lib/auth'
+import { useUserContextStore } from '@/stores/userContext'
 
 export interface HttpClientConfig {
   baseUrl: string
@@ -9,47 +11,33 @@ export interface HttpClientConfig {
 
 /**
  * Get tenant ID from user context
- * TODO: Wire this to actual auth state when implemented
  */
 function getTenantId(): string | undefined {
-  // For now, return undefined - will be wired to Pinia userContext later
-  return undefined
+  const userContext = useUserContextStore()
+  return userContext.tenantId
 }
 
 /**
  * Get auth token from auth service
- * TODO: Wire this to actual auth state when implemented
  */
-function getAuthToken(): string | undefined {
-  // For now, return undefined - will be wired to auth service later
-  return undefined
+async function getAuthToken(): Promise<string | undefined> {
+  const token = await AuthService.getAccessToken()
+  return token ?? undefined
 }
 
-export function getApiConfig(): HttpClientConfig {
-  const apiType = (import.meta.env.VITE_API_TYPE || 'json-server') as ApiType
+/**
+ * Get API configuration for BFF
+ * Always uses BFF endpoints from ep.json
+ */
+export async function getApiConfig(): Promise<HttpClientConfig> {
+  // Get BFF URL from endpoints (ep.json)
+  const endpoints = await EndpointsProvider.getEndpoints()
+  const token = await getAuthToken()
 
-  switch (apiType) {
-    case 'json-server': {
-      return {
-        baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1',
-        timeout: 10_000,
-      }
-    }
-    case 'bff': {
-      return {
-        baseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-        tenantId: getTenantId(),
-        token: getAuthToken(),
-        timeout: 30_000,
-      }
-    }
-    default: {
-      // Mock mode - no longer supported, fallback to JSON Server
-      return {
-        baseUrl: 'http://localhost:3001/api/v1',
-        timeout: 10_000,
-      }
-    }
+  return {
+    baseUrl: endpoints.bff + '/api/v1',
+    tenantId: getTenantId(),
+    token,
+    timeout: 30_000,
   }
 }
-

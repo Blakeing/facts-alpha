@@ -150,13 +150,12 @@
     return route.path === to || route.path.startsWith(to + '/')
   }
 
-  // Initialize user context and load locations
+  // Load locations if not already loaded (auth initialization handles this, but ensure it's done)
   onMounted(async () => {
-    // Initialize mock user (auth will come later)
-    userContext.initMockUser()
-
-    // Load locations from the API
-    await userContext.loadLocations()
+    // Locations are loaded during initFromAuth(), but ensure they're loaded if auth is already complete
+    if (userContext.isAuthenticated && !userContext.locationsLoaded) {
+      await userContext.loadLocations()
+    }
   })
 </script>
 

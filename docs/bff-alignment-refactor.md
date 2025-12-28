@@ -145,6 +145,62 @@ Frontend Entities (string IDs, camelCase, numeric enums)
     ✅ Perfect 1:1 match - no conversion needed!
 ```
 
+### 8. Name Entity and Nested Structure ✅
+
+**Created:** `/apps/web/src/entities/name/model/name.ts`
+
+**Changed:** ContractPerson now uses nested `Name` object matching BFF structure exactly
+
+**Before (flattened):**
+```typescript
+interface ContractPerson {
+  firstName: string
+  lastName: string
+  phone?: string
+  email?: string
+  address?: Address
+}
+```
+
+**After (nested, matching BFF):**
+```typescript
+interface ContractPerson {
+  nameId: string
+  roles: number  // Flags enum
+  name: Name  // Nested object with phones[], addresses[], emailAddresses[]
+}
+
+interface Name {
+  first: string
+  last: string
+  phones: NamePhone[]
+  addresses: NameAddress[]
+  emailAddresses: NameEmail[]
+}
+```
+
+**Impact:** 
+- Removed transformation/flattening logic from `contractApi.ts`
+- Components now access `person.name.first` instead of `person.firstName`
+- Helper functions in `nameHelpers.ts` provide utilities for working with nested structure
+- Form schemas updated to validate nested structure
+
+### 9. ContractResponse Wrapper ✅
+
+**Changed:** `contractApi.ts` now handles BFF response wrapper
+
+**BFF Response Format:**
+```typescript
+interface ContractResponse {
+  contract: Contract
+  executeContract: boolean
+  finalizeContract: boolean
+  voidContract: boolean
+}
+```
+
+**Impact:** API layer unwraps `response.data.contract` and returns it directly - no transformation needed.
+
 ## Benefits
 
 1. **Simplified Codebase**: Removed entire mapping layer (~500+ lines)
@@ -178,6 +234,9 @@ Simply point the API client to the production BFF URL - everything will work.
 ### Created
 - `/apps/web/src/shared/lib/entity/types.ts` - Entity base types
 - `/apps/web/src/shared/lib/entity/index.ts` - Entity exports
+- `/apps/web/src/entities/name/model/name.ts` - Name entity types (BFF-aligned)
+- `/apps/web/src/entities/name/model/nameHelpers.ts` - Name utility functions
+- `/apps/web/src/entities/name/index.ts` - Name entity exports
 
 ### Deleted
 - `/apps/web/src/shared/api/mappers/` - Entire directory (no longer needed)
@@ -199,6 +258,10 @@ Simply point the API client to the production BFF URL - everything will work.
 - [x] Form validation works with numeric enums
 - [x] UI components display enum labels correctly
 - [x] Mock data matches production format
+- [x] ContractPerson uses nested Name structure (matching BFF)
+- [x] ContractResponse wrapper handled correctly
+- [x] No transformation logic in API layer
+- [x] Components access nested name data correctly
 
 ## Related Documentation
 

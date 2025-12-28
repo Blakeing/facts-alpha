@@ -17,7 +17,6 @@ import { computed, inject, type MaybeRefOrGetter, provide, ref, toValue, watch }
 import { ContractApi } from '../api/contractApi'
 import {
   type Contract,
-  ContractPersonRole,
   getCoBuyers,
   getPrimaryBeneficiary,
   getPrimaryBuyer,
@@ -25,6 +24,7 @@ import {
   SaleStatus,
   SaleType,
 } from './contract'
+import { ContractSaveModelBuilder } from './ContractSaveModelBuilder'
 import { CONTRACT_SESSION_KEY, type ContractSessionContext } from './contractSessionContext'
 import { useItemsHandler } from './handlers/useItemsHandler'
 import { usePaymentsHandler } from './handlers/usePaymentsHandler'
@@ -168,18 +168,44 @@ export function useContractSession(
     error: loadError,
   } = useQuery({
     queryKey: computed(() => ['contract', contractId.value] as const),
-    queryFn: runEffectQuery(ContractApi.get(contractId.value)),
-    enabled: computed(() => !isNewContract.value && !!contractId.value),
+    queryFn: async () => {
+      const id = contractId.value
+      console.log('[useContractSession] queryFn called with id:', id)
+      if (!id || id === 'undefined') {
+        throw new Error('No contract ID provided')
+      }
+      const result = await runEffectQuery(ContractApi.get(id))()
+      console.log('[useContractSession] API returned:', result)
+      console.log('[useContractSession] result.people:', result.people)
+      console.log('[useContractSession] result.sales:', result.sales)
+      return result
+    },
+    enabled: computed(() => {
+      const id = contractId.value
+      const enabled = !isNewContract.value && !!id && id !== 'undefined'
+      console.log(
+        '[useContractSession] query enabled:',
+        enabled,
+        'id:',
+        id,
+        'isNew:',
+        isNewContract.value,
+      )
+      return enabled
+    }),
   })
 
   // Apply server data to handlers when loaded
   watch(
     existingContract,
     (contract) => {
+      console.log('[useContractSession] watch existingContract fired:', contract)
       if (contract) {
         // Get sale items from primary sale
         const primarySale = contract.sales?.find((s) => s.saleType === SaleType.CONTRACT)
         const saleItems = primarySale?.items ?? []
+        console.log('[useContractSession] primarySale:', primarySale)
+        console.log('[useContractSession] saleItems:', saleItems)
 
         // Set the sale context for items handler
         if (primarySale) {
@@ -192,11 +218,18 @@ export function useContractSession(
 
         // Get people by role
         const contractPeople = contract.people ?? []
+        console.log('[useContractSession] contractPeople:', contractPeople)
         const buyer = getPrimaryBuyer(contractPeople)
         const beneficiary = getPrimaryBeneficiary(contractPeople)
         const coBuyers = getCoBuyers(contractPeople)
+        console.log('[useContractSession] buyer:', buyer)
+        console.log('[useContractSession] beneficiary:', beneficiary)
 
         people.applyFromServer(buyer, beneficiary, coBuyers)
+        console.log(
+          '[useContractSession] after applyFromServer - purchaser:',
+          people.purchaser.value,
+        )
 
         // Apply metadata
         needType.value = contract.needType
@@ -278,314 +311,36 @@ export function useContractSession(
   // ==========================================================================
 
   /**
-   * Build contract form data from current session state
-   * (Similar to legacy ContractSaveModelBuilder.buildSaveModel)
-   *
-   * For updates, preserves existing contract fields that aren't being changed
+   * Apply server response back to session (like legacy apply() pattern)
+   * Updates all handlers with fresh server data after save
    */
-  function buildContractFormData() {
-    const peopleData = people.getFormValues()
-    const existing = existingContract.value
+  function applyServerResponse(contract: Contract): void {
+    // Update metadata
+    needType.value = contract.needType
+    contractDate.value = contract.dateSigned ?? contract.dateExecuted ?? ''
+    locationId.value = contract.locationId
 
-    return {
-      locationId: locationId.value,
-      // Preserve existing values for updates, use empty string as fallback for required fields
-      prePrintedContractNumber: existing?.prePrintedContractNumber ?? '',
-      needType: needType.value,
-      dateSigned: contractDate.value || undefined,
-      isConditionalSale: existing?.isConditionalSale ?? false,
-      notes: existing?.notes ?? '',
-      primaryBuyer: {
-        firstName: peopleData.purchaser.firstName,
-        lastName: peopleData.purchaser.lastName,
-        middleName: peopleData.purchaser.middleName ?? '',
-        prefix: '',
-        suffix: '',
-        nickname: '',
-        companyName: '',
-        phone: peopleData.purchaser.phone ?? '',
-        email: peopleData.purchaser.email ?? '',
-        address: peopleData.purchaser.address,
-        dateOfBirth: peopleData.purchaser.dateOfBirth ?? '',
-        dateOfDeath: peopleData.purchaser.dateOfDeath ?? '',
-        nationalIdentifier: '',
-        driversLicense: '',
-        driversLicenseState: '',
-        isVeteran: false,
-        roles: [ContractPersonRole.PRIMARY_BUYER],
-        addedAfterContractExecution: false,
-      },
-      coBuyers: peopleData.coBuyers.map((cb) => ({
-        firstName: cb.firstName,
-        lastName: cb.lastName,
-        middleName: cb.middleName ?? '',
-        prefix: '',
-        suffix: '',
-        nickname: '',
-        companyName: '',
-        phone: cb.phone ?? '',
-        email: cb.email ?? '',
-        address: cb.address,
-        dateOfBirth: cb.dateOfBirth ?? '',
-        dateOfDeath: cb.dateOfDeath ?? '',
-        nationalIdentifier: '',
-        driversLicense: '',
-        driversLicenseState: '',
-        isVeteran: false,
-        roles: [ContractPersonRole.CO_BUYER],
-        addedAfterContractExecution: false,
-      })),
-      primaryBeneficiary: {
-        firstName: peopleData.beneficiary.firstName,
-        lastName: peopleData.beneficiary.lastName,
-        middleName: peopleData.beneficiary.middleName ?? '',
-        prefix: '',
-        suffix: '',
-        nickname: '',
-        companyName: '',
-        phone: peopleData.beneficiary.phone ?? '',
-        email: peopleData.beneficiary.email ?? '',
-        address: peopleData.beneficiary.address,
-        dateOfBirth: peopleData.beneficiary.dateOfBirth ?? '',
-        dateOfDeath: peopleData.beneficiary.dateOfDeath ?? '',
-        nationalIdentifier: '',
-        driversLicense: '',
-        driversLicenseState: '',
-        isVeteran: false,
-        roles: [ContractPersonRole.PRIMARY_BENEFICIARY],
-        addedAfterContractExecution: false,
-      },
-      additionalBeneficiaries: [],
-      fundingDetails: [],
-      // Preserve existing contract fields for updates
-      contractTypeId: existing?.contractTypeId,
-      contractSaleTypeId: existing?.contractSaleTypeId,
-      leadSourceId: existing?.leadSourceId,
-      atNeedType: existing?.atNeedType,
-      preNeedFundingType: existing?.preNeedFundingType,
-      salesPersonId: existing?.salesPersonId,
-      marketingAgentId: existing?.marketingAgentId,
-      isCancelled: existing?.isCancelled ?? false,
-      contractReferenceId: existing?.contractReferenceId,
-      firstCallId: existing?.firstCallId,
-      commentFeedOwnerId: existing?.commentFeedOwnerId,
-      dateApproved: existing?.dateApproved,
-    }
-  }
-
-  /**
-   * Ensure primary sale exists for items/payments
-   * Handles JSON Server timing issues by fetching or creating if needed
-   */
-  async function ensurePrimarySale(contract: Contract) {
-    // 1. Check if sale exists in saved contract response
-    let primarySale = contract.sales?.find((s) => s.saleType === SaleType.CONTRACT)
-
-    // 2. If not found, fetch directly (handles JSON Server timing)
-    if (!primarySale) {
-      try {
-        const sales = await runEffect(ContractApi.getSales(contract.id))
-        primarySale = sales.find((s) => s.saleType === SaleType.CONTRACT)
-      } catch {
-        // Silently continue - will create new sale below
-      }
+    // Get primary sale and update items
+    const primarySale = contract.sales?.find((s) => s.saleType === SaleType.CONTRACT)
+    if (primarySale) {
+      items.setSaleContext(primarySale.id, contract.needType)
+      items.applyFromServer(primarySale.items ?? [])
+      saleStatus.value = primarySale.saleStatus ?? SaleStatus.DRAFT
     }
 
-    // 3. If still missing, create it
-    if (!primarySale) {
-      try {
-        const now = new Date().toISOString()
-        const saleNumber = `S-${contract.contractNumber.split('-')[1]}-${contract.contractNumber.split('-')[2]}`
-        primarySale = await runEffect(
-          ContractApi.addSale(contract.id, {
-            saleNumber,
-            saleDate: contract.dateSigned || now,
-            saleType: SaleType.CONTRACT,
-            saleStatus: SaleStatus.DRAFT,
-            accountingPeriod: new Date(now).toISOString().split('T')[0],
-            memo: '',
-            items: [],
-          }),
-        )
-      } catch {
-        // Failed to create primary sale - items/payments won't be saved
-      }
-    }
+    // Update payments
+    payments.applyFromServer(contract.payments ?? [])
 
-    return primarySale || null
-  }
+    // Apply people
+    const buyer = getPrimaryBuyer(contract.people ?? [])
+    const beneficiary = getPrimaryBeneficiary(contract.people ?? [])
+    const coBuyers = getCoBuyers(contract.people ?? [])
+    people.applyFromServer(buyer, beneficiary, coBuyers)
 
-  /**
-   * Persist new and modified items to the server
-   */
-  async function persistNewItems(contractId: string, saleId: string): Promise<void> {
-    // Save new items (not yet on server)
-    const newItems = items.getNewItems()
-    for (const item of newItems) {
-      try {
-        await runEffect(
-          ContractApi.addSaleItem(contractId, saleId, {
-            itemId: item.itemId,
-            description: item.description,
-            needType: item.needType,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            bookPrice: item.bookPrice,
-            cost: item.cost,
-            bookCost: item.bookCost,
-            size: item.size,
-            statedCare: item.statedCare,
-            salesTaxEnabled: item.salesTaxEnabled,
-            serialNumber: item.serialNumber,
-            isCancelled: item.isCancelled,
-            ordinal: item.ordinal,
-            sku: item.sku,
-            itemDescription: item.itemDescription,
-            itemType: item.itemType,
-            salesTax: item.salesTax,
-            discounts: item.discounts,
-            trust: item.trust,
-          }),
-        )
-      } catch {
-        // Continue with other items even if one fails
-      }
-    }
-
-    // Update modified items (existed on server, now changed)
-    const modifiedItems = items.getModifiedItems()
-    for (const item of modifiedItems) {
-      try {
-        await runEffect(
-          ContractApi.updateSaleItem(contractId, saleId, item.id, {
-            itemId: item.itemId,
-            description: item.description,
-            needType: item.needType,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            bookPrice: item.bookPrice,
-            cost: item.cost,
-            bookCost: item.bookCost,
-            size: item.size,
-            statedCare: item.statedCare,
-            salesTaxEnabled: item.salesTaxEnabled,
-            serialNumber: item.serialNumber,
-            isCancelled: item.isCancelled,
-            ordinal: item.ordinal,
-            sku: item.sku,
-            itemDescription: item.itemDescription,
-            itemType: item.itemType,
-            salesTax: item.salesTax,
-            discounts: item.discounts,
-            trust: item.trust,
-          }),
-        )
-      } catch {
-        // Continue with other items even if one fails
-      }
-    }
-  }
-
-  /**
-   * Persist new and modified payments to the server
-   */
-  async function persistNewPayments(contractId: string): Promise<void> {
-    // Save new payments (not yet on server)
-    const newPayments = payments.getNewPayments()
-    for (const payment of newPayments) {
-      try {
-        await runEffect(
-          ContractApi.addPayment(contractId, {
-            date: payment.date,
-            method: payment.method,
-            amount: payment.amount,
-            reference: payment.reference || '',
-            checkNumber: payment.checkNumber || '',
-            notes: payment.notes || '',
-          }),
-        )
-      } catch {
-        // Continue with other payments even if one fails
-      }
-    }
-
-    // Update modified payments (existed on server, now changed)
-    const modifiedPayments = payments.getModifiedPayments()
-    for (const payment of modifiedPayments) {
-      try {
-        await runEffect(
-          ContractApi.updatePayment(contractId, payment.id, {
-            date: payment.date,
-            method: payment.method,
-            amount: payment.amount,
-            reference: payment.reference || '',
-            checkNumber: payment.checkNumber || '',
-            notes: payment.notes || '',
-          }),
-        )
-      } catch {
-        // Continue with other payments even if one fails
-      }
-    }
-  }
-
-  /**
-   * Persist people changes (new and modified)
-   */
-  async function persistPeopleChanges(contractId: string): Promise<void> {
-    const peopleData = people.getFormValues()
-
-    // Helper to save/update a person
-    const savePerson = async (person: any, roles: ContractPersonRole[]) => {
-      const personData = {
-        firstName: person.firstName,
-        lastName: person.lastName,
-        middleName: person.middleName ?? '',
-        prefix: '',
-        suffix: '',
-        nickname: '',
-        companyName: '',
-        phone: person.phone ?? '',
-        email: person.email ?? '',
-        address: person.address,
-        dateOfBirth: person.dateOfBirth ?? '',
-        dateOfDeath: person.dateOfDeath ?? '',
-        nationalIdentifier: '',
-        driversLicense: '',
-        driversLicenseState: '',
-        isVeteran: false,
-        roles,
-        addedAfterContractExecution: false,
-      }
-
-      // Check if this person is new or existing
-      await (people.isPersonNew(person.id)
-        ? runEffect(ContractApi.addPerson(contractId, personData))
-        : runEffect(ContractApi.updatePerson(contractId, person.id, personData)))
-    }
-
-    // Save/update purchaser
-    try {
-      await savePerson(peopleData.purchaser, [ContractPersonRole.PRIMARY_BUYER])
-    } catch {
-      // Failed to save/update purchaser
-    }
-
-    // Save/update beneficiary
-    try {
-      await savePerson(peopleData.beneficiary, [ContractPersonRole.PRIMARY_BENEFICIARY])
-    } catch {
-      // Failed to save/update beneficiary
-    }
-
-    // Save/update co-buyers
-    for (const coBuyer of peopleData.coBuyers) {
-      try {
-        await savePerson(coBuyer, [ContractPersonRole.CO_BUYER])
-      } catch {
-        // Failed to save/update co-buyer
-      }
-    }
+    // Update status fields
+    dateSigned.value = contract.dateSigned
+    dateExecuted.value = contract.dateExecuted
+    isCancelled.value = contract.isCancelled
   }
 
   // ==========================================================================
@@ -599,70 +354,35 @@ export function useContractSession(
     saveError.value = null
 
     try {
-      // 1. Build form data
-      const data = buildContractFormData()
+      // Build complete save model using builder (like legacy buildSaveModel)
+      const saveModel = ContractSaveModelBuilder.buildSaveModel({
+        contractId,
+        contractNumber,
+        status: saleStatus,
+        needType,
+        contractDate,
+        locationId,
+        items,
+        payments,
+        people,
+      } as any)
 
-      // 2. Save contract
-      const savedContract = await runEffect(
-        isNewContract.value ? ContractApi.create(data) : ContractApi.update(contractId.value, data),
-      )
+      // Single API call to BFF
+      const result = await runEffect(ContractApi.saveDraft(saveModel))
 
-      // 3. Ensure primary sale exists
-      const primarySale = await ensurePrimarySale(savedContract)
+      // Apply response back to session (like legacy apply())
+      applyServerResponse(result)
 
-      if (primarySale) {
-        // 4. Update sale status if it has changed
-        if (primarySale.saleStatus !== saleStatus.value) {
-          try {
-            await runEffect(
-              ContractApi.updateSale(savedContract.id, primarySale.id, {
-                saleStatus: saleStatus.value,
-              }),
-            )
-          } catch {
-            // Failed to update sale status - continue with other saves
-          }
-        }
-
-        // 5. Persist new items and payments
-        await persistNewItems(savedContract.id, primarySale.id)
-        await persistNewPayments(savedContract.id)
-
-        // 6. Persist people changes
-        await persistPeopleChanges(savedContract.id)
-
-        // 7. Refetch contract to get updated items/payments/status from server
-        const updatedContract = await runEffect(ContractApi.get(savedContract.id))
-
-        // Update handlers with fresh server data
-        const updatedPrimarySale = updatedContract.sales?.find(
-          (s) => s.saleType === SaleType.CONTRACT,
-        )
-        if (updatedPrimarySale) {
-          // Update sale context for items handler
-          items.setSaleContext(updatedPrimarySale.id, updatedContract.needType)
-          items.applyFromServer(updatedPrimarySale.items ?? [])
-          payments.applyFromServer(updatedContract.payments ?? [])
-
-          // Sync status from server (in case it was updated)
-          saleStatus.value = updatedPrimarySale.saleStatus ?? SaleStatus.DRAFT
-        }
-      }
-      // If no primary sale found, items/payments won't be saved
-
-      // 8. Mark all handlers as clean
+      // Mark all handlers as clean
       items.markClean()
       payments.markClean()
       people.markClean()
 
-      // 7. Refetch queries to ensure fresh data before navigation
-      await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['contracts'] }),
-        queryClient.refetchQueries({ queryKey: ['contract', savedContract.id] }),
-      ])
+      // Invalidate queries to refresh UI
+      await queryClient.invalidateQueries({ queryKey: ['contracts'] })
 
-      options.onSave?.(savedContract)
-      return savedContract
+      options.onSave?.(result)
+      return result
     } catch (error_) {
       const error = error_ instanceof Error ? error_ : new Error('Failed to save contract')
       saveError.value = error

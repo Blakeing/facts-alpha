@@ -6,9 +6,9 @@
  */
 
 import { z } from 'zod'
+import { AddressType, Gender, MaritalStatus, PhoneType } from '@/entities/name'
 import {
   AtNeedType,
-  ContractPersonRole,
   FinancingStatus,
   ItemType,
   LateFeeType,
@@ -128,36 +128,100 @@ export const saleSchema = z.object({
 export type SaleFormValues = z.infer<typeof saleSchema>
 
 // =============================================================================
-// Contract Person Schema
+// Name Entity Schemas (BFF-aligned nested structure)
+// =============================================================================
+
+export const namePhoneSchema = z.object({
+  id: z.string().optional(),
+  nameId: z.string().optional(),
+  number: z.string().max(25),
+  type: z.nativeEnum(PhoneType).default(PhoneType.HOME),
+  preferred: z.boolean().default(true),
+  active: z.boolean().default(true),
+})
+
+export const nameAddressSchema = z.object({
+  id: z.string().optional(),
+  nameId: z.string().optional(),
+  address1: z.string().min(1, 'Address is required').max(255),
+  address2: z.string().max(255).optional().default(''),
+  city: z.string().min(1, 'City is required').max(255),
+  state: z.string().min(2, 'State is required').max(255),
+  postalCode: z.string().max(50).optional().default(''),
+  county: z.string().max(100).optional().default(''),
+  country: z.string().max(255).optional().default('USA'),
+  primary: z.boolean().default(true),
+  active: z.boolean().default(true),
+  addressType: z.nativeEnum(AddressType).default(AddressType.PHYSICAL),
+})
+
+export const nameEmailSchema = z.object({
+  id: z.string().optional(),
+  nameId: z.string().optional(),
+  address: z.string().email('Invalid email').max(255),
+  preferred: z.boolean().default(true),
+  active: z.boolean().default(true),
+})
+
+export const nameSchema = z.object({
+  id: z.string().optional(),
+  first: z.string().min(1, 'First name is required').max(255),
+  last: z.string().min(1, 'Last name is required').max(255),
+  middle: z.string().max(255).optional().default(''),
+  prefix: z.string().max(50).optional().default(''),
+  suffix: z.string().max(50).optional().default(''),
+  nickname: z.string().max(255).optional().default(''),
+  companyName: z.string().max(255).optional().default(''),
+  maidenName: z.string().max(255).optional().default(''),
+  birthDate: z.string().nullable().optional().default(null),
+  deathDate: z.string().nullable().optional().default(null),
+  timeOfDeath: z.string().nullable().optional().default(null),
+  age: z.number().nullable().optional().default(null),
+  deceased: z.boolean().optional().default(false),
+  weight: z.number().nullable().optional().default(null),
+  condition: z.string().nullable().optional().default(null),
+  nationalIdentifier: z.string().max(20).optional().default(''),
+  driversLicense: z.string().max(50).optional().default(''),
+  driversLicenseState: z.string().max(2).optional().default(''),
+  gender: z.nativeEnum(Gender).nullable().optional().default(null),
+  maritalStatus: z.nativeEnum(MaritalStatus).default(MaritalStatus.UNKNOWN),
+  ethnicity: z.string().nullable().optional().default(null),
+  race: z.string().nullable().optional().default(null),
+  isVeteran: z.boolean().optional().default(false),
+  branchOfService: z.number().optional().default(0),
+  mailingAddressSameAsPhysical: z.boolean().optional().default(true),
+  optOutMarketing: z.boolean().optional().default(false),
+  conversion: z.string().nullable().optional().default(null),
+  conversionId: z.string().nullable().optional().default(null),
+  conversionSource: z.string().nullable().optional().default(null),
+  phones: z.array(namePhoneSchema).default([]),
+  addresses: z.array(nameAddressSchema).default([]),
+  emailAddresses: z.array(nameEmailSchema).default([]),
+  relations: z.array(z.any()).default([]), // NameRelation - simplified for now
+})
+
+// =============================================================================
+// Contract Person Schema (with nested Name)
 // =============================================================================
 
 export const contractPersonSchema = z.object({
   id: z.string().optional(),
   contractId: z.string().optional(),
   nameId: z.string().optional(), // Reference to Name entity
-  roles: z.array(z.nativeEnum(ContractPersonRole)).default([ContractPersonRole.PERSON]),
+  roles: z.number(), // Flags enum (1=PrimaryBuyer, 2=CoBuyer, 4=PrimaryBeneficiary, 8=AdditionalBeneficiary)
   addedAfterContractExecution: z.boolean().optional().default(false),
-
-  // Name fields
-  firstName: z.string().min(1, 'First name is required').max(255),
-  middleName: z.string().max(255).optional().default(''),
-  lastName: z.string().min(1, 'Last name is required').max(255),
-  prefix: z.string().max(50).optional().default(''),
-  suffix: z.string().max(50).optional().default(''),
-  nickname: z.string().max(255).optional().default(''),
-  companyName: z.string().max(255).optional().default(''),
-  phone: z.string().max(25).optional().default(''),
-  email: z.string().email('Invalid email').max(255).optional().or(z.literal('')).default(''),
-  address: addressSchema.optional(),
-  dateOfBirth: z.string().optional().default(''),
-  dateOfDeath: z.string().optional().default(''),
-  nationalIdentifier: z.string().max(20).optional().default(''),
-  driversLicense: z.string().max(50).optional().default(''),
-  driversLicenseState: z.string().max(2).optional().default(''),
-  isVeteran: z.boolean().optional().default(false),
+  conversion: z.string().nullable().optional().default(null),
+  conversionId: z.string().nullable().optional().default(null),
+  conversionSource: z.string().nullable().optional().default(null),
+  // Nested Name object (BFF structure)
+  name: nameSchema,
 })
 
 export type ContractPersonFormValues = z.infer<typeof contractPersonSchema>
+export type NameFormValues = z.infer<typeof nameSchema>
+export type NamePhoneFormValues = z.infer<typeof namePhoneSchema>
+export type NameAddressFormValues = z.infer<typeof nameAddressSchema>
+export type NameEmailFormValues = z.infer<typeof nameEmailSchema>
 
 // =============================================================================
 // Contract Financing Schema
@@ -289,31 +353,52 @@ export function getDefaultAddress(): AddressFormValues {
 /**
  * Get default contract person
  */
-export function getDefaultContractPerson(
-  roles: ContractPersonRole[] = [ContractPersonRole.PERSON],
-): ContractPersonFormValues {
+export function getDefaultContractPerson(roleFlags = 0): ContractPersonFormValues {
   return {
     id: '',
     contractId: '',
     nameId: '',
-    roles,
+    roles: roleFlags, // Flags enum number
     addedAfterContractExecution: false,
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    prefix: '',
-    suffix: '',
-    nickname: '',
-    companyName: '',
-    phone: '',
-    email: '',
-    address: undefined,
-    dateOfBirth: '',
-    dateOfDeath: '',
-    nationalIdentifier: '',
-    driversLicense: '',
-    driversLicenseState: '',
-    isVeteran: false,
+    conversion: null,
+    conversionId: null,
+    conversionSource: null,
+    name: {
+      id: '',
+      first: '',
+      last: '',
+      middle: '',
+      prefix: '',
+      suffix: '',
+      nickname: '',
+      companyName: '',
+      maidenName: '',
+      birthDate: null,
+      deathDate: null,
+      timeOfDeath: null,
+      age: null,
+      deceased: false,
+      weight: null,
+      condition: null,
+      nationalIdentifier: '',
+      driversLicense: '',
+      driversLicenseState: '',
+      gender: null,
+      maritalStatus: MaritalStatus.UNKNOWN,
+      ethnicity: null,
+      race: null,
+      isVeteran: false,
+      branchOfService: 0,
+      mailingAddressSameAsPhysical: true,
+      optOutMarketing: false,
+      conversion: null,
+      conversionId: null,
+      conversionSource: null,
+      phones: [],
+      addresses: [],
+      emailAddresses: [],
+      relations: [],
+    },
   }
 }
 
@@ -406,9 +491,9 @@ export function getDefaultContractFormValues(locationId: string): ContractFormVa
     marketingAgentId: '',
     dateSigned: '', // Empty until user sets it
     isConditionalSale: false,
-    primaryBuyer: getDefaultContractPerson([ContractPersonRole.PRIMARY_BUYER]),
+    primaryBuyer: getDefaultContractPerson(1), // PrimaryBuyer = 1
     coBuyers: [],
-    primaryBeneficiary: getDefaultContractPerson([ContractPersonRole.PRIMARY_BENEFICIARY]),
+    primaryBeneficiary: getDefaultContractPerson(4), // PrimaryBeneficiary = 4
     additionalBeneficiaries: [],
     financing: getDefaultFinancing(),
     fundingDetails: [],

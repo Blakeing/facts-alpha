@@ -375,11 +375,25 @@ public class ContractFinancing : Entity {
 public class ContractPerson : Entity {
     public long NameId { get; set; }                     // Links to Name entity
     public long ContractId { get; set; }
-    public ContractPersonRole Roles { get; set; }        // Flags enum
+    public ContractPersonRole Roles { get; set; }        // Flags enum (numeric)
     public bool AddedAfterContractExecution { get; set; }
-    public Name Name { get; set; }                       // Navigation property
+    public Name Name { get; set; }                       // Navigation property (nested in BFF response)
 }
 ```
+
+**`Facts.Entities.Name`** (C#):
+
+The BFF returns ContractPerson with a nested `Name` object that includes:
+- Name fields: `first`, `last`, `middle`, `prefix`, `suffix`, `nickname`, `companyName`
+- Dates: `birthDate`, `deathDate`, `timeOfDeath`
+- Demographics: `gender`, `maritalStatus`, `ethnicity`, `race`, `isVeteran`
+- Nested collections:
+  - `phones[]` - Array of phone numbers with `number`, `type`, `preferred`, `active`
+  - `addresses[]` - Array of addresses with `address1`, `city`, `state`, `postalCode`, `primary`, `active`
+  - `emailAddresses[]` - Array of emails with `address`, `preferred`, `active`
+  - `relations[]` - Array of name relationships
+
+**Important:** The BFF returns the full nested structure. Facts Alpha types match this exactly - no flattening/transformation needed!
 
 ### Contract Enums
 
@@ -422,15 +436,17 @@ public class ContractPerson : Entity {
 | 8 | `PropertyExchange` | `'property_exchange'` |
 | 9 | `ItemCredit` | `'item_credit'` |
 
-**ContractPersonRole** (Flags):
+**ContractPersonRole** (Flags Enum - numeric):
 
-| Backend | Name | Frontend |
-|---------|------|----------|
-| 0 | `Person` | `'person'` |
-| 1 | `PrimaryBuyer` | `'primary_buyer'` |
-| 2 | `CoBuyer` | `'co_buyer'` |
-| 4 | `PrimaryBeneficiary` | `'primary_beneficiary'` |
-| 8 | `AdditionalBeneficiary` | `'additional_beneficiary'` |
+| Backend | Name | Frontend | Notes |
+|---------|------|----------|-------|
+| 0 | `Person` | `0` | Base role |
+| 1 | `PrimaryBuyer` | `1` | Flags enum - use bitwise AND to check |
+| 2 | `CoBuyer` | `2` | Flags enum - use bitwise AND to check |
+| 4 | `PrimaryBeneficiary` | `4` | Flags enum - use bitwise AND to check |
+| 8 | `AdditionalBeneficiary` | `8` | Flags enum - use bitwise AND to check |
+
+**Note:** BFF returns `roles` as a **number** (flags enum), not an array. Use bitwise operations: `(person.roles & 1) !== 0` to check for PrimaryBuyer.
 
 **AtNeedType:**
 
@@ -645,14 +661,32 @@ interface ContractPerson {
   id: string
   contractId: string
   nameId: string
-  roles: ContractPersonRole[]
+  roles: number  // Flags enum: 1=PrimaryBuyer, 2=CoBuyer, 4=PrimaryBeneficiary, 8=AdditionalBeneficiary
   addedAfterContractExecution: boolean
-  // Embedded name data for display
-  firstName: string
-  lastName: string
-  middleName?: string
-  phone?: string
-  email?: string
+  // Nested Name object from BFF (includes phones[], addresses[], emailAddresses[])
+  name: Name
+}
+
+interface Name {
+  id: string
+  first: string
+  last: string
+  middle: string
+  prefix: string
+  suffix: string
+  nickname: string
+  companyName: string
+  maidenName: string
+  birthDate: string | null
+  deathDate: string | null
+  deceased: boolean
+  isVeteran: boolean
+  // Nested collections
+  phones: NamePhone[]
+  addresses: NameAddress[]
+  emailAddresses: NameEmail[]
+  relations: NameRelation[]
+  // ... additional fields
 }
 ```
 

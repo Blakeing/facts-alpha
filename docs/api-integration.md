@@ -1,8 +1,8 @@
 # API Integration
 
-This document describes the backend BFF (Backend for Frontend) API patterns for future integration.
+This document describes the backend BFF (Backend for Frontend) API integration patterns.
 
-> **Note:** Facts Alpha currently uses mock data. This document serves as a reference for when we integrate with the real backend.
+> **Note:** Facts Alpha is now fully integrated with the BFF. All API calls go directly to the BFF endpoints.
 
 ## Architecture Overview
 
@@ -342,18 +342,13 @@ interface ContractSaleSaveModel {
 
 This means the frontend doesn't need to track which entities are new vs modified - just send the complete current state in the nested payload.
 
-**Current Implementation Note:** Our JSON Server implementation uses:
-1. **Separate API calls**: create contract → create sale → create items → create payments → update people (because JSON Server doesn't support nested saves)
-2. **Client-side CREATE/UPDATE tracking**: Handlers track `originalIds` to determine which entities need `add*()` vs `update*()` methods
+**Implementation Status**: ✅ **COMPLETE** - Facts Alpha now uses the single-payload pattern with the BFF:
+1. **Single API call**: `POST /api/v1/contracts/save/draft` with complete `ContractSessionSaveModel`
+2. **Nested structure**: Contract + Sales + Items + Payments + People in one payload
+3. **No tracking needed**: BFF handles CREATE vs UPDATE logic based on entity IDs
+4. **Atomic transactions**: Backend saves everything in one database transaction
 
-**Migration Required**: When connecting to the real BFF:
-1. Remove all `persistNewItems()`, `persistNewPayments()`, `persistPeopleChanges()` logic
-2. Remove `originalIds` tracking from handlers
-3. Remove `getNewItems()`, `getModifiedItems()`, etc. helper methods
-4. Update `ContractApi.create()` and `ContractApi.update()` to send the entire nested `ContractSessionSaveModel` payload in one request
-5. Simplify `useContractSession.save()` to: build payload → single API call → refresh UI
-
-This will significantly reduce code complexity and align with the backend's atomic transaction model.
+See `ContractSaveModelBuilder` for the implementation of building the nested payload.
 
 ### Validate Contract
 

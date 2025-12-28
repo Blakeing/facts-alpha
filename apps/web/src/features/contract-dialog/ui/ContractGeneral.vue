@@ -102,129 +102,6 @@
       </v-col>
     </v-row>
 
-    <v-row>
-      <!-- Primary Buyer -->
-      <v-col
-        cols="12"
-        md="6"
-      >
-        <FCard title="Primary Buyer">
-          <v-row dense>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                v-model="model.primaryBuyer.firstName"
-                field="primaryBuyer.firstName"
-                label="First Name"
-                :readonly="!isEditable"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                v-model="model.primaryBuyer.lastName"
-                field="primaryBuyer.lastName"
-                label="Last Name"
-                :readonly="!isEditable"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                v-model="model.primaryBuyer.phone"
-                field="primaryBuyer.phone"
-                label="Phone"
-                :readonly="!isEditable"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FTextField
-                v-model="model.primaryBuyer.email"
-                field="primaryBuyer.email"
-                label="Email"
-                :readonly="!isEditable"
-                type="email"
-              />
-            </v-col>
-          </v-row>
-        </FCard>
-      </v-col>
-
-      <!-- Primary Beneficiary -->
-      <v-col
-        cols="12"
-        md="6"
-      >
-        <FCard title="Primary Beneficiary (Decedent)">
-          <v-row dense>
-            <v-col
-              cols="12"
-              md="4"
-            >
-              <FTextField
-                v-model="model.primaryBeneficiary.firstName"
-                field="primaryBeneficiary.firstName"
-                label="First Name"
-                :readonly="!isEditable"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="4"
-            >
-              <FTextField
-                v-model="model.primaryBeneficiary.middleName"
-                field="primaryBeneficiary.middleName"
-                label="Middle Name"
-                :readonly="!isEditable"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="4"
-            >
-              <FTextField
-                v-model="model.primaryBeneficiary.lastName"
-                field="primaryBeneficiary.lastName"
-                label="Last Name"
-                :readonly="!isEditable"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FDatePicker
-                v-model="model.primaryBeneficiary.dateOfBirth"
-                field="primaryBeneficiary.dateOfBirth"
-                label="Date of Birth"
-                :readonly="!isEditable"
-              />
-            </v-col>
-            <v-col
-              cols="12"
-              md="6"
-            >
-              <FDatePicker
-                v-model="model.primaryBeneficiary.dateOfDeath"
-                field="primaryBeneficiary.dateOfDeath"
-                label="Date of Death"
-                :readonly="!isEditable"
-              />
-            </v-col>
-          </v-row>
-        </FCard>
-      </v-col>
-    </v-row>
 
     <!-- Notes -->
     <v-row>
@@ -244,6 +121,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { computed } from 'vue'
   import { type ContractFormValues, needTypeOptions } from '@/entities/contract'
   import { formatCurrency } from '@/shared/lib'
   import { FCard, FDatePicker, FSelect, FTextarea, FTextField } from '@/shared/ui'

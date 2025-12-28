@@ -105,6 +105,15 @@
               inline
             />
           </v-tab>
+
+          <v-tab
+            class="contract-sidebar-tab"
+            prepend-icon="mdi-account-group"
+            rounded="0"
+            value="people"
+          >
+            People
+          </v-tab>
         </v-tabs>
       </aside>
 
@@ -152,6 +161,28 @@
                 @add="handleAddPayment"
                 @remove="handleRemovePayment"
               />
+            </div>
+          </v-window-item>
+
+          <v-window-item value="people">
+            <div class="content-panel">
+              <template v-if="session.people">
+                <ContractPeople
+                  :is-draft="session.hasDraftStatus.value"
+                  :is-executed="session.isExecuted.value"
+                  :is-finalized="session.isFinalized.value"
+                  :is-voided="session.isVoided.value"
+                  :location-id="session.locationId.value"
+                  :need-type="session.needType.value"
+                  :people="session.people"
+                />
+              </template>
+              <div
+                v-else
+                class="d-flex align-center justify-center pa-12"
+              >
+                <v-progress-circular indeterminate />
+              </div>
             </div>
           </v-window-item>
         </v-window>
@@ -216,12 +247,13 @@
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'
   import ContractPayments from './ContractPayments.vue'
+  import ContractPeople from './ContractPeople.vue'
 
   interface Props {
     modelValue?: boolean
     contractId?: string | null
     /** Initial tab to display (supports route query param: ?tab=payments) */
-    initialTab?: 'general' | 'items' | 'payments'
+    initialTab?: 'general' | 'items' | 'payments' | 'people'
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -242,7 +274,9 @@
   const errorMessage = ref<string | null>(null)
 
   // Tab state - internal state, initialized from prop
-  const activeTab = ref<'general' | 'items' | 'payments'>(props.initialTab)
+  const activeTab = ref<'general' | 'items' | 'payments' | 'people'>(
+    (props.initialTab as 'general' | 'items' | 'payments' | 'people') || 'general',
+  )
 
   // Sync with prop when it changes (e.g., route update)
   watch(
@@ -259,6 +293,21 @@
 
   // Confirmation dialog for unsaved changes
   const confirmDialog = useConfirm()
+
+  // Helper to check if purchaser has meaningful data
+  // BFF returns person with nested name object
+  function hasPurchaserData(purchaser: {
+    id?: string
+    nameId?: string
+    name?: { first?: string }
+  }): boolean {
+    // Check for either embedded name data OR a valid reference (nameId or id not '0')
+    return !!(
+      purchaser.name?.first ||
+      (purchaser.nameId && purchaser.nameId !== '0') ||
+      (purchaser.id && purchaser.id !== '0')
+    )
+  }
 
   // ==========================================================================
   // Contract Session - Main orchestration
@@ -344,6 +393,9 @@
   // Show errors snackbar only on failed save
   const showErrors = ref(false)
 
+  // Track if we've applied session data to form (must be before watches that use it)
+  const hasAppliedSessionData = ref(false)
+
   // Combined busy state
   const isBusy = computed(() => session.isLoading.value || session.isSaving.value)
 
@@ -351,34 +403,96 @@
   watch(
     dialogModel,
     (visible: boolean) => {
+      console.log('[ContractDialog] dialogModel watch fired, visible:', visible)
+      console.log('[ContractDialog] isNewContract:', session.isNewContract.value)
+      console.log('[ContractDialog] isLoading:', session.isLoading.value)
+      console.log('[ContractDialog] purchaser:', session.people.purchaser.value)
       if (visible) {
         // Tab is now driven by route (initialTab prop)
         errorMessage.value = null
         showErrors.value = false
 
-        // Only reset session for new contracts to avoid clearing cached edit data
         if (session.isNewContract.value) {
+          console.log('[ContractDialog] NEW contract - resetting form')
+          // New contract: reset session and form
           session.reset()
-          // Set locationId for new contracts
           session.locationId.value = userContext.currentLocationId ?? ''
           reset(getDefaultContractFormValues(userContext.currentLocationId ?? ''))
+          hasAppliedSessionData.value = true
+        } else if (!session.isLoading.value && hasPurchaserData(session.people.purchaser.value)) {
+          console.log('[ContractDialog] EXISTING contract with cached data - resetting form')
+          console.log('[ContractDialog] initialFormValues:', initialFormValues.value)
+          // Existing contract with data already cached (from prefetch) - reset form immediately
+          reset(initialFormValues.value)
+          hasAppliedSessionData.value = true
+        } else {
+          console.log('[ContractDialog] EXISTING contract but no data yet - waiting for watch')
         }
-        // For existing contracts, the session data is already loaded via TanStack Query
-        // and will populate the form via the purchaser watch below
+        // If still loading or no data yet, the other watches will handle form reset
       }
     },
     { immediate: true },
   )
 
-  // Reset form when session data changes
+  // Reset form when session data finishes loading (handles async load case)
   watch(
-    () => session.people.purchaser.value,
-    () => {
-      if (dialogModel.value && !session.isLoading.value) {
+    () => session.isLoading.value,
+    (isLoading, wasLoading) => {
+      console.log('[ContractDialog] isLoading watch:', {
+        isLoading,
+        wasLoading,
+        dialogOpen: dialogModel.value,
+      })
+      // When loading completes (transition from true → false), reset form with loaded data
+      if (wasLoading && !isLoading && dialogModel.value && !session.isNewContract.value) {
+        console.log(
+          '[ContractDialog] Loading complete - resetting form with:',
+          initialFormValues.value,
+        )
         reset(initialFormValues.value)
+        hasAppliedSessionData.value = true
       }
     },
   )
+
+  // Watch for people data changes (handles cached data case where isLoading never transitions)
+  watch(
+    [() => session.people.purchaser.value, () => session.people.beneficiary.value],
+    ([purchaser, beneficiary]) => {
+      console.log('[ContractDialog] people watch fired:', {
+        purchaser,
+        beneficiary,
+        hasApplied: hasAppliedSessionData.value,
+        dialogOpen: dialogModel.value,
+        isNew: session.isNewContract.value,
+        isLoading: session.isLoading.value,
+      })
+      // Only reset once when we first get data, and only if dialog is open
+      if (
+        !hasAppliedSessionData.value &&
+        dialogModel.value &&
+        !session.isNewContract.value &&
+        !session.isLoading.value &&
+        (hasPurchaserData(purchaser) || hasPurchaserData(beneficiary))
+      ) {
+        console.log(
+          '[ContractDialog] People data arrived - resetting form with:',
+          initialFormValues.value,
+        )
+        reset(initialFormValues.value)
+        hasAppliedSessionData.value = true
+      }
+    },
+    { deep: true },
+  )
+
+  // Reset tracking when dialog closes
+  watch(dialogModel, (visible) => {
+    if (!visible) {
+      console.log('[ContractDialog] Dialog closed - resetting hasAppliedSessionData')
+      hasAppliedSessionData.value = false
+    }
+  })
 
   // ==========================================================================
   // Computed

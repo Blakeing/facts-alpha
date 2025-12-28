@@ -17,10 +17,15 @@ export function useContract(contractId: MaybeRefOrGetter<string | null | undefin
     queryKey,
     queryFn: async () => {
       const id = toValue(contractId)
-      if (!id) throw new Error('No contract ID provided')
+      if (!id || id === 'undefined') {
+        throw new Error('No contract ID provided')
+      }
       return runEffectQuery(ContractApi.get(id))()
     },
-    enabled: computed(() => !!toValue(contractId)),
+    enabled: computed(() => {
+      const id = toValue(contractId)
+      return !!id && id !== 'undefined'
+    }),
   })
 
   const contract = computed<Contract | null>(() => query.data.value ?? null)

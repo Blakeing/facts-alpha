@@ -71,6 +71,27 @@ export default defineConfig({
     extensions: ['.js', '.json', '.jsx', '.mjs', '.ts', '.tsx', '.vue'],
   },
   server: {
-    port: 3000,
+    port: 8080,
+    headers: {
+      // Match legacy app CSP headers - allows connecting to external services
+      'Content-Security-Policy':
+        "default-src 'self' data: blob:; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' maps.googleapis.com cdnjs.cloudflare.com; " +
+        'connect-src *; ' +
+        "frame-src 'self' *.factssquared.com:* data: blob:; " +
+        "style-src 'self' 'unsafe-inline' data: blob: fonts.googleapis.com cdn.jsdelivr.net; " +
+        "img-src 'self' data: blob: *.gstatic.com; " +
+        "font-src 'self' data: blob: fonts.gstatic.com cdn.jsdelivr.net;",
+    },
+    // Proxy for Identity Server to avoid CORS issues in local development
+    proxy: {
+      // Proxy OIDC metadata and token endpoints
+      '/ids': {
+        target: 'https://cloud-dev-auth.factssquared.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ids/, ''),
+        secure: true,
+      },
+    },
   },
 })

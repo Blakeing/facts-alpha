@@ -24,7 +24,7 @@ export interface ItemsHandlerState {
 function createEmptySaleItem(saleId: string, needType: NeedType, ordinal: number): SaleItem {
   const now = new Date().toISOString()
   return {
-    id: crypto.randomUUID(),
+    id: '0',
     saleId,
     itemId: '',
     description: '',
@@ -56,9 +56,6 @@ export function useItemsHandler(context: ContractSessionContext) {
   const isDirty = ref(false)
   const currentSaleId = ref<string>('')
   const currentNeedType = ref<NeedType>(NeedType.AT_NEED)
-
-  // Track original item IDs from server to distinguish new vs modified
-  const originalItemIds = ref<Set<string>>(new Set())
 
   // ==========================================================================
   // Computed Totals - Reactive, no events needed!
@@ -111,7 +108,7 @@ export function useItemsHandler(context: ContractSessionContext) {
         : currentSaleId.value || 'temp-sale-id'
 
     const newItem: SaleItem = {
-      id: crypto.randomUUID(),
+      id: '0',
       saleId: tempSaleId,
       itemId: catalogItemId,
       description: catalogItem.description,
@@ -131,7 +128,7 @@ export function useItemsHandler(context: ContractSessionContext) {
         taxRate > 0
           ? [
               {
-                id: crypto.randomUUID(),
+                id: '0',
                 saleItemId: '',
                 taxProfileItemId: 'default-tax',
                 taxRate: taxRate * 100,
@@ -256,7 +253,7 @@ export function useItemsHandler(context: ContractSessionContext) {
     }
 
     item.discounts.push({
-      id: crypto.randomUUID(),
+      id: '0',
       saleItemId: itemId,
       description,
       amount,
@@ -346,8 +343,6 @@ export function useItemsHandler(context: ContractSessionContext) {
       discounts: item.discounts ?? [],
       trust: item.trust ?? [],
     }))
-    // Track original IDs to identify new vs modified items on save
-    originalItemIds.value = new Set(serverItems.map((item) => item.id))
     isDirty.value = false
   }
 
@@ -367,20 +362,6 @@ export function useItemsHandler(context: ContractSessionContext) {
   }
 
   /**
-   * Get new items (added in UI, not yet saved to server)
-   */
-  function getNewItems(): SaleItem[] {
-    return items.value.filter((item) => !originalItemIds.value.has(item.id))
-  }
-
-  /**
-   * Get modified items (existed on server, modified in UI)
-   */
-  function getModifiedItems(): SaleItem[] {
-    return items.value.filter((item) => originalItemIds.value.has(item.id))
-  }
-
-  /**
    * Mark items as clean (after save)
    */
   function markClean() {
@@ -395,7 +376,6 @@ export function useItemsHandler(context: ContractSessionContext) {
     isDirty.value = false
     currentSaleId.value = ''
     currentNeedType.value = NeedType.AT_NEED
-    originalItemIds.value = new Set()
   }
 
   // ==========================================================================
@@ -431,8 +411,6 @@ export function useItemsHandler(context: ContractSessionContext) {
     applyFromServer,
     setSaleContext,
     getItems,
-    getNewItems,
-    getModifiedItems,
     markClean,
     reset,
   }

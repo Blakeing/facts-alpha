@@ -62,13 +62,15 @@ export const useCatalogStore = defineStore('catalog', () => {
     error.value = null
 
     try {
-      // TODO: Replace with actual API calls
+      // TODO: Implement actual API calls to BFF
       // const [itemsData, taxData] = await Promise.all([
       //   catalogApi.getItems(locationId),
       //   catalogApi.getTaxRates(locationId),
       // ])
+      // items.value = itemsData
+      // taxRates.value = taxData
 
-      // Mock data for now
+      // Temporary: Using mock data until catalog API is implemented
       items.value = getMockCatalogItems()
       taxRates.value = getMockTaxRates(locationId)
 
@@ -126,7 +128,7 @@ export const useCatalogStore = defineStore('catalog', () => {
 })
 
 // =============================================================================
-// Mock Data (temporary until API is connected)
+// Temporary Mock Data (TODO: Replace with BFF API calls)
 // =============================================================================
 
 function getMockCatalogItems(): CatalogItem[] {

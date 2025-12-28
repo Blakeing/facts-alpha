@@ -6,20 +6,35 @@
     size="small"
     variant="tonal"
   >
-    {{ statusLabel }}
+    {{ status }}
   </v-chip>
 </template>
 
 <script lang="ts" setup>
   import { computed } from 'vue'
-  import { getSaleStatusColor, getSaleStatusLabel, type SaleStatus } from '../model/contract'
 
   interface Props {
-    status: SaleStatus
+    /** Status string from BFF (e.g., "Draft", "Executed", "Finalized", "Void") */
+    status?: string
   }
 
-  const props = defineProps<Props>()
+  const props = withDefaults(defineProps<Props>(), {
+    status: 'Draft'
+  })
 
-  const statusLabel = computed(() => getSaleStatusLabel(props.status))
-  const statusColor = computed(() => getSaleStatusColor(props.status))
+  // Map status string to display color (matches legacy ContractList.vue)
+  const statusColor = computed(() => {
+    switch (props.status) {
+      case 'Executed':
+        return 'success'
+      case 'Finalized':
+        return 'warning'
+      case 'Void':
+      case 'Cancelled':
+        return 'error'
+      case 'Draft':
+      default:
+        return 'grey'
+    }
+  })
 </script>

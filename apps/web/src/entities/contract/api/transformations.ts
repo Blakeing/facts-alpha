@@ -13,19 +13,20 @@ import type {
   Sale,
 } from '../model/contract'
 import type { ContractPersonFormValues } from '../model/contractSchema'
-import { nanoid } from 'nanoid'
 import { NeedType, SaleStatus, SaleType } from '../model/contract'
 
 // =============================================================================
-// ID Generation (temporary - will be replaced with /api/v1/nextid endpoint)
+// ID Generation
 // =============================================================================
 
 /**
- * Generate a unique ID
- * TODO: Replace with actual backend nextId() call when connecting to BFF
+ * Generate a temporary ID for immediate use
+ * Uses "0" to match legacy app pattern - backend will CREATE new entities
+ * These IDs are replaced by backend-generated IDs on save
+ * @param _prefix - Optional prefix (ignored, kept for compatibility)
  */
-export function generateId(): string {
-  return nanoid()
+export function generateId(_prefix?: string): string {
+  return '0'
 }
 
 // =============================================================================
@@ -84,7 +85,7 @@ export function formPersonToPerson(
   return {
     id: generateId(),
     contractId,
-    nameId: generateId(), // Generate nameId (in real app, this would link to Name entity)
+    nameId: generateId(), // Temporary ID - backend will assign proper ID on save
     roles,
     addedAfterContractExecution: formData.addedAfterContractExecution ?? false,
     firstName: formData.firstName,

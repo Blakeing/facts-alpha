@@ -5,7 +5,8 @@
  * @see docs/data-models.md for field mapping details
  */
 
-import type { Entity } from '@/shared/lib/entity'
+import type { Entity, EntityState } from '@/shared/lib/entity'
+import type { Name } from '@/entities/name'
 
 // =============================================================================
 // Backend-Aligned Enums
@@ -273,30 +274,22 @@ export interface Sale extends Omit<Entity, 'createdByUserId' | 'version'> {
 /**
  * A person associated with a contract (buyer, beneficiary, etc.)
  * Backend: Facts.Entities.ContractPerson -> Name
+ *
+ * NOTE: BFF returns nested Name object - no flattening needed!
  */
 export interface ContractPerson extends Omit<Entity, 'createdByUserId' | 'version'> {
   contractId: string
   nameId: string // Reference to Name entity
-  roles: ContractPersonRole[] // Can have multiple roles
+  roles: number // Flags enum: 1=PrimaryBuyer, 2=CoBuyer, 4=PrimaryBeneficiary, 8=AdditionalBeneficiary
   addedAfterContractExecution: boolean
 
-  // Embedded name data for display (from Name entity)
-  firstName: string
-  middleName?: string
-  lastName: string
-  prefix?: string
-  suffix?: string
-  nickname?: string
-  companyName?: string
-  phone?: string
-  email?: string
-  address?: Address
-  dateOfBirth?: string
-  dateOfDeath?: string
-  nationalIdentifier?: string // SSN (masked)
-  driversLicense?: string
-  driversLicenseState?: string
-  isVeteran?: boolean
+  // Nested Name object from BFF (includes phones[], addresses[], emailAddresses[])
+  name: Name
+
+  // Conversion tracking (for data migration)
+  conversion: string | null
+  conversionId: string | null
+  conversionSource: string | null
 
   // Timestamps (matches BFF field names)
   dateCreated: string
@@ -440,7 +433,20 @@ export interface Contract {
 // =============================================================================
 
 /**
+ * BFF response wrapper for GET /contracts/{id}
+ * The BFF returns a wrapper object, not the contract directly
+ */
+export interface ContractResponse {
+  contract: Contract
+  executeContract: boolean
+  finalizeContract: boolean
+  voidContract: boolean
+  data?: unknown
+}
+
+/**
  * Lightweight contract model for list views
+ * Aligned with legacy BFF ContractListingModel
  */
 export interface ContractListing {
   id: string
@@ -448,13 +454,40 @@ export interface ContractListing {
   prePrintedContractNumber?: string
   locationId: string
   needType: NeedType
-  saleStatus: SaleStatus // Status of primary sale
+  /** Contract status as string - use this for display (e.g., "Draft", "Executed", "Void") */
+  status?: string
+  /**
+   * Contract status as numeric enum - BUG: BFF always returns 0 (Draft) regardless of actual status.
+   * Use `status` string field instead for display/filtering.
+   * @deprecated Use `status` string field instead
+   */
+  contractStatus: SaleStatus
   isCancelled: boolean
   dateExecuted?: string
   dateSigned?: string
+  /** Date field (BFF may return as 'date' or 'dateSigned') */
+  date?: string
+  /** Primary buyer name (BFF may return as 'purchaser') */
   primaryBuyerName: string
+  purchaser?: string // Legacy BFF field name
+  /** Co-buyers array (from legacy BFF) */
+  cobuyers?: string[]
+  /** Primary beneficiary name (BFF may return as 'beneficiary') */
   primaryBeneficiaryName: string
+  beneficiary?: string // Legacy BFF field name
+  /** Contract type (from legacy BFF) */
+  type?: string
+  /** Buyer ID (from legacy BFF) */
+  buyerId?: string
+  /** Beneficiary ID (from legacy BFF) */
+  beneficiaryId?: string
+  /** Beneficiary date of death (for At-Need contracts) */
+  beneficiaryDateOfDeath?: string | null
+  /** Funding details (for insurance-funded pre-need) */
+  fundingDetails?: ContractFundingDetail[]
   salesPersonName?: string
+  salesPerson?: string // Legacy BFF field name
+  salesPersonId?: string // Legacy BFF field name
   grandTotal: number
   amountPaid: number
   balanceDue: number
@@ -596,22 +629,60 @@ export function getContractPersonDisplayName(person: ContractPerson): string {
 /**
  * Get primary buyer from contract people
  */
+/**
+ * Check if a person has a specific role
+ * Handles both:
+ * - Array format: roles: ['primary_buyer'] or roles: [1]
+ * - Flags format: roles: 1 (BFF returns this)
+ */
+function hasRole(person: ContractPerson, roleValue: number, roleString: string): boolean {
+  const roles = person.roles
+  if (!roles && roles !== 0) return false
+
+  // If roles is a number (flags enum from BFF), use bitwise check
+  if (typeof roles === 'number') {
+    return (roles & roleValue) !== 0
+  }
+
+  // If roles is an array, check for both string and numeric values
+  if (Array.isArray(roles)) {
+    return (
+      roles.includes(roleString as ContractPersonRole) ||
+      roles.includes(roleValue as unknown as ContractPersonRole)
+    )
+  }
+
+  return false
+}
+
+/**
+ * Get primary buyer from contract people
+ * BFF: PrimaryBuyer = 1 (flags enum)
+ */
 export function getPrimaryBuyer(people: ContractPerson[]): ContractPerson | undefined {
-  return people.find((p) => p.roles.includes(ContractPersonRole.PRIMARY_BUYER))
+  console.log(
+    '[getPrimaryBuyer] People:',
+    people?.map((p) => ({ name: p.firstName, roles: p.roles, rolesType: typeof p.roles })),
+  )
+  const found = people.find((p) => hasRole(p, 1, ContractPersonRole.PRIMARY_BUYER))
+  console.log('[getPrimaryBuyer] Found:', found?.firstName)
+  return found
 }
 
 /**
  * Get primary beneficiary from contract people
+ * BFF: PrimaryBeneficiary = 4 (flags enum)
  */
 export function getPrimaryBeneficiary(people: ContractPerson[]): ContractPerson | undefined {
-  return people.find((p) => p.roles.includes(ContractPersonRole.PRIMARY_BENEFICIARY))
+  return people.find((p) => hasRole(p, 4, ContractPersonRole.PRIMARY_BENEFICIARY))
 }
 
 /**
  * Get co-buyers from contract people
+ * BFF: CoBuyer = 2 (flags enum)
  */
 export function getCoBuyers(people: ContractPerson[]): ContractPerson[] {
-  return people.filter((p) => p.roles.includes(ContractPersonRole.CO_BUYER))
+  return people.filter((p) => hasRole(p, 2, ContractPersonRole.CO_BUYER))
 }
 
 /**
@@ -652,3 +723,102 @@ export function calculateSaleTotals(items: SaleItem[]): {
 // import { needTypeController, saleStatusController } from '@/shared/lib/enums/contract'
 // const needType = yield* needTypeController.fromApi(backendValue)
 // const backendValue = yield* needTypeController.toApi(frontendValue)
+
+// =============================================================================
+// Save Model Types (for BFF API)
+// =============================================================================
+
+/**
+ * Contract Name Role - Role assignments at contract level
+ * Used for tracking relationships between people and contracts
+ */
+export interface ContractNameRole {
+  id?: string
+  contractId: string
+  nameId: string
+  roleType?: string
+  // Additional fields as needed
+}
+
+/**
+ * Comment Feed - For contract comments/notes
+ */
+export interface CommentFeed {
+  feedType: string
+  ownerId: number
+  // Additional fields as needed
+}
+
+/**
+ * Contract Session Data - Additional session-specific data
+ */
+export interface ContractSessionDataSaveModel {
+  forms?: unknown[]
+  attributeValues?: unknown
+  nonMappedFormValues?: unknown
+  commissionLog?: unknown
+  trustLog?: unknown
+}
+
+/**
+ * Payment Save Model - Wrapper with entity state tracking
+ * Used to indicate whether payment is new, modified, deleted, or moved
+ */
+export interface PaymentSaveModel {
+  state: EntityState
+  payment: ContractPayment
+}
+
+/**
+ * Contract Save Model - Nested structure for saving contract
+ * Includes all related entities (people, sales, items, payments)
+ */
+export interface ContractSaveModel {
+  id?: string
+  locationId: string
+  needType: NeedType
+  dateSigned?: string
+  dateExecuted?: string
+  contractNumber?: string
+  prePrintedContractNumber?: string
+  isConditionalSale?: boolean
+  isCancelled?: boolean
+  notes?: string
+
+  // Related entities (nested)
+  people: ContractPerson[]
+  sales: Sale[]
+  financing?: ContractFinancing
+
+  // Name roles (gathered from people on save)
+  nameRoles?: ContractNameRole[]
+
+  // Optional fields from Contract entity
+  contractTypeId?: string
+  contractSaleTypeId?: string
+  leadSourceId?: string
+  atNeedType?: AtNeedType
+  preNeedFundingType?: PreNeedFundingType
+  salesPersonId?: string
+  marketingAgentId?: string
+  contractReferenceId?: string
+  firstCallId?: string
+  commentFeedOwnerId?: string
+  dateApproved?: string
+}
+
+/**
+ * Contract Session Save Model - Complete payload for BFF save endpoint
+ * Matches legacy ContractSessionSaveModel structure
+ * POST /api/v1/contracts/save/draft
+ */
+export interface ContractSessionSaveModel {
+  executeContract: boolean
+  finalizeContract: boolean
+  voidContract: boolean
+  contract: ContractSaveModel
+  payments: PaymentSaveModel[]
+  commentFeed?: CommentFeed
+  temporaryAttachmentOwnerId?: string
+  data?: ContractSessionDataSaveModel
+}

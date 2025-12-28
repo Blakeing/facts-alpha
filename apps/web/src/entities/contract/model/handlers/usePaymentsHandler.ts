@@ -29,9 +29,6 @@ export function usePaymentsHandler(context: ContractSessionContext) {
 
   const payments = ref<ContractPayment[]>([])
   const isDirty = ref(false)
-  
-  // Track original payment IDs from server to distinguish new vs modified
-  const originalPaymentIds = ref<Set<string>>(new Set())
 
   // ==========================================================================
   // Computed
@@ -91,7 +88,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
   function addPayment(data: PaymentFormData): ContractPayment {
     const now = new Date().toISOString()
     const newPayment: ContractPayment = {
-      id: crypto.randomUUID(),
+      id: '0',
       contractId: context.contractId.value,
       saleId: data.saleId,
       date: data.date,
@@ -215,8 +212,6 @@ export function usePaymentsHandler(context: ContractSessionContext) {
    */
   function applyFromServer(serverPayments: ContractPayment[]) {
     payments.value = serverPayments.map((payment) => ({ ...payment }))
-    // Track original IDs to identify new vs modified payments on save
-    originalPaymentIds.value = new Set(serverPayments.map((payment) => payment.id))
     isDirty.value = false
   }
 
@@ -225,20 +220,6 @@ export function usePaymentsHandler(context: ContractSessionContext) {
    */
   function getPayments(): ContractPayment[] {
     return payments.value.map((payment) => ({ ...payment }))
-  }
-
-  /**
-   * Get new payments (added in UI, not yet saved to server)
-   */
-  function getNewPayments(): ContractPayment[] {
-    return payments.value.filter((payment) => !originalPaymentIds.value.has(payment.id))
-  }
-
-  /**
-   * Get modified payments (existed on server, modified in UI)
-   */
-  function getModifiedPayments(): ContractPayment[] {
-    return payments.value.filter((payment) => originalPaymentIds.value.has(payment.id))
   }
 
   /**
@@ -254,7 +235,6 @@ export function usePaymentsHandler(context: ContractSessionContext) {
   function reset() {
     payments.value = []
     isDirty.value = false
-    originalPaymentIds.value = new Set()
   }
 
   // ==========================================================================
@@ -286,8 +266,6 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     // Session lifecycle
     applyFromServer,
     getPayments,
-    getNewPayments,
-    getModifiedPayments,
     markClean,
     reset,
   }
