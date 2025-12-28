@@ -22,17 +22,17 @@ export type {
 // =============================================================================
 
 export {
-  NeedType,
-  SaleType,
-  SaleStatus,
-  SaleAdjustmentType,
-  ContractPersonRole,
   AtNeedType,
-  PreNeedFundingType,
+  ContractPersonRole,
   FinancingStatus,
-  LateFeeType,
   ItemType,
+  LateFeeType,
+  NeedType,
   PaymentMethod,
+  PreNeedFundingType,
+  SaleAdjustmentType,
+  SaleStatus,
+  SaleType,
 } from './contract'
 
 // =============================================================================
@@ -40,33 +40,33 @@ export {
 // =============================================================================
 
 export {
-  // Need Type
-  needTypeLabels,
-  needTypeOptions,
-  getNeedTypeLabel,
-  // Sale Status
-  saleStatusLabels,
-  saleStatusColors,
-  saleStatusOptions,
-  getSaleStatusLabel,
-  getSaleStatusColor,
   // At-Need Type
   atNeedTypeLabels,
   atNeedTypeOptions,
-  // Pre-Need Funding Type
-  preNeedFundingTypeLabels,
-  preNeedFundingTypeOptions,
   // Contract Person Role
   contractPersonRoleLabels,
   getContractPersonRoleLabel,
+  getItemTypeLabel,
+  getNeedTypeLabel,
+  getPaymentMethodLabel,
+  getSaleStatusColor,
+  getSaleStatusLabel,
   // Item Type
   itemTypeLabels,
   itemTypeOptions,
-  getItemTypeLabel,
+  // Need Type
+  needTypeLabels,
+  needTypeOptions,
   // Payment Method
   paymentMethodLabels,
   paymentMethodOptions,
-  getPaymentMethodLabel,
+  // Pre-Need Funding Type
+  preNeedFundingTypeLabels,
+  preNeedFundingTypeOptions,
+  saleStatusColors,
+  // Sale Status
+  saleStatusLabels,
+  saleStatusOptions,
 } from './contract'
 
 // =============================================================================
@@ -74,11 +74,11 @@ export {
 // =============================================================================
 
 export {
-  getContractPersonDisplayName,
-  getPrimaryBuyer,
-  getPrimaryBeneficiary,
-  getCoBuyers,
   calculateSaleTotals,
+  getCoBuyers,
+  getContractPersonDisplayName,
+  getPrimaryBeneficiary,
+  getPrimaryBuyer,
   // Backend conversion helpers
   needTypeFromBackend,
   needTypeToBackend,
@@ -94,37 +94,37 @@ export {
 
 export {
   addressSchema,
+  contractFinancingSchema,
   contractFormSchema,
+  contractFundingDetailSchema,
   contractPaymentSchema,
   contractPersonSchema,
-  contractFinancingSchema,
-  contractFundingDetailSchema,
-  saleSchema,
-  saleItemSchema,
-  saleItemSalesTaxSchema,
-  saleItemDiscountSchema,
-  saleItemTrustFundSchema,
   // Default value helpers
   getDefaultAddress,
+  getDefaultContractFormValues,
   getDefaultContractPerson,
-  getDefaultSaleItem,
-  getDefaultSale,
   getDefaultFinancing,
   getDefaultPayment,
-  getDefaultContractFormValues,
+  getDefaultSale,
+  getDefaultSaleItem,
+  saleItemDiscountSchema,
+  saleItemSalesTaxSchema,
+  saleItemSchema,
+  saleItemTrustFundSchema,
+  saleSchema,
 } from './contractSchema'
 
 export type {
   AddressFormValues,
+  ContractFinancingFormValues,
   ContractFormValues,
+  ContractFundingDetailFormValues,
   ContractPaymentFormValues,
   ContractPersonFormValues,
-  ContractFinancingFormValues,
-  ContractFundingDetailFormValues,
   SaleFormValues,
+  SaleItemDiscountFormValues,
   SaleItemFormValues,
   SaleItemSalesTaxFormValues,
-  SaleItemDiscountFormValues,
   SaleItemTrustFundFormValues,
 } from './contractSchema'
 
@@ -143,7 +143,7 @@ export { useItemsHandler } from './handlers/useItemsHandler'
 export type { ItemsHandler } from './handlers/useItemsHandler'
 
 export { usePaymentsHandler } from './handlers/usePaymentsHandler'
-export type { PaymentsHandler, PaymentFormData } from './handlers/usePaymentsHandler'
+export type { PaymentFormData, PaymentsHandler } from './handlers/usePaymentsHandler'
 
 export { usePeopleHandler } from './handlers/usePeopleHandler'
 export type { PeopleHandler, PersonFormData } from './handlers/usePeopleHandler'
@@ -152,6 +152,8 @@ export type { PeopleHandler, PersonFormData } from './handlers/usePeopleHandler'
 // Composables
 // =============================================================================
 
+export { useContract } from './useContract'
+export { useContractMutations } from './useContractMutations'
 export { CONTRACTS_QUERY_KEY, useContracts } from './useContracts'
 
 // Session Architecture

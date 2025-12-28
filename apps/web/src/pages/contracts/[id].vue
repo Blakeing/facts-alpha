@@ -420,11 +420,9 @@
 </template>
 
 <script lang="ts" setup>
-  import { useQuery } from '@tanstack/vue-query'
   import { computed } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import {
-    contractApi,
     ContractStatusBadge,
     getNeedTypeLabel,
     getPaymentMethodLabel,
@@ -433,6 +431,7 @@
     type PaymentMethod,
     SaleStatus,
     SaleType,
+    useContract,
   } from '@/entities/contract'
   import { formatCurrency, formatDate, formatPhone } from '@/shared/lib'
   import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
@@ -454,12 +453,8 @@
     return params.id
   })
 
-  // Fetch contract data
-  const { data: contract, isLoading } = useQuery({
-    queryKey: ['contract', contractId],
-    queryFn: () => contractApi.get(contractId.value),
-    enabled: computed(() => !!contractId.value),
-  })
+  // Fetch contract data using Effect-based composable
+  const { contract, isLoading } = useContract(contractId)
 
   // Get people from contract
   const primaryBuyer = computed(() => {

@@ -1,5 +1,5 @@
 /**
- * useContracts - List composable for contracts
+ * useContracts - List composable for contracts with Effect-based error handling
  *
  * Contracts are filtered by the current location from the user context store.
  *
@@ -7,10 +7,14 @@
  */
 
 import type { ContractListing, NeedType } from './contract'
+import { errorMessage, handleError, runEffectQuery } from '@facts/effect'
+
 import { useQuery } from '@tanstack/vue-query'
+
 import { computed, ref } from 'vue'
+
 import { useUserContextStore } from '@/stores'
-import { contractApi } from '../api/contractApi'
+import { ContractApi } from '../api'
 import { SaleStatus } from './contract'
 
 export const CONTRACTS_QUERY_KEY = ['contracts'] as const
@@ -25,27 +29,37 @@ export function useContracts() {
   // Query key includes locationId for cache separation per location
   const queryKey = computed(() => ['contracts', userContext.currentLocationId] as const)
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const query = useQuery<ContractListing[], Error>({
     queryKey,
-    queryFn: () => contractApi.list(),
+    queryFn: runEffectQuery(ContractApi.list()),
   })
 
-  const contracts = computed(() => data.value ?? [])
+  const contracts = computed<ContractListing[]>(() => query.data.value ?? [])
+
+  // Typed error handling
+  const errorMsg = computed(() => {
+    if (!query.error.value) return null
+    return handleError(query.error.value, {
+      NetworkError: (e) => `Network error: ${e.message}`,
+      UnauthorizedError: () => 'Please log in to view contracts',
+      default: errorMessage,
+    })
+  })
 
   // Filter by current location first
-  const locationFilteredContracts = computed(() => {
+  const locationFilteredContracts = computed<ContractListing[]>(() => {
     const locationId = userContext.currentLocationId
     if (!locationId) return []
-    return contracts.value.filter((c) => c.locationId === locationId)
+    return contracts.value.filter((c: ContractListing) => c.locationId === locationId)
   })
 
   // Filter by search term
-  const searchedContracts = computed(() => {
+  const searchedContracts = computed<ContractListing[]>(() => {
     if (!search.value) return locationFilteredContracts.value
 
     const term = search.value.toLowerCase()
     return locationFilteredContracts.value.filter(
-      (c) =>
+      (c: ContractListing) =>
         c.contractNumber.toLowerCase().includes(term) ||
         c.primaryBuyerName.toLowerCase().includes(term) ||
         c.primaryBeneficiaryName.toLowerCase().includes(term) ||
@@ -54,15 +68,15 @@ export function useContracts() {
   })
 
   // Filter by status and need type
-  const filteredContracts = computed(() => {
+  const filteredContracts = computed<ContractListing[]>(() => {
     let result = searchedContracts.value
 
     if (statusFilter.value) {
-      result = result.filter((c) => c.saleStatus === statusFilter.value)
+      result = result.filter((c: ContractListing) => c.saleStatus === statusFilter.value)
     }
 
     if (needTypeFilter.value) {
-      result = result.filter((c) => c.needType === needTypeFilter.value)
+      result = result.filter((c: ContractListing) => c.needType === needTypeFilter.value)
     }
 
     return result
@@ -78,7 +92,7 @@ export function useContracts() {
     }
 
     for (const contract of locationFilteredContracts.value) {
-      const status = contract.saleStatus
+      const status = contract.saleStatus as SaleStatus
       if (grouped[status]) {
         grouped[status].push(contract)
       }
@@ -93,7 +107,10 @@ export function useContracts() {
     draft: contractsByStatus.value[SaleStatus.DRAFT]?.length ?? 0,
     executed: contractsByStatus.value[SaleStatus.EXECUTED]?.length ?? 0,
     finalized: contractsByStatus.value[SaleStatus.FINALIZED]?.length ?? 0,
-    totalBalance: locationFilteredContracts.value.reduce((sum, c) => sum + c.balanceDue, 0),
+    totalBalance: locationFilteredContracts.value.reduce(
+      (sum: number, c: ContractListing) => sum + c.balanceDue,
+      0,
+    ),
   }))
 
   return {
@@ -109,8 +126,10 @@ export function useContracts() {
     stats,
 
     // Query state
-    isLoading,
-    error,
-    reload: refetch,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    errorMessage: errorMsg,
+    reload: query.refetch,
   }
 }

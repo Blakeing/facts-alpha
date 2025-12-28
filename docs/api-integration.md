@@ -297,6 +297,64 @@ POST /api/v1/contracts/save/draft
 
 **Permission:** `ProcessContracts`
 
+**Request Body:** `ContractSessionSaveModel` - Single payload containing contract, sales, items, and payments
+
+The legacy backend expects **everything in one request**:
+
+```typescript
+interface ContractSessionSaveModel {
+  executeContract: boolean
+  finalizeContract: boolean
+  voidContract: boolean
+  contract: ContractSaveModel  // Includes nested sales with items
+  payments: PaymentSaveModel[]
+  commentFeed: CommentFeed
+  data: ContractSessionDataSaveModel
+  // ... other fields
+}
+
+interface ContractSaveModel {
+  id: string
+  contractNumber: string
+  // ... contract fields
+  sales: ContractSaleSaveModel[]  // Nested sales
+  people: ContractPersonModel[]
+  financing: ContractFinancingSaveModel | null
+  // ... other fields
+}
+
+interface ContractSaleSaveModel {
+  id: string
+  contractId: string
+  saleType: SaleType
+  saleStatus: SaleStatus
+  items: ContractSaleItemSaveModel[]  // Nested items
+  // ... other sale fields
+}
+```
+
+**Important:** The backend saves everything in **one database transaction**. This ensures atomicity - if any part fails, the entire save is rolled back.
+
+**Backend CREATE vs UPDATE Logic**: The backend automatically determines whether to CREATE or UPDATE entities based on IDs in the payload:
+- If an entity has an ID that exists in the database → UPDATE
+- If an entity has no ID or an ID that doesn't exist → CREATE
+- If an entity is missing from the payload but existed before → DELETE (optional, depends on business rules)
+
+This means the frontend doesn't need to track which entities are new vs modified - just send the complete current state in the nested payload.
+
+**Current Implementation Note:** Our JSON Server implementation uses:
+1. **Separate API calls**: create contract → create sale → create items → create payments → update people (because JSON Server doesn't support nested saves)
+2. **Client-side CREATE/UPDATE tracking**: Handlers track `originalIds` to determine which entities need `add*()` vs `update*()` methods
+
+**Migration Required**: When connecting to the real BFF:
+1. Remove all `persistNewItems()`, `persistNewPayments()`, `persistPeopleChanges()` logic
+2. Remove `originalIds` tracking from handlers
+3. Remove `getNewItems()`, `getModifiedItems()`, etc. helper methods
+4. Update `ContractApi.create()` and `ContractApi.update()` to send the entire nested `ContractSessionSaveModel` payload in one request
+5. Simplify `useContractSession.save()` to: build payload → single API call → refresh UI
+
+This will significantly reduce code complexity and align with the backend's atomic transaction model.
+
 ### Validate Contract
 
 ```

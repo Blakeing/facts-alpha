@@ -9,8 +9,9 @@
 import type { MaybeRefOrGetter } from 'vue'
 import type { Location } from './location'
 import type { LocationFormValues } from './locationSchema'
+import { runEffect } from '@facts/effect'
 import { useEntityForm } from '@facts/ui'
-import { locationApi } from '../api/locationApi'
+import { LocationApi } from '../api/locationApi'
 import { getDefaultLocationFormValues } from './locationSchema'
 import { LOCATIONS_QUERY_KEY } from './useLocations'
 
@@ -66,11 +67,12 @@ function locationToFormValues(l: Location): LocationFormValues {
     accountingPeriod: l.accountingPeriod,
     glGroupId: l.glGroupId || '',
     intercompanyGlAccountId: l.intercompanyGlAccountId ?? null,
-    glMaps: l.glMaps?.map((map) => ({
-      id: map.id,
-      locationId: map.locationId,
-      glAccountId: map.glAccountId,
-    })) || [],
+    glMaps:
+      l.glMaps?.map((map) => ({
+        id: map.id,
+        locationId: map.locationId,
+        glAccountId: map.glAccountId,
+      })) || [],
 
     // Licenses
     licenses: l.licenses.map((lic) => ({
@@ -93,7 +95,13 @@ export function useLocationForm(
 ) {
   return useEntityForm<Location, LocationFormValues>({
     entityId: locationId,
-    api: locationApi,
+    api: {
+      get: (id: string) => runEffect(LocationApi.get(id)),
+      create: (data: LocationFormValues) => runEffect(LocationApi.create(data)),
+      update: (id: string, data: Partial<LocationFormValues>) =>
+        runEffect(LocationApi.update(id, data)),
+      delete: (id: string) => runEffect(LocationApi.delete(id)),
+    },
     queryKey: (id) => ['location', id] as const,
     listQueryKey: LOCATIONS_QUERY_KEY,
     toFormValues: locationToFormValues,

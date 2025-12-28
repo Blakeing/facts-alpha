@@ -10,7 +10,7 @@
 
 // Contract entity
 export {
-  contractApi,
+  ContractApi,
   contractFormSchema,
   CONTRACTS_QUERY_KEY,
   ContractStatusBadge,
@@ -37,7 +37,7 @@ export {
   getDefaultLocationFormValues,
   getLocationTypeColor,
   getLocationTypeLabel,
-  locationApi,
+  LocationApi,
   locationFormSchema,
   LOCATIONS_QUERY_KEY,
   LocationTypeBadge,

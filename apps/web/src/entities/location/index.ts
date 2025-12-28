@@ -5,7 +5,7 @@
  */
 
 // API
-export { locationApi } from './api'
+export { LocationApi } from './api'
 
 // Model (types, schemas, composables)
 export * from './model'

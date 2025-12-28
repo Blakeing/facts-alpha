@@ -18,45 +18,87 @@
 - **Data Persistence**: Date signed, buyer/beneficiary names properly saved/displayed
 - **Location Integration**: Backend-aligned location fields (coordinates, accounting)
 
+### ✅ **Completed - Effect TS Integration**
+- **@facts/effect Package**: Core infrastructure with typed errors
+- **Official Effect Patterns**: Using `Effect.tryPromise` directly
+- **TanStack Query Bridge**: `runEffectQuery`, `runEffectMutation`, `handleError` utilities
+- **BaseApi Factory**: Promise → Effect transformation layer
+- **Contract & Location APIs**: Full Effect TS integration
+
+### ✅ **Completed - JSON Server Setup**
+- **@facts/mock-api Package**: JSON Server with BFF-style endpoints
+- **Centralized URL Management**: `shared/api/urls.ts` for all endpoints
+- **HTTP Client**: Axios with tenant/auth header support
+- **Data Source Switching**: Environment-based mock/JSON Server/BFF selection
+- **Entity API Integration**: Contract and Location APIs support all modes
+
 ### ✅ **Completed - Documentation**
 - **Architecture Docs**: FSD, project structure, domain patterns
 - **API Integration**: BFF patterns, response handling, legacy patterns
 - **Data Models**: Backend/frontend field mapping
 - **Effect TS Strategy**: Typed error handling approach
 - **Development Guide**: Setup, commands, conventions
+- **Roadmap**: Development phases and success metrics
 
 ---
 
-## Phase 1: Effect TS Integration (Next Priority)
+## Phase 0: API Development Foundation ✅ COMPLETED
 
-### 🎯 **Goal**: Implement typed error handling and functional programming patterns
+### 🎯 **Status**: JSON Server Implementation Complete
 
-### **Tasks**:
-1. **Setup @facts/effect package**
-   - Core Effect TS dependencies
-   - Error handling bridge utilities
-   - TanStack Query integration helpers
+### **Completed**:
+1. **JSON Server Package** (`@facts/mock-api`) - Local HTTP-based development
+2. **Centralized URLs** (`shared/api/urls.ts`) - Type-safe endpoint definitions
+3. **HTTP Client Factory** (`shared/api/http/client.ts`) - Axios with tenant/auth headers
+4. **Data Source Abstraction** - Environment-based switching (mock/JSON Server/BFF)
+5. **Entity Integration** - Contract and Location APIs support all modes
 
-2. **Implement Result Pattern**
-   - Replace try/catch with explicit error types
-   - Typed error handling for API responses
-   - Railway-oriented programming foundations
+### **Benefits Delivered**:
+- ✅ HTTP data flow testing without backend dependency
+- ✅ BFF-aligned endpoint structure for smooth migration
+- ✅ Environment variable configuration (`.env.example`, `.env.json-server`, `.env.bff`)
+- ✅ Concurrent dev scripts (`pnpm dev:all`) for full-stack development
 
-3. **Contract API Enhancement**
-   - Effect TS wrappers for contract operations
-   - Typed error responses from backend
-   - Improved error recovery patterns
+### **Development Modes**:
+```bash
+# Full stack: Web app + JSON Server (Turborepo runs all dev scripts)
+pnpm dev
 
-4. **Query Integration**
-   - Effect TS integration with TanStack Query
-   - Better error handling in data fetching
-   - Streamlined error propagation
+# Web app only (uses in-memory mocks by default)
+pnpm dev:web
 
-### **Benefits**:
-- Type-safe error handling
-- Better developer experience
-- Scalable error management
-- Foundation for complex async workflows
+# BFF mode (production, requires backend)
+# Set VITE_API_TYPE=bff in .env.local
+pnpm dev:web
+```
+
+### **Future Enhancements** (Deferred):
+- **SignalR Real-Time Updates** (High Priority) - Post-BFF integration
+- **Feature Flags Service** (Medium Priority) - For gradual rollouts
+- **Event Bus** (Low Priority) - If Pinia state management becomes insufficient
+- **Enhanced Location Context** (Medium Priority) - As features require it
+
+### 🎯 **Status**: Foundation Established
+
+### **Completed**:
+1. **@facts/effect package** - Core infrastructure ready
+2. **Tagged error types** - Type-safe error handling
+3. **TanStack Query bridge** - Seamless integration
+4. **Contract entity integration** - Proof of concept complete
+
+### **Benefits Delivered**:
+- ✅ Type-safe error handling (compile-time safety)
+- ✅ Better developer experience (IntelliSense, refactoring)
+- ✅ User-friendly error messages (technical → human readable)
+- ✅ Future-proof architecture (complex workflows ready)
+
+### **Recommendation**: Continue with Effect TS
+
+**For Facts Alpha's scale and complexity, Effect TS overhead is justified by:**
+- Enterprise-grade error handling
+- Long-term maintainability
+- Complex business logic support
+- Team scaling benefits
 
 ---
 
@@ -110,11 +152,16 @@
 - **Settings Management**: System configuration and preferences
 
 ### **Integration Features**
-- **Authentication**: User management and login system
+- **Authentication**: User management and login system (Required for BFF)
 - **Multi-Tenant Support**: Organization isolation
-- **API Gateway**: Unified backend communication
-- **Real-time Updates**: SignalR/WebSocket integration
+- **API Gateway/BFF**: Unified backend communication
+- **Real-time Updates (SignalR)**: Live data synchronization
+  - *Deferred from legacy patterns - requires backend coordination*
+  - *Pattern: Centralized connection, automatic reconnection, type-safe event handlers*
 - **File Attachments**: Document management
+- **Feature Flags**: Gradual rollout management
+  - *Deferred from legacy patterns - for controlled feature deployment*
+  - *Pattern: Centralized service, role-based flags, environment-aware*
 
 ---
 
@@ -209,8 +256,17 @@
 
 ## Next Steps
 
-**Immediate Focus**: Effect TS integration for better error handling and developer experience.
+**Current Status**: JSON Server implementation complete, ready for BFF integration when authentication is available.
 
-**Decision Point**: Choose between Effect TS first (architectural foundation) or feature expansion (user value) based on timeline and priorities.
+**Immediate Priorities**:
+1. **Authentication Setup** - Required for BFF connection
+2. **Additional Entities** - Extend JSON Server and APIs to cover more backend models
+3. **Feature Expansion** - Build out contract financing, multi-sale support, catalog
+4. **Real-Time Features** - SignalR integration once BFF is connected
+
+**BFF Migration Tasks** (When connecting to real backend):
+- **Contract Save Pattern**: Update `ContractApi.create()` to send nested `ContractSessionSaveModel` payload (contract + sales + items + payments) in one request instead of separate calls. See [API Integration](./api-integration.md#save-contract-draft) for details.
+
+**Decision Point**: Continue feature development with JSON Server while authentication is being developed.
 
 **Timeline Estimate**: 6-12 months for full migration depending on scope and resources.

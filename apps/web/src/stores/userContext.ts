@@ -7,9 +7,10 @@
  * Permission system is aligned with legacy FACTS application.
  */
 
+import { runEffect } from '@facts/effect'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { locationApi, type LocationListing, type LocationType } from '@/entities/location'
+import { LocationApi, type LocationListing, type LocationType } from '@/entities/location'
 import {
   type GrantedPermission,
   PermissionLevel,
@@ -211,7 +212,7 @@ export const useUserContextStore = defineStore('userContext', () => {
 
     locationsLoading.value = true
     try {
-      const listings = await locationApi.list()
+      const listings = await runEffect(LocationApi.list())
 
       // Convert LocationListing to our Location shape
       const locations: Location[] = listings

@@ -1,7 +1,5 @@
-/**
- * shared/api/index.ts
- *
- * API client and request utilities
- */
-
-export { httpClient } from './httpClient'
+export { BaseApi, BaseReaderApi } from './base'
+export type { Api, DataSource, ReaderApi, ReaderDataSource } from './base'
+export * from './http'
+export * from './sources'
+export * from './urls'

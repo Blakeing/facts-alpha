@@ -1,30 +1,46 @@
 /**
- * useLocation - Single location composable
+ * useLocation - Single location composable with Effect-based error handling
  */
 
+import type { Location } from './location'
+import { errorMessage, handleError, runEffectQuery } from '@facts/effect'
+
 import { useQuery } from '@tanstack/vue-query'
+
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
-import { locationApi } from '../api/locationApi'
+import { LocationApi } from '../api'
 
 export function useLocation(locationId: MaybeRefOrGetter<string | null | undefined>) {
   const queryKey = computed(() => ['location', toValue(locationId)] as const)
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const query = useQuery<Location, Error>({
     queryKey,
-    queryFn: () => {
+    queryFn: async () => {
       const id = toValue(locationId)
-      if (!id) return null
-      return locationApi.get(id)
+      if (!id) throw new Error('No location ID provided')
+      return runEffectQuery(LocationApi.get(id))()
     },
     enabled: computed(() => !!toValue(locationId)),
   })
 
-  const location = computed(() => data.value ?? null)
+  const location = computed<Location | null>(() => query.data.value ?? null)
+
+  // Typed error handling
+  const errorMsg = computed(() => {
+    if (!query.error.value) return null
+    return handleError(query.error.value, {
+      NotFoundError: (e) => `Location "${e.id}" not found`,
+      NetworkError: (e) => `Network error: ${e.message}`,
+      default: errorMessage,
+    })
+  })
 
   return {
     location,
-    isLoading,
-    error,
-    reload: refetch,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    errorMessage: errorMsg,
+    reload: query.refetch,
   }
 }

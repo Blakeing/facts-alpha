@@ -1,1 +1,1 @@
-export { contractApi } from './contractApi'
+export { ContractApi } from './contractApi'

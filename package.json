@@ -5,6 +5,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=@facts/web",
     "build": "turbo build",
     "lint": "turbo lint",
     "type-check": "turbo type-check",

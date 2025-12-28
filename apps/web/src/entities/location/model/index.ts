@@ -4,7 +4,8 @@ export * from './location'
 // Schemas
 export * from './locationSchema'
 
+// Composables
 export { useLocation } from './useLocation'
 export { useLocationForm } from './useLocationForm'
-// Composables
+export { useLocationMutations } from './useLocationMutations'
 export { LOCATIONS_QUERY_KEY, useLocations } from './useLocations'

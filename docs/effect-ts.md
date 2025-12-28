@@ -1,148 +1,72 @@
-# Effect TS Strategy
+# Effect TS Integration
 
-This document outlines the strategy for integrating Effect TS into Facts Alpha for typed error handling and complex async orchestration.
+This document describes the Effect TS integration in Facts Alpha for typed error handling using official Effect patterns and conventions.
 
-> **Note:** Effect TS integration is planned for when we connect to the real backend API. This document serves as a design reference.
+## Status
 
-## Why Effect TS?
+**✅ IMPLEMENTED**: Fully integrated across Contract and Location entities using official Effect patterns.
 
-### Problem: Untyped Errors
+## Package Overview
 
-Current JavaScript/TypeScript error handling has limitations:
+The `@facts/effect` package (`packages/effect/`) provides a minimal, idiomatic Effect integration:
 
-```typescript
-// Current pattern - errors are untyped
-async function getLocation(id: string): Promise<Location> {
-  const response = await fetch(`/api/locations/${id}`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch location') // What kind of error?
+```
+packages/effect/
+  src/
+    index.ts              # Re-exports
+    errors.ts             # Tagged error types (Data.TaggedError)
+    http.ts               # HTTP error mapping (toApiError)
+    query.ts              # TanStack Vue Query bridge
+```
+
+### Installation
+
+The package is included in the web app's dependencies:
+
+```json
+{
+  "dependencies": {
+    "@facts/effect": "workspace:*",
+    "effect": "^3.19.13"
   }
-  return response.json()
-}
-
-// Caller has no idea what errors can occur
-try {
-  const location = await getLocation('123')
-} catch (error) {
-  // error is 'unknown' - could be anything
-  if (error instanceof Error) {
-    console.error(error.message)
-  }
 }
 ```
 
-### Solution: Typed Errors with Effect
+## Error Types
+
+All API errors use Effect's official `Data.TaggedError` pattern:
 
 ```typescript
-import { Effect } from 'effect'
+import {
+  NotFoundError,
+  ValidationError,
+  UnauthorizedError,
+  NetworkError,
+  ServerError,
+  ForbiddenError,
+  type ApiError,
+} from '@facts/effect'
 
-// Define specific error types
-class NotFoundError {
-  readonly _tag = 'NotFoundError'
-  constructor(readonly resource: string, readonly id: string) {}
-}
-
-class UnauthorizedError {
-  readonly _tag = 'UnauthorizedError'
-}
-
-class NetworkError {
-  readonly _tag = 'NetworkError'
-  constructor(readonly message: string) {}
-}
-
-// Function signature declares possible errors
-function getLocation(
-  id: string
-): Effect.Effect<Location, NotFoundError | UnauthorizedError | NetworkError> {
-  return Effect.tryPromise({
-    try: () => fetch(`/api/locations/${id}`).then(r => r.json()),
-    catch: (error) => new NetworkError(String(error)),
-  })
-}
-
-// Caller knows exactly what errors can occur
-const program = getLocation('123').pipe(
-  Effect.catchTag('NotFoundError', (e) => 
-    Effect.succeed(null) // Handle not found
-  ),
-  Effect.catchTag('UnauthorizedError', (e) =>
-    Effect.fail(new RedirectToLoginError()) // Escalate
-  )
-)
+// Each error has a _tag property for pattern matching
+const error = new NotFoundError({ resource: 'contract', id: '123' })
+console.log(error._tag) // 'NotFoundError'
 ```
 
-### Backend Alignment
+### Available Error Types
 
-The backend already uses a Result pattern:
+| Error Type          | HTTP Code | Properties                         |
+| ------------------- | --------- | ---------------------------------- |
+| `NotFoundError`     | 404       | `resource`, `id`                   |
+| `ValidationError`   | 400       | `fields: Record<string, string[]>` |
+| `UnauthorizedError` | 401       | `message`                          |
+| `ForbiddenError`    | 403       | `permission`                       |
+| `NetworkError`      | N/A       | `message`, `cause?`                |
+| `ServerError`       | 5xx       | `message`, `statusCode`            |
 
-```csharp
-// Backend C#
-public class Response<T> : ResponseBase {
-    public T Value { get; set; }
-    public bool Success { get; set; }
-    public int StatusCode { get; set; }
-    public string ErrorMessage { get; set; }
-}
-```
-
-Effect TS provides the same pattern with better TypeScript support.
-
-## Implementation Plan
-
-### Phase 1: Package Setup
-
-Create `@facts/effect` package:
-
-```
-packages/
-  effect/
-    src/
-      index.ts          # Re-exports
-      errors.ts         # Domain error types
-      api.ts            # Effect-based HTTP client
-      bridge.ts         # TanStack Query integration
-    package.json
-```
-
-### Phase 2: Error Types
-
-Define domain-specific errors:
+### Union Type
 
 ```typescript
-// packages/effect/src/errors.ts
-import { Data } from 'effect'
-
-// Base API errors
-export class NotFoundError extends Data.TaggedError('NotFoundError')<{
-  readonly resource: string
-  readonly id: string
-}> {}
-
-export class ValidationError extends Data.TaggedError('ValidationError')<{
-  readonly fields: Record<string, string[]>
-}> {}
-
-export class UnauthorizedError extends Data.TaggedError('UnauthorizedError')<{
-  readonly message: string
-}> {}
-
-export class ForbiddenError extends Data.TaggedError('ForbiddenError')<{
-  readonly permission: string
-}> {}
-
-export class NetworkError extends Data.TaggedError('NetworkError')<{
-  readonly message: string
-  readonly cause?: unknown
-}> {}
-
-export class ServerError extends Data.TaggedError('ServerError')<{
-  readonly message: string
-  readonly statusCode: number
-}> {}
-
-// Union type for all API errors
-export type ApiError =
+type ApiError =
   | NotFoundError
   | ValidationError
   | UnauthorizedError
@@ -151,343 +75,311 @@ export type ApiError =
   | ServerError
 ```
 
-### Phase 3: Effect-Based API Client
+## API Effects Pattern
+
+Use `Effect.tryPromise` with `toApiError` to convert HTTP errors to typed Effect errors:
 
 ```typescript
-// packages/effect/src/api.ts
-import { Effect, pipe } from 'effect'
-import type { ApiError } from './errors'
-import {
-  NotFoundError,
-  ValidationError,
-  UnauthorizedError,
-  ForbiddenError,
-  NetworkError,
-  ServerError,
-} from './errors'
+// entities/contract/api/contractApi.ts
+import * as Effect from 'effect'
+import { toApiError, NotFoundError, type ApiError } from '@facts/effect'
+import { getHttpClient } from '@/shared/api'
 
-export function apiGet<T>(
-  url: string
-): Effect.Effect<T, ApiError> {
-  return pipe(
+export const ContractApi = {
+  /**
+   * List all contracts for a location
+   */
+  list: (): Effect.Effect<ContractListing[], ApiError> =>
     Effect.tryPromise({
-      try: async () => {
-        const response = await fetch(url, {
-          headers: getAuthHeaders(),
-        })
-        return { response, data: await response.json() }
+      try: () => {
+        const client = getHttpClient()
+        return client.get<ContractListing[]>(apiUrls.contracts.listing)
       },
-      catch: (error) => new NetworkError({ 
-        message: String(error),
-        cause: error 
-      }),
+      catch: (error: unknown) => toApiError(error, 'contract'),
     }),
-    Effect.flatMap(({ response, data }) => {
-      if (response.ok) {
-        return Effect.succeed(data as T)
-      }
-      
-      // Map HTTP status to typed error
-      switch (response.status) {
-        case 400:
-          return Effect.fail(new ValidationError({ 
-            fields: data?.errors ?? {} 
-          }))
-        case 401:
-          return Effect.fail(new UnauthorizedError({ 
-            message: data ?? 'Unauthorized' 
-          }))
-        case 403:
-          return Effect.fail(new ForbiddenError({ 
-            permission: data ?? 'Unknown' 
-          }))
-        case 404:
-          return Effect.fail(new NotFoundError({ 
-            resource: url, 
-            id: '' 
-          }))
-        default:
-          return Effect.fail(new ServerError({ 
-            message: data ?? 'Server error',
-            statusCode: response.status 
-          }))
-      }
-    })
-  )
-}
 
-export function apiPost<T>(
-  url: string, 
-  body: unknown
-): Effect.Effect<T, ApiError> {
-  return pipe(
-    Effect.tryPromise({
-      try: async () => {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            ...getAuthHeaders(),
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-        })
-        return { response, data: await response.json() }
-      },
-      catch: (error) => new NetworkError({ 
-        message: String(error),
-        cause: error 
-      }),
+  /**
+   * Get a single contract by ID
+   */
+  get: (id: string): Effect.Effect<Contract, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      const response = yield* Effect.tryPromise({
+        try: () => client.get<Contract>(apiUrls.contracts.detail(id)),
+        catch: (error: unknown) => toApiError(error, 'contract', id),
+      })
+
+      const contract = response.data
+      if (!contract) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'contract', id }))
+      }
+
+      return contract
     }),
-    Effect.flatMap(({ response, data }) => {
-      // Same error mapping as GET
-      if (response.ok) {
-        return Effect.succeed(data as T)
-      }
-      // ... error handling
-    })
-  )
 }
 ```
 
-### Phase 4: TanStack Query Bridge
+### HTTP Error Mapping
+
+The `toApiError` utility automatically maps HTTP status codes to typed errors:
+
+- **400 Bad Request** → `ValidationError` (with field-level errors from backend)
+- **401 Unauthorized** → `UnauthorizedError`
+- **403 Forbidden** → `ForbiddenError`
+- **404 Not Found** → `NotFoundError`
+- **5xx Server Error** → `ServerError`
+- **Network/timeout errors** → `NetworkError`
+
+This aligns with the backend's `Response<T>` pattern and ensures all API errors are type-safe.
+
+## TanStack Vue Query Bridge
+
+Since `effect-query` is React-only, we provide a minimal Vue Query bridge.
+
+### Query Functions
+
+Convert Effects to TanStack Query functions:
 
 ```typescript
-// packages/effect/src/bridge.ts
-import { Effect, Runtime } from 'effect'
-import type { QueryFunction } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
+import { runEffectQuery } from '@facts/effect'
+import { ContractApi } from '../api/contractEffects'
 
-/**
- * Convert an Effect to a TanStack Query function
- */
-export function effectToQueryFn<T, E>(
-  effect: Effect.Effect<T, E>,
-  runtime = Runtime.defaultRuntime
-): QueryFunction<T> {
-  return async () => {
-    const result = await Runtime.runPromiseExit(runtime)(effect)
-    
-    if (result._tag === 'Success') {
-      return result.value
-    }
-    
-    // Convert Effect failure to thrown error for TanStack Query
-    throw result.cause
-  }
-}
-
-/**
- * Create a query options object from an Effect
- */
-export function effectQuery<T, E>(
-  queryKey: unknown[],
-  effect: Effect.Effect<T, E>
-) {
-  return {
-    queryKey,
-    queryFn: effectToQueryFn(effect),
-  }
-}
-
-/**
- * Create mutation options from an Effect function
- */
-export function effectMutation<TData, TVariables, E>(
-  mutationFn: (variables: TVariables) => Effect.Effect<TData, E>
-) {
-  return {
-    mutationFn: async (variables: TVariables) => {
-      const result = await Effect.runPromise(mutationFn(variables))
-      return result
-    },
-  }
-}
+const query = useQuery<ContractListing[], Error>({
+  queryKey: ['contracts'],
+  queryFn: runEffectQuery(ContractApi.list()),
+})
 ```
 
-### Phase 5: Domain API with Effects
+### Error Handling
+
+Use `handleError` for type-safe error handling:
 
 ```typescript
-// entities/location/api/locationEffects.ts
-import { Effect, pipe } from 'effect'
-import { apiGet, apiPost, apiPut } from '@facts/effect'
-import type { Location, LocationListing } from '../model/location'
-import type { LocationFormValues } from '../model/locationSchema'
+import { handleError, errorMessage } from '@facts/effect'
 
-const BASE_URL = '/api/v1/locations'
+const errorMsg = computed(() => {
+  if (!query.error.value) return null
 
-export const locationEffects = {
-  list: (): Effect.Effect<LocationListing[], ApiError> =>
-    apiGet(`${BASE_URL}/listing`),
-
-  get: (id: string): Effect.Effect<Location, ApiError> =>
-    apiGet(`${BASE_URL}/${id}`),
-
-  create: (data: LocationFormValues): Effect.Effect<Location, ApiError> =>
-    apiPost(BASE_URL, { model: data }),
-
-  update: (id: string, data: LocationFormValues): Effect.Effect<Location, ApiError> =>
-    apiPut(`${BASE_URL}/${id}`, { model: data }),
-}
-```
-
-### Phase 6: Composables with Effect
-
-```typescript
-// entities/location/model/useLocationEffect.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { Effect } from 'effect'
-import { effectQuery, effectMutation } from '@facts/effect'
-import { locationEffects } from '../api/locationEffects'
-
-export function useLocations() {
-  const query = useQuery(
-    effectQuery(['locations'], locationEffects.list())
-  )
-  
-  return {
-    locations: computed(() => query.data.value ?? []),
-    isLoading: query.isLoading,
-    error: query.error,
-  }
-}
-
-export function useLocation(id: MaybeRefOrGetter<string>) {
-  const query = useQuery({
-    queryKey: computed(() => ['location', toValue(id)]),
-    queryFn: () => Effect.runPromise(locationEffects.get(toValue(id))),
-    enabled: computed(() => !!toValue(id)),
+  return handleError(query.error.value, {
+    NotFoundError: (e) => `${e.resource} "${e.id}" not found`,
+    NetworkError: (e) => `Network error: ${e.message}`,
+    UnauthorizedError: () => 'Please log in',
+    default: errorMessage,
   })
-  
-  return {
-    location: computed(() => query.data.value ?? null),
-    isLoading: query.isLoading,
-    error: query.error,
-  }
+})
+```
+
+### Type Guard
+
+Check if an error is an ApiError:
+
+```typescript
+import { isApiError, getErrorTag } from '@facts/effect'
+
+if (isApiError(error)) {
+  console.log(error._tag) // Type-safe access to tag
 }
 
-export function useLocationMutation() {
+const tag = getErrorTag(error) // 'NotFoundError' | ... | undefined
+```
+
+## Composable Patterns
+
+### List Composable
+
+```typescript
+// entities/contract/model/useContracts.ts
+import { useQuery } from '@tanstack/vue-query'
+import { runEffectQuery, handleError, errorMessage } from '@facts/effect'
+import { ContractApi } from '../api/contractEffects'
+
+export function useContracts() {
+  const query = useQuery<ContractListing[], Error>({
+    queryKey: ['contracts'],
+    queryFn: runEffectQuery(ContractApi.list()),
+  })
+
+  const errorMsg = computed(() => {
+    if (!query.error.value) return null
+    return handleError(query.error.value, {
+      NetworkError: (e) => `Network error: ${e.message}`,
+      UnauthorizedError: () => 'Please log in to view contracts',
+      default: errorMessage,
+    })
+  })
+
+  return {
+    contracts: computed(() => query.data.value ?? []),
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    errorMessage: errorMsg,
+    reload: query.refetch,
+  }
+}
+```
+
+### Single Entity Composable
+
+```typescript
+// entities/contract/model/useContract.ts
+export function useContract(contractId: MaybeRefOrGetter<string | null | undefined>) {
+  const query = useQuery<Contract, Error>({
+    queryKey: computed(() => ['contract', toValue(contractId)]),
+    queryFn: async () => {
+      const id = toValue(contractId)
+      if (!id) throw new Error('No contract ID provided')
+      return runEffectQuery(ContractApi.get(id))()
+    },
+    enabled: computed(() => !!toValue(contractId)),
+  })
+
+  const errorMsg = computed(() => {
+    if (!query.error.value) return null
+    return handleError(query.error.value, {
+      NotFoundError: (e) => `Contract "${e.id}" not found`,
+      NetworkError: (e) => `Network error: ${e.message}`,
+      default: errorMessage,
+    })
+  })
+
+  return {
+    contract: computed(() => query.data.value ?? null),
+    isLoading: query.isLoading,
+    errorMessage: errorMsg,
+    reload: query.refetch,
+  }
+}
+```
+
+### Mutations Composable
+
+```typescript
+// entities/contract/model/useContractMutations.ts
+export function useContractMutations() {
   const queryClient = useQueryClient()
-  
-  const createMutation = useMutation({
-    ...effectMutation(locationEffects.create),
+
+  const createMutation = useMutation<Contract, Error, ContractFormValues>({
+    mutationFn: async (data): Promise<Contract> => {
+      return runEffectMutation((data) => ContractApi.create(data))
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['locations'] })
+      queryClient.invalidateQueries({ queryKey: CONTRACTS_QUERY_KEY })
     },
   })
-  
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: LocationFormValues }) =>
-      Effect.runPromise(locationEffects.update(id, data)),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['locations'] })
-      queryClient.invalidateQueries({ queryKey: ['location', id] })
-    },
-  })
-  
+
   return {
     create: createMutation.mutateAsync,
-    update: updateMutation.mutateAsync,
     isCreating: createMutation.isPending,
-    isUpdating: updateMutation.isPending,
+    createError: createMutation.error,
+    createErrorMessage: computed(() =>
+      createMutation.error.value ? errorMessage(createMutation.error.value) : null,
+    ),
   }
 }
 ```
 
-## Complex Orchestration Example
+## Architecture
 
-Effect excels at orchestrating complex operations:
+```
+packages/effect/src/
+  errors.ts         # Tagged error types (Data.TaggedError)
+  http.ts           # HTTP error mapping (toApiError)
+  query.ts          # Vue Query bridge (runEffectQuery, runEffectMutation, handleError)
+  index.ts          # Public exports
+
+entities/contract/
+  api/
+    contractApi.ts        # Promise-based mock API (internal)
+    contractEffects.ts    # ContractApi object with Effect operations
+    index.ts              # Exports ContractApi
+  model/
+    contract.ts           # Types and enums
+    contractSchema.ts     # Zod schemas
+    useContracts.ts       # List composable with Effect
+    useContract.ts        # Single fetch composable with Effect
+    useContractMutations.ts # CRUD composable with Effect
+    useContractSession.ts # Complex session logic
+    index.ts              # Exports all
+
+entities/location/
+  api/
+    locationApi.ts        # Effect-based API with HTTP error mapping
+    index.ts             # Exports LocationApi
+  model/
+    useLocations.ts       # List composable with Effect
+    useLocation.ts        # Single fetch composable with Effect
+    useLocationMutations.ts # CRUD composable with Effect
+```
+
+## Function Reference
+
+| Function            | Purpose                               | Example                                                      |
+| ------------------- | ------------------------------------- | ------------------------------------------------------------ |
+| `runEffect`         | Run Effect as Promise (direct exec)   | `const contract = await runEffect(ContractApi.get(id))`      |
+| `runEffectQuery`    | Convert Effect to TanStack Query fn   | `queryFn: runEffectQuery(ContractApi.list())`                |
+| `runEffectMutation` | Convert Effect fn to mutation fn      | `mutationFn: runEffectMutation((data) => ContractApi.create(data))` |
+| `toApiError`        | Map HTTP errors to typed Effect errors | `catch: (error) => toApiError(error, 'contract', id)`        |
+| `handleError`       | Pattern match on errors               | `handleError(error, { NetworkError: (e) => ... })`           |
+| `errorMessage`      | Convert error to user-friendly string | `errorMessage(error)`                                        |
+| `isApiError`        | Type guard for ApiError               | `if (isApiError(error)) { ... }`                             |
+| `getErrorTag`        | Get error tag safely                  | `getErrorTag(error) // 'NotFoundError' \| undefined`         |
+
+## Official Effect Patterns Used
+
+1. **Data.TaggedError** - For typed error classes
+2. **Effect.tryPromise** - For wrapping Promise operations
+3. **Effect.gen** - For sequential operations with early exit
+4. **Effect.fail** - For explicit failures
+
+## Future Enhancements
+
+### Railway Oriented Programming
+
+Chain operations that can fail:
 
 ```typescript
-// Contract save with multiple steps
-function saveContract(
-  contractId: string,
-  data: ContractFormValues
-): Effect.Effect<SaveResult, ContractSaveError> {
-  return pipe(
-    // Step 1: Validate
+import { Effect, pipe } from 'effect'
+
+const saveContract = (data: ContractFormValues) =>
+  pipe(
     validateContract(data),
-    
-    // Step 2: Check permissions
-    Effect.flatMap(() => checkContractPermissions(contractId)),
-    
-    // Step 3: Lock contract for editing
-    Effect.flatMap(() => acquireContractLock(contractId)),
-    
-    // Step 4: Save contract data
-    Effect.flatMap(() => 
-      Effect.all({
-        contract: saveContractCore(contractId, data),
-        items: saveContractItems(contractId, data.items),
-        payments: saveContractPayments(contractId, data.payments),
-      }, { concurrency: 'unbounded' })
-    ),
-    
-    // Step 5: Release lock (always, even on failure)
-    Effect.ensuring(releaseContractLock(contractId)),
-    
-    // Step 6: Invalidate caches
-    Effect.tap(() => invalidateContractCaches(contractId)),
-    
-    // Error recovery
-    Effect.catchTag('ValidationError', (e) =>
-      Effect.fail(new ContractValidationError(e.fields))
-    ),
-    Effect.catchTag('LockAcquisitionError', (e) =>
-      Effect.fail(new ContractBusyError(e.lockedBy))
-    ),
+    Effect.flatMap(() => checkPermissions()),
+    Effect.flatMap(() => ContractApi.create(data)),
+    Effect.tap(() => invalidateCaches()),
   )
-}
 ```
 
-## Migration Strategy
+### Complex Orchestration
 
-### Incremental Adoption
-
-1. **Keep existing code working** - Effect is opt-in
-2. **Start with new features** - Use Effect for new API integrations
-3. **Migrate critical paths** - Contract save, payment processing
-4. **Document patterns** - As we learn what works
-
-### Compatibility Layer
-
-Keep both patterns available during migration:
+Effect excels at multi-step operations:
 
 ```typescript
-// Both work during migration
-const location1 = await locationApi.get('123') // Promise-based
-const location2 = await Effect.runPromise(locationEffects.get('123')) // Effect-based
+const finalizeContract = (contractId: string) =>
+  Effect.gen(function* () {
+    // Step 1: Get and validate contract
+    const contract = yield* ContractApi.get(contractId)
+    if (contract.balanceDue > 0) {
+      return yield* Effect.fail(new BalanceDueError({ amount: contract.balanceDue }))
+    }
+
+    // Step 2: Process in parallel
+    const results = yield* Effect.all(
+      {
+        finalized: finalizeContractStatus(contractId),
+        documents: generateDocuments(contract),
+        notifications: sendNotifications(contract),
+      },
+      { concurrency: 'unbounded' },
+    )
+
+    return results
+  })
 ```
-
-## Learning Resources
-
-- [Effect Documentation](https://effect.website/)
-- [Effect GitHub](https://github.com/Effect-TS/effect)
-- [Effect Discord](https://discord.gg/effect-ts)
-
-## Package Dependencies
-
-```json
-{
-  "dependencies": {
-    "effect": "^3.0.0",
-    "@effect/schema": "^0.70.0"
-  }
-}
-```
-
-## Decision: When to Use Effect
-
-| Scenario | Use Effect? | Reason |
-|----------|-------------|--------|
-| Simple CRUD | Optional | TanStack Query handles well |
-| Complex save operations | Yes | Multiple steps, rollback needed |
-| External API integration | Yes | Typed errors crucial |
-| Background jobs | Yes | Structured concurrency |
-| Form validation | No | Zod handles this well |
-| Permission checks | Optional | Simple boolean logic |
 
 ## See Also
 
 - [API Integration](./api-integration.md) - Backend API patterns
 - [Data Models](./data-models.md) - Type definitions
-- [Legacy Patterns](./legacy-patterns.md) - ContractSession orchestration
-
+- [Roadmap](./roadmap.md) - Future development plans

@@ -71,11 +71,12 @@
 </template>
 
 <script lang="ts" setup>
+  import { runEffectQuery } from '@facts/effect'
   import { useQueryClient } from '@tanstack/vue-query'
   import { computed, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import {
-    contractApi,
+    ContractApi,
     type ContractListing,
     ContractStatusBadge,
     SaleStatus,
@@ -162,7 +163,7 @@
       isBusy.value = true
       await queryClient.fetchQuery({
         queryKey: ['contract', item.id],
-        queryFn: () => contractApi.get(item.id),
+        queryFn: runEffectQuery(ContractApi.get(item.id)),
       })
     } catch {
       // Prefetch failed, but we can still navigate

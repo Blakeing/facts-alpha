@@ -1,11 +1,14 @@
 /**
- * useLocations - List composable for locations
+ * useLocations - List composable for locations with Effect-based error handling
  */
 
 import type { LocationListing, LocationType } from './location'
+import { errorMessage, handleError, runEffectQuery } from '@facts/effect'
+
 import { useQuery } from '@tanstack/vue-query'
+
 import { computed, ref } from 'vue'
-import { locationApi } from '../api/locationApi'
+import { LocationApi } from '../api'
 
 export const LOCATIONS_QUERY_KEY = ['locations'] as const
 
@@ -14,12 +17,21 @@ export function useLocations() {
   const typeFilter = ref<LocationType | null>(null)
   const activeFilter = ref<boolean | null>(null)
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const query = useQuery({
     queryKey: LOCATIONS_QUERY_KEY,
-    queryFn: () => locationApi.list(),
+    queryFn: runEffectQuery(LocationApi.list()),
   })
 
-  const locations = computed(() => data.value ?? [])
+  const locations = computed(() => query.data.value ?? [])
+
+  // Typed error handling
+  const errorMsg = computed(() => {
+    if (!query.error.value) return null
+    return handleError(query.error.value, {
+      NetworkError: (e) => `Network error: ${e.message}`,
+      default: errorMessage,
+    })
+  })
 
   // Filter by search term
   const searchedLocations = computed(() => {
@@ -88,8 +100,10 @@ export function useLocations() {
     stats,
 
     // Query state
-    isLoading,
-    error,
-    reload: refetch,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    errorMessage: errorMsg,
+    reload: query.refetch,
   }
 }

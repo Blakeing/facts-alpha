@@ -1,11 +1,12 @@
 /**
- * Contract API client (mock implementation)
+ * Contract API client (HTTP-based with transformations)
  *
- * Aligned with backend BFF endpoints:
- * - GET /api/v1/contracts/listing/{locationId}
- * - GET /api/v1/contracts/{id}
- * - POST /api/v1/contracts/save/draft
- * - POST /api/v1/contracts/save/adjustment
+ * This API implements transformation logic to convert between:
+ * - Form data (nested: primaryBuyer, coBuyers, etc.)
+ * - JSON Server structure (flat: separate collections for contracts, people, sales, etc.)
+ *
+ * In production, this transformation logic happens in the BFF.
+ * For testing with JSON Server, we implement it client-side.
  *
  * @see docs/data-models.md for field mapping details
  * @see docs/api-integration.md for endpoint details
@@ -17,6 +18,7 @@ import type {
   ContractListing,
   ContractPayment,
   ContractPerson,
+  ContractPersonRole,
   Sale,
   SaleItem,
 } from '../model/contract'
@@ -28,756 +30,677 @@ import type {
   SaleFormValues,
   SaleItemFormValues,
 } from '../model/contractSchema'
-import { calculateSaleTotals, ContractPersonRole, NeedType, SaleStatus } from '../model/contract'
+import { type ApiError, NotFoundError, toApiError } from '@facts/effect'
+import { Effect } from 'effect'
+import { apiUrls, getHttpClient } from '@/shared/api'
+import { SaleType } from '../model/contract'
 import {
   contractToListing,
+  formPersonToPerson,
+  generateContractNumber,
   generateId,
-  mockContracts,
-  mockFinancing,
-  mockPayments,
-  mockPeople,
-  mockSales,
-} from './mockContracts'
-
-// Simulate network delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-// In-memory stores
-let contracts = [...mockContracts]
-const sales: Record<string, Sale[]> = { ...mockSales }
-const people: Record<string, ContractPerson[]> = { ...mockPeople }
-const financing: Record<string, ContractFinancing | undefined> = { ...mockFinancing }
-const payments: Record<string, ContractPayment[]> = { ...mockPayments }
+} from './transformations'
 
 // =============================================================================
-// Contract CRUD
+// CRUD Operations (with transformations)
 // =============================================================================
 
-export const contractApi = {
+export const ContractApi = {
   /**
-   * Get all contracts for a location (listing format)
-   * Backend: GET /api/v1/contracts/listing/{locationId}
+   * List all contracts with joined people/sales data
    */
-  async list(locationId?: string): Promise<ContractListing[]> {
-    await delay(300)
-    const filtered = locationId ? contracts.filter((c) => c.locationId === locationId) : contracts
-    return filtered.map((c) =>
-      contractToListing({
-        ...c,
-        people: people[c.id] ?? [],
-        sales: sales[c.id] ?? [],
-      }),
-    )
-  },
+  list: (): Effect.Effect<ContractListing[], ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
 
-  /**
-   * Get a single contract by ID with full details
-   * Backend: GET /api/v1/contracts/{id}
-   */
-  async get(id: string): Promise<Contract | null> {
-    await delay(200)
-    const contract = contracts.find((c) => c.id === id)
-    if (!contract) return null
+      // Fetch all collections in parallel
+      const [contractsRes, peopleRes, salesRes] = yield* Effect.all(
+        [
+          Effect.tryPromise({
+            try: () => client.get<Contract[]>(apiUrls.contracts.listing),
+            catch: (error: unknown) => toApiError(error, 'contract'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<ContractPerson[]>('/people'),
+            catch: (error: unknown) => toApiError(error, 'person'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<Sale[]>('/sales'),
+            catch: (error: unknown) => toApiError(error, 'sale'),
+          }),
+        ],
+        { concurrency: 'unbounded' },
+      )
 
-    return {
-      ...contract,
-      sales: sales[id] ?? [],
-      people: people[id] ?? [],
-      financing: financing[id],
-      payments: payments[id] ?? [],
-    }
-  },
+      // Transform each contract to listing with joined data
+      return contractsRes.data.map((c) => contractToListing(c, peopleRes.data, salesRes.data))
+    }),
 
   /**
-   * Create a new contract (draft)
-   * Backend: POST /api/v1/contracts/save/draft
+   * Get a single contract with all related data
    */
-  async create(data: ContractFormValues): Promise<Contract> {
-    await delay(400)
+  get: (id: string): Effect.Effect<Contract, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
 
-    const now = new Date().toISOString()
-    const contractId = generateId()
-    const contractNumber = `${data.needType === NeedType.PRE_NEED ? 'PN' : 'AN'}-${new Date().getFullYear()}-${String(contracts.length + 1).padStart(4, '0')}`
+      // Fetch contract and related data in parallel
+      const [contractRes, peopleRes, salesRes, financingRes, paymentsRes] = yield* Effect.all(
+        [
+          Effect.tryPromise({
+            try: () => client.get<Contract>(apiUrls.contracts.detail(id)),
+            catch: (error: unknown) => toApiError(error, 'contract', id),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<ContractPerson[]>(`/people?contractId=${id}`),
+            catch: (error: unknown) => toApiError(error, 'person'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<Sale[]>(apiUrls.contracts.sales.list(id)),
+            catch: (error: unknown) => toApiError(error, 'sale'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<ContractFinancing[]>(`/financing?contractId=${id}`),
+            catch: (error: unknown) => toApiError(error, 'financing'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<ContractPayment[]>(`/payments?contractId=${id}`),
+            catch: (error: unknown) => toApiError(error, 'payment'),
+          }),
+        ],
+        { concurrency: 'unbounded' },
+      )
 
-    // Create people from form data
-    const contractPeople: ContractPerson[] = []
+      const contract = contractRes.data
+      if (!contract) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'contract', id }))
+      }
 
-    // Primary buyer
-    const buyerPerson = formToPerson(data.primaryBuyer, contractId, [
-      ContractPersonRole.PRIMARY_BUYER,
-    ])
-    contractPeople.push(buyerPerson)
+      // Fetch sale items for each sale
+      const sales = salesRes.data
 
-    // Co-buyers
-    for (const cb of data.coBuyers) {
-      contractPeople.push(formToPerson(cb, contractId, [ContractPersonRole.CO_BUYER]))
-    }
+      for (const sale of sales) {
+        const itemsRes = yield* Effect.tryPromise({
+          try: () => client.get<SaleItem[]>(`/saleItems?saleId=${sale.id}`),
+          catch: (error: unknown) => toApiError(error, 'saleItem'),
+        })
+        sale.items = itemsRes.data
+      }
 
-    // Primary beneficiary
-    const beneficiaryPerson = formToPerson(data.primaryBeneficiary, contractId, [
-      ContractPersonRole.PRIMARY_BENEFICIARY,
-    ])
-    contractPeople.push(beneficiaryPerson)
+      // Return contract with all related data
+      return {
+        ...contract,
+        people: peopleRes.data,
+        sales,
+        financing: financingRes.data[0] || undefined,
+        payments: paymentsRes.data,
+      }
+    }),
 
-    // Additional beneficiaries
-    for (const ab of data.additionalBeneficiaries ?? []) {
-      contractPeople.push(formToPerson(ab, contractId, [ContractPersonRole.ADDITIONAL_BENEFICIARY]))
-    }
+  /**
+   * Create a new contract with people and financing
+   * Transforms nested form data into separate collection records
+   */
+  create: (data: ContractFormValues): Effect.Effect<Contract, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      const now = new Date().toISOString()
+      const contractId = generateId()
 
-    // Create financing if provided
-    let contractFinancing: ContractFinancing | undefined
-    if (data.financing) {
-      contractFinancing = formToFinancing(data.financing, contractId)
-    }
+      // 1. Build flat contract payload (no nested people)
+      const contractPayload = {
+        id: contractId,
+        contractNumber: generateContractNumber(data.needType),
+        prePrintedContractNumber: data.prePrintedContractNumber || '',
+        locationId: data.locationId,
+        needType: data.needType,
+        contractTypeId: data.contractTypeId,
+        contractSaleTypeId: data.contractSaleTypeId,
+        leadSourceId: data.leadSourceId,
+        atNeedType: data.atNeedType,
+        preNeedFundingType: data.preNeedFundingType,
+        salesPersonId: data.salesPersonId,
+        marketingAgentId: data.marketingAgentId,
+        dateExecuted: data.dateSigned,
+        dateSigned: data.dateSigned,
+        isCancelled: false,
+        isConditionalSale: data.isConditionalSale,
+        notes: data.notes,
+        // Initialize totals to 0 (will be calculated when items are added)
+        subtotal: 0,
+        taxTotal: 0,
+        discountTotal: 0,
+        grandTotal: 0,
+        amountPaid: 0,
+        balanceDue: 0,
+        createdAt: now,
+        updatedAt: now,
+      }
 
-    const newContract: Contract = {
-      id: contractId,
-      contractNumber,
-      prePrintedContractNumber: data.prePrintedContractNumber || undefined,
-      locationId: data.locationId,
-      needType: data.needType,
-      contractTypeId: data.contractTypeId,
-      contractSaleTypeId: data.contractSaleTypeId,
-      leadSourceId: data.leadSourceId,
-      atNeedType: data.atNeedType,
-      preNeedFundingType: data.preNeedFundingType,
-      salesPersonId: data.salesPersonId,
-      marketingAgentId: data.marketingAgentId,
-      dateSigned: data.dateSigned || undefined,
-      isCancelled: false,
-      isConditionalSale: data.isConditionalSale,
-      // Initialize totals
-      subtotal: 0,
-      taxTotal: 0,
-      discountTotal: 0,
-      grandTotal: 0,
-      amountPaid: 0,
-      balanceDue: 0,
-      notes: data.notes,
-      createdAt: now,
-      updatedAt: now,
-    }
+      // 2. POST contract
+      yield* Effect.tryPromise({
+        try: () => client.post(apiUrls.contracts.saveDraft, contractPayload),
+        catch: (error: unknown) => toApiError(error, 'contract'),
+      })
 
-    // Store in memory
-    contracts.push(newContract)
-    people[contractId] = contractPeople
-    sales[contractId] = []
-    payments[contractId] = []
-    if (contractFinancing) {
-      financing[contractId] = contractFinancing
-    }
+      // 3. Create people records
+      const peoplePayloads = [
+        formPersonToPerson(data.primaryBuyer, contractId, [
+          'primary_buyer',
+        ] as ContractPersonRole[]),
+        ...data.coBuyers.map((p) =>
+          formPersonToPerson(p, contractId, ['co_buyer'] as ContractPersonRole[]),
+        ),
+        formPersonToPerson(data.primaryBeneficiary, contractId, [
+          'primary_beneficiary',
+        ] as ContractPersonRole[]),
+        ...data.additionalBeneficiaries.map((p) =>
+          formPersonToPerson(p, contractId, ['additional_beneficiary'] as ContractPersonRole[]),
+        ),
+      ]
 
-    return {
-      ...newContract,
-      sales: [],
-      people: contractPeople,
-      financing: contractFinancing,
-      payments: [],
-    }
-  },
+      for (const person of peoplePayloads) {
+        yield* Effect.tryPromise({
+          try: () => client.post('/people', person),
+          catch: (error: unknown) => toApiError(error, 'person'),
+        })
+      }
+
+      // 4. Create an initial draft sale (required for items/payments)
+      const saleId = generateId()
+      const saleNumber = `S-${contractPayload.contractNumber.split('-')[1]}-${contractPayload.contractNumber.split('-')[2]}`
+      yield* Effect.tryPromise({
+        try: () =>
+          client.post('/sales', {
+            id: saleId,
+            contractId,
+            saleNumber,
+            saleDate: data.dateSigned || now,
+            saleType: SaleType.CONTRACT,
+            saleStatus: 'draft',
+            accountingPeriod: new Date(now).toISOString().split('T')[0],
+            memo: '',
+            subtotal: 0,
+            taxTotal: 0,
+            discountTotal: 0,
+            grandTotal: 0,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        catch: (error: unknown) => toApiError(error, 'sale'),
+      })
+
+      // 5. Create financing if provided
+      if (data.financing?.isFinanced) {
+        yield* Effect.tryPromise({
+          try: () =>
+            client.post('/financing', {
+              id: generateId(),
+              contractId,
+              ...data.financing,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          catch: (error: unknown) => toApiError(error, 'financing'),
+        })
+      }
+
+      // 6. Re-fetch complete contract with all joins
+      return yield* ContractApi.get(contractId)
+    }),
 
   /**
    * Update an existing contract
-   * Backend: PUT /api/v1/contracts/{id}
    */
-  async update(id: string, data: Partial<ContractFormValues>): Promise<Contract> {
-    await delay(300)
+  update: (id: string, data: Partial<ContractFormValues>): Effect.Effect<Contract, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      const now = new Date().toISOString()
 
-    const index = contracts.findIndex((c) => c.id === id)
-    if (index === -1) {
-      throw new Error('Contract not found')
-    }
+      // Fetch existing contract to merge with updates
+      const existingContractRes = yield* Effect.tryPromise({
+        try: () => client.get<Contract>(apiUrls.contracts.detail(id)),
+        catch: (error: unknown) => toApiError(error, 'contract', id),
+      })
 
-    const existing = contracts[index]!
-    const now = new Date().toISOString()
-
-    // Update people if provided
-    if (
-      data.primaryBuyer ||
-      data.coBuyers ||
-      data.primaryBeneficiary ||
-      data.additionalBeneficiaries
-    ) {
-      const contractPeople: ContractPerson[] = []
-
-      if (data.primaryBuyer) {
-        contractPeople.push(formToPerson(data.primaryBuyer, id, [ContractPersonRole.PRIMARY_BUYER]))
+      const existingContract = existingContractRes.data
+      if (!existingContract) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'contract', id }))
       }
 
-      for (const cb of data.coBuyers ?? []) {
-        contractPeople.push(formToPerson(cb, id, [ContractPersonRole.CO_BUYER]))
+      // Merge updates with existing data
+      // JSON Server PUT replaces entire resource, so we must include ALL contract-level fields
+      // Exclude nested arrays (sales, people, payments) - they're managed separately
+      const {
+        sales: _sales,
+        people: _people,
+        payments: _payments,
+        financing: _financing,
+        fundingDetails: _fundingDetails,
+        ...contractFields
+      } = existingContract
+
+      const updatePayload: Omit<
+        Contract,
+        'sales' | 'people' | 'payments' | 'financing' | 'fundingDetails'
+      > = {
+        ...contractFields,
+        // Update locationId and needType (always provided)
+        locationId: data.locationId ?? existingContract.locationId,
+        needType: data.needType ?? existingContract.needType,
+        // Update optional fields only if explicitly provided (not empty string for string fields)
+        ...(data.prePrintedContractNumber !== undefined &&
+          data.prePrintedContractNumber !== '' && {
+            prePrintedContractNumber: data.prePrintedContractNumber,
+          }),
+        ...(data.contractTypeId !== undefined && { contractTypeId: data.contractTypeId }),
+        ...(data.contractSaleTypeId !== undefined && {
+          contractSaleTypeId: data.contractSaleTypeId,
+        }),
+        ...(data.leadSourceId !== undefined && { leadSourceId: data.leadSourceId }),
+        ...(data.atNeedType !== undefined && { atNeedType: data.atNeedType }),
+        ...(data.preNeedFundingType !== undefined && {
+          preNeedFundingType: data.preNeedFundingType,
+        }),
+        ...(data.salesPersonId !== undefined && { salesPersonId: data.salesPersonId }),
+        ...(data.marketingAgentId !== undefined && { marketingAgentId: data.marketingAgentId }),
+        ...(data.dateSigned !== undefined && { dateSigned: data.dateSigned }),
+        ...(data.isConditionalSale !== undefined && {
+          isConditionalSale: data.isConditionalSale,
+        }),
+        ...(data.notes !== undefined && data.notes !== '' && { notes: data.notes }),
+        updatedAt: now,
       }
 
-      if (data.primaryBeneficiary) {
-        contractPeople.push(
-          formToPerson(data.primaryBeneficiary, id, [ContractPersonRole.PRIMARY_BENEFICIARY]),
-        )
-      }
+      // Update contract with complete payload
+      yield* Effect.tryPromise({
+        try: () => client.put(apiUrls.contracts.detail(id), updatePayload),
+        catch: (error: unknown) => toApiError(error, 'contract', id),
+      })
 
-      for (const ab of data.additionalBeneficiaries ?? []) {
-        contractPeople.push(formToPerson(ab, id, [ContractPersonRole.ADDITIONAL_BENEFICIARY]))
-      }
+      // TODO: Handle people updates if provided
+      // For now, people updates are handled separately via addPerson/updatePerson/removePerson
 
-      people[id] = contractPeople
-    }
-
-    // Update financing if provided
-    if (data.financing !== undefined) {
-      financing[id] = data.financing ? formToFinancing(data.financing, id) : undefined
-    }
-
-    const updated: Contract = {
-      ...existing,
-      prePrintedContractNumber: data.prePrintedContractNumber ?? existing.prePrintedContractNumber,
-      locationId: data.locationId ?? existing.locationId,
-      needType: data.needType ?? existing.needType,
-      contractTypeId: data.contractTypeId ?? existing.contractTypeId,
-      contractSaleTypeId: data.contractSaleTypeId ?? existing.contractSaleTypeId,
-      leadSourceId: data.leadSourceId ?? existing.leadSourceId,
-      atNeedType: data.atNeedType ?? existing.atNeedType,
-      preNeedFundingType: data.preNeedFundingType ?? existing.preNeedFundingType,
-      salesPersonId: data.salesPersonId ?? existing.salesPersonId,
-      marketingAgentId: data.marketingAgentId ?? existing.marketingAgentId,
-      dateSigned: data.dateSigned ?? existing.dateSigned,
-      isConditionalSale: data.isConditionalSale ?? existing.isConditionalSale,
-      notes: data.notes ?? existing.notes,
-      updatedAt: now,
-    }
-
-    contracts[index] = updated
-
-    return {
-      ...updated,
-      sales: sales[id] ?? [],
-      people: people[id] ?? [],
-      financing: financing[id],
-      payments: payments[id] ?? [],
-    }
-  },
+      // Re-fetch complete contract
+      return yield* ContractApi.get(id)
+    }),
 
   /**
-   * Delete/void a contract
+   * Delete a contract and all related data
    */
-  async delete(id: string): Promise<void> {
-    await delay(300)
-    const index = contracts.findIndex((c) => c.id === id)
-    if (index !== -1) {
-      contracts[index] = { ...contracts[index]!, isCancelled: true }
-    }
-  },
+  delete: (id: string): Effect.Effect<void, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+
+      // 1. Fetch related data
+      const [peopleRes, salesRes, paymentsRes, financingRes] = yield* Effect.all(
+        [
+          Effect.tryPromise({
+            try: () => client.get<ContractPerson[]>(`/people?contractId=${id}`),
+            catch: (error: unknown) => toApiError(error, 'person'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<Sale[]>(`/sales?contractId=${id}`),
+            catch: (error: unknown) => toApiError(error, 'sale'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<ContractPayment[]>(`/payments?contractId=${id}`),
+            catch: (error: unknown) => toApiError(error, 'payment'),
+          }),
+          Effect.tryPromise({
+            try: () => client.get<ContractFinancing[]>(`/financing?contractId=${id}`),
+            catch: (error: unknown) => toApiError(error, 'financing'),
+          }),
+        ],
+        { concurrency: 'unbounded' },
+      )
+
+      // 2. Delete all people
+      for (const person of peopleRes.data) {
+        yield* Effect.tryPromise({
+          try: () => client.delete(`/people/${person.id}`),
+          catch: (error: unknown) => toApiError(error, 'person', person.id),
+        })
+      }
+
+      // 3. Delete all sales and their items
+      for (const sale of salesRes.data) {
+        const itemsRes = yield* Effect.tryPromise({
+          try: () => client.get<SaleItem[]>(`/saleItems?saleId=${sale.id}`),
+          catch: (error: unknown) => toApiError(error, 'saleItem'),
+        })
+
+        for (const item of itemsRes.data) {
+          yield* Effect.tryPromise({
+            try: () => client.delete(`/saleItems/${item.id}`),
+            catch: (error: unknown) => toApiError(error, 'saleItem', item.id),
+          })
+        }
+
+        yield* Effect.tryPromise({
+          try: () => client.delete(`/sales/${sale.id}`),
+          catch: (error: unknown) => toApiError(error, 'sale', sale.id),
+        })
+      }
+
+      // 4. Delete all payments
+      for (const payment of paymentsRes.data) {
+        yield* Effect.tryPromise({
+          try: () => client.delete(`/payments/${payment.id}`),
+          catch: (error: unknown) => toApiError(error, 'payment', payment.id),
+        })
+      }
+
+      // 5. Delete financing
+      for (const financing of financingRes.data) {
+        yield* Effect.tryPromise({
+          try: () => client.delete(`/financing/${financing.id}`),
+          catch: (error: unknown) => toApiError(error, 'financing', financing.id),
+        })
+      }
+
+      // 6. Finally, delete the contract itself
+      yield* Effect.tryPromise({
+        try: () => client.delete(apiUrls.contracts.detail(id)),
+        catch: (error: unknown) => toApiError(error, 'contract', id),
+      })
+    }),
 
   // ===========================================================================
+  // Domain-Specific Methods (Sales, Items, Payments, People, Financing)
+  // ===========================================================================
+
   // Sales
-  // ===========================================================================
+  getSales: (contractId: string): Effect.Effect<Sale[], ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        const response = await client.get<Sale[]>(apiUrls.contracts.sales.list(contractId))
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'sale'),
+    }),
 
-  /**
-   * Get sales for a contract
-   */
-  async getSales(contractId: string): Promise<Sale[]> {
-    await delay(150)
-    return sales[contractId] ?? []
-  },
+  addSale: (contractId: string, data: SaleFormValues): Effect.Effect<Sale, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        // Ensure contractId is in the payload for JSON Server
+        const payload = { ...data, contractId }
+        const response = await client.post<Sale>(
+          apiUrls.contracts.sales.create(contractId),
+          payload,
+        )
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'sale'),
+    }),
 
-  /**
-   * Add a sale to a contract
-   */
-  async addSale(contractId: string, data: SaleFormValues): Promise<Sale> {
-    await delay(200)
-
-    const now = new Date().toISOString()
-    const saleId = generateId()
-    const saleNumber = `S-${new Date().getFullYear()}-${String(Object.keys(sales).reduce((acc, k) => acc + (sales[k]?.length ?? 0), 0) + 1).padStart(4, '0')}`
-
-    const saleItems: SaleItem[] = data.items.map((item, idx) => formToSaleItem(item, saleId, idx))
-    const totals = calculateSaleTotals(saleItems)
-
-    const newSale: Sale = {
-      id: saleId,
-      contractId,
-      saleNumber,
-      saleDate: data.saleDate,
-      saleType: data.saleType,
-      saleStatus: data.saleStatus,
-      saleAdjustmentType: data.saleAdjustmentType,
-      accountingPeriod: data.accountingPeriod,
-      memo: data.memo,
-      ...totals,
-      items: saleItems,
-      createdAt: now,
-      updatedAt: now,
-    }
-
-    if (!sales[contractId]) {
-      sales[contractId] = []
-    }
-    sales[contractId].push(newSale)
-
-    await recalculateContractTotals(contractId)
-
-    return newSale
-  },
-
-  /**
-   * Update a sale
-   */
-  async updateSale(
+  updateSale: (
     contractId: string,
     saleId: string,
     data: Partial<SaleFormValues>,
-  ): Promise<Sale> {
-    await delay(200)
+  ): Effect.Effect<Sale, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      // Fetch existing sale to merge (JSON Server PUT replaces entire resource)
+      const existingRes = yield* Effect.tryPromise({
+        try: () => client.get<Sale>(apiUrls.contracts.sales.detail(contractId, saleId)),
+        catch: (error: unknown) => toApiError(error, 'sale', saleId),
+      })
+      const existing = existingRes.data
+      const mergedData = {
+        ...existing,
+        ...data,
+        id: saleId, // Ensure ID is preserved
+        contractId, // Ensure contractId is preserved
+        updatedAt: new Date().toISOString(),
+      }
+      const response = yield* Effect.tryPromise({
+        try: () => client.put<Sale>(apiUrls.contracts.sales.update(contractId, saleId), mergedData),
+        catch: (error: unknown) => toApiError(error, 'sale', saleId),
+      })
+      return response.data
+    }),
 
-    const contractSales = sales[contractId]
-    if (!contractSales) throw new Error('Contract not found')
+  removeSale: (contractId: string, saleId: string): Effect.Effect<void, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        await client.delete(apiUrls.contracts.sales.delete(contractId, saleId))
+      },
+      catch: (error: unknown) => toApiError(error, 'sale', saleId),
+    }),
 
-    const index = contractSales.findIndex((s) => s.id === saleId)
-    if (index === -1) throw new Error('Sale not found')
-
-    const existing = contractSales[index]!
-    const now = new Date().toISOString()
-
-    let saleItems = existing.items
-    if (data.items) {
-      saleItems = data.items.map((item, idx) => formToSaleItem(item, saleId, idx))
-    }
-
-    const totals = calculateSaleTotals(saleItems)
-
-    const updated: Sale = {
-      ...existing,
-      saleDate: data.saleDate ?? existing.saleDate,
-      saleStatus: data.saleStatus ?? existing.saleStatus,
-      accountingPeriod: data.accountingPeriod ?? existing.accountingPeriod,
-      memo: data.memo ?? existing.memo,
-      ...totals,
-      items: saleItems,
-      updatedAt: now,
-    }
-
-    contractSales[index] = updated
-    await recalculateContractTotals(contractId)
-
-    return updated
-  },
-
-  /**
-   * Remove a sale
-   */
-  async removeSale(contractId: string, saleId: string): Promise<void> {
-    await delay(150)
-    if (sales[contractId]) {
-      sales[contractId] = sales[contractId].filter((s) => s.id !== saleId)
-      await recalculateContractTotals(contractId)
-    }
-  },
-
-  // ===========================================================================
   // Sale Items
-  // ===========================================================================
-
-  /**
-   * Add an item to a sale
-   */
-  async addSaleItem(
+  addSaleItem: (
     contractId: string,
     saleId: string,
     data: SaleItemFormValues,
-  ): Promise<SaleItem> {
-    await delay(200)
+  ): Effect.Effect<SaleItem, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        // Include saleId in body for JSON Server (it needs it to create the relationship)
+        const payload = { ...data, saleId }
+        const response = await client.post<SaleItem>(apiUrls.sales.items.create(saleId), payload)
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'saleItem'),
+    }),
 
-    const contractSales = sales[contractId]
-    if (!contractSales) throw new Error('Contract not found')
-
-    const saleIndex = contractSales.findIndex((s) => s.id === saleId)
-    if (saleIndex === -1) throw new Error('Sale not found')
-
-    const sale = contractSales[saleIndex]!
-    const ordinal = sale.items.length
-
-    const newItem = formToSaleItem(data, saleId, ordinal)
-    sale.items.push(newItem)
-
-    // Recalculate sale totals
-    const totals = calculateSaleTotals(sale.items)
-    Object.assign(sale, totals)
-    sale.updatedAt = new Date().toISOString()
-
-    await recalculateContractTotals(contractId)
-
-    return newItem
-  },
-
-  /**
-   * Update a sale item
-   */
-  async updateSaleItem(
+  updateSaleItem: (
     contractId: string,
     saleId: string,
     itemId: string,
     data: Partial<SaleItemFormValues>,
-  ): Promise<SaleItem> {
-    await delay(200)
+  ): Effect.Effect<SaleItem, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      // Fetch existing item to merge (JSON Server PUT replaces entire resource)
+      const existingRes = yield* Effect.tryPromise({
+        try: () => client.get<SaleItem>(apiUrls.sales.items.detail(saleId, itemId)),
+        catch: (error: unknown) => toApiError(error, 'saleItem', itemId),
+      })
+      const existing = existingRes.data
+      const mergedData = {
+        ...existing,
+        ...data,
+        id: itemId, // Ensure ID is preserved
+        saleId, // Ensure saleId is preserved
+        updatedAt: new Date().toISOString(),
+      }
+      const response = yield* Effect.tryPromise({
+        try: () => client.put<SaleItem>(apiUrls.sales.items.update(saleId, itemId), mergedData),
+        catch: (error: unknown) => toApiError(error, 'saleItem', itemId),
+      })
+      return response.data
+    }),
 
-    const contractSales = sales[contractId]
-    if (!contractSales) throw new Error('Contract not found')
+  removeSaleItem: (
+    contractId: string,
+    saleId: string,
+    itemId: string,
+  ): Effect.Effect<void, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        await client.delete(apiUrls.sales.items.delete(saleId, itemId))
+      },
+      catch: (error: unknown) => toApiError(error, 'saleItem', itemId),
+    }),
 
-    const sale = contractSales.find((s) => s.id === saleId)
-    if (!sale) throw new Error('Sale not found')
-
-    const itemIndex = sale.items.findIndex((i) => i.id === itemId)
-    if (itemIndex === -1) throw new Error('Item not found')
-
-    const existing = sale.items[itemIndex]!
-    const now = new Date().toISOString()
-
-    const updated: SaleItem = {
-      ...existing,
-      itemId: data.itemId ?? existing.itemId,
-      description: data.description ?? existing.description,
-      needType: data.needType ?? existing.needType,
-      quantity: data.quantity ?? existing.quantity,
-      unitPrice: data.unitPrice ?? existing.unitPrice,
-      bookPrice: data.bookPrice ?? existing.bookPrice,
-      cost: data.cost ?? existing.cost,
-      bookCost: data.bookCost ?? existing.bookCost,
-      salesTaxEnabled: data.salesTaxEnabled ?? existing.salesTaxEnabled,
-      serialNumber: data.serialNumber ?? existing.serialNumber,
-      isCancelled: data.isCancelled ?? existing.isCancelled,
-      ordinal: data.ordinal ?? existing.ordinal,
-      updatedAt: now,
-    }
-
-    sale.items[itemIndex] = updated
-
-    // Recalculate sale totals
-    const totals = calculateSaleTotals(sale.items)
-    Object.assign(sale, totals)
-    sale.updatedAt = now
-
-    await recalculateContractTotals(contractId)
-
-    return updated
-  },
-
-  /**
-   * Remove a sale item
-   */
-  async removeSaleItem(contractId: string, saleId: string, itemId: string): Promise<void> {
-    await delay(150)
-
-    const contractSales = sales[contractId]
-    if (!contractSales) return
-
-    const sale = contractSales.find((s) => s.id === saleId)
-    if (!sale) return
-
-    sale.items = sale.items.filter((i) => i.id !== itemId)
-
-    // Recalculate totals
-    const totals = calculateSaleTotals(sale.items)
-    Object.assign(sale, totals)
-    sale.updatedAt = new Date().toISOString()
-
-    await recalculateContractTotals(contractId)
-  },
-
-  // ===========================================================================
   // Payments
-  // ===========================================================================
+  getPayments: (contractId: string): Effect.Effect<ContractPayment[], ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        const response = await client.get<ContractPayment[]>(
+          apiUrls.contracts.payments.list(contractId),
+        )
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'payment'),
+    }),
 
-  /**
-   * Get payments for a contract
-   */
-  async getPayments(contractId: string): Promise<ContractPayment[]> {
-    await delay(150)
-    return payments[contractId] ?? []
-  },
+  addPayment: (
+    contractId: string,
+    data: ContractPaymentFormValues,
+  ): Effect.Effect<ContractPayment, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        // Include contractId in body for JSON Server (it needs it to create the relationship)
+        const payload = { ...data, contractId }
+        const response = await client.post<ContractPayment>(
+          apiUrls.contracts.payments.create(contractId),
+          payload,
+        )
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'payment'),
+    }),
 
-  /**
-   * Add a payment
-   */
-  async addPayment(contractId: string, data: ContractPaymentFormValues): Promise<ContractPayment> {
-    await delay(200)
+  updatePayment: (
+    contractId: string,
+    paymentId: string,
+    data: Partial<ContractPaymentFormValues>,
+  ): Effect.Effect<ContractPayment, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      // Fetch existing payment to merge (JSON Server PUT replaces entire resource)
+      const existingRes = yield* Effect.tryPromise({
+        try: () =>
+          client.get<ContractPayment>(apiUrls.contracts.payments.detail(contractId, paymentId)),
+        catch: (error: unknown) => toApiError(error, 'payment', paymentId),
+      })
+      const existing = existingRes.data
+      const mergedData = {
+        ...existing,
+        ...data,
+        id: paymentId, // Ensure ID is preserved
+        contractId, // Ensure contractId is preserved
+        updatedAt: new Date().toISOString(),
+      }
+      const response = yield* Effect.tryPromise({
+        try: () =>
+          client.put<ContractPayment>(
+            apiUrls.contracts.payments.update(contractId, paymentId),
+            mergedData,
+          ),
+        catch: (error: unknown) => toApiError(error, 'payment', paymentId),
+      })
+      return response.data
+    }),
 
-    const now = new Date().toISOString()
+  removePayment: (contractId: string, paymentId: string): Effect.Effect<void, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        await client.delete(apiUrls.contracts.payments.delete(contractId, paymentId))
+      },
+      catch: (error: unknown) => toApiError(error, 'payment', paymentId),
+    }),
 
-    const newPayment: ContractPayment = {
-      id: generateId(),
-      contractId,
-      saleId: data.saleId,
-      date: data.date,
-      method: data.method,
-      amount: data.amount,
-      reference: data.reference,
-      checkNumber: data.checkNumber,
-      notes: data.notes,
-      createdAt: now,
-      updatedAt: now,
-    }
-
-    if (!payments[contractId]) {
-      payments[contractId] = []
-    }
-    payments[contractId].push(newPayment)
-
-    await recalculateContractTotals(contractId)
-
-    return newPayment
-  },
-
-  /**
-   * Remove a payment
-   */
-  async removePayment(contractId: string, paymentId: string): Promise<void> {
-    await delay(150)
-
-    if (payments[contractId]) {
-      payments[contractId] = payments[contractId].filter((p) => p.id !== paymentId)
-      await recalculateContractTotals(contractId)
-    }
-  },
-
-  // ===========================================================================
   // People
-  // ===========================================================================
+  getPeople: (contractId: string): Effect.Effect<ContractPerson[], ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        const response = await client.get<ContractPerson[]>(
+          apiUrls.contracts.people.list(contractId),
+        )
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'person'),
+    }),
 
-  /**
-   * Get people for a contract
-   */
-  async getPeople(contractId: string): Promise<ContractPerson[]> {
-    await delay(150)
-    return people[contractId] ?? []
-  },
+  addPerson: (
+    contractId: string,
+    data: ContractPersonFormValues,
+  ): Effect.Effect<ContractPerson, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        const response = await client.post<ContractPerson>(
+          apiUrls.contracts.people.create(contractId),
+          data,
+        )
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'person'),
+    }),
 
-  /**
-   * Add a person to a contract
-   */
-  async addPerson(contractId: string, data: ContractPersonFormValues): Promise<ContractPerson> {
-    await delay(200)
-
-    const newPerson = formToPerson(data, contractId, data.roles)
-
-    if (!people[contractId]) {
-      people[contractId] = []
-    }
-    people[contractId].push(newPerson)
-
-    return newPerson
-  },
-
-  /**
-   * Update a person
-   */
-  async updatePerson(
+  updatePerson: (
     contractId: string,
     personId: string,
     data: Partial<ContractPersonFormValues>,
-  ): Promise<ContractPerson> {
-    await delay(200)
+  ): Effect.Effect<ContractPerson, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      // Fetch existing person to merge (JSON Server PUT replaces entire resource)
+      const existingRes = yield* Effect.tryPromise({
+        try: () =>
+          client.get<ContractPerson>(apiUrls.contracts.people.detail(contractId, personId)),
+        catch: (error: unknown) => toApiError(error, 'person', personId),
+      })
+      const existing = existingRes.data
+      const mergedData = {
+        ...existing,
+        ...data,
+        id: personId, // Ensure ID is preserved
+        contractId, // Ensure contractId is preserved
+        updatedAt: new Date().toISOString(),
+      }
+      const response = yield* Effect.tryPromise({
+        try: () =>
+          client.put<ContractPerson>(
+            apiUrls.contracts.people.update(contractId, personId),
+            mergedData,
+          ),
+        catch: (error: unknown) => toApiError(error, 'person', personId),
+      })
+      return response.data
+    }),
 
-    const contractPeople = people[contractId]
-    if (!contractPeople) throw new Error('Contract not found')
+  removePerson: (contractId: string, personId: string): Effect.Effect<void, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        await client.delete(apiUrls.contracts.people.delete(contractId, personId))
+      },
+      catch: (error: unknown) => toApiError(error, 'person', personId),
+    }),
 
-    const index = contractPeople.findIndex((p) => p.id === personId)
-    if (index === -1) throw new Error('Person not found')
+  // Financing
+  getFinancing: (contractId: string): Effect.Effect<ContractFinancing, ApiError> =>
+    Effect.gen(function* () {
+      const client = getHttpClient()
+      const response = yield* Effect.tryPromise({
+        try: () => client.get<ContractFinancing[]>(apiUrls.contracts.financing.get(contractId)),
+        catch: (error: unknown) => toApiError(error, 'financing', contractId),
+      })
 
-    const existing = contractPeople[index]!
-    const now = new Date().toISOString()
+      // JSON Server returns an array for filtered queries, get first item
+      const financing = Array.isArray(response.data) ? response.data[0] : response.data
+      if (!financing) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'financing', id: contractId }))
+      }
+      return financing
+    }),
 
-    const updated: ContractPerson = {
-      ...existing,
-      roles: data.roles ?? existing.roles,
-      firstName: data.firstName ?? existing.firstName,
-      middleName: data.middleName ?? existing.middleName,
-      lastName: data.lastName ?? existing.lastName,
-      prefix: data.prefix ?? existing.prefix,
-      suffix: data.suffix ?? existing.suffix,
-      nickname: data.nickname ?? existing.nickname,
-      companyName: data.companyName ?? existing.companyName,
-      phone: data.phone ?? existing.phone,
-      email: data.email ?? existing.email,
-      address: data.address ?? existing.address,
-      dateOfBirth: data.dateOfBirth ?? existing.dateOfBirth,
-      dateOfDeath: data.dateOfDeath ?? existing.dateOfDeath,
-      updatedAt: now,
-    }
-
-    contractPeople[index] = updated
-    return updated
-  },
-
-  /**
-   * Remove a person
-   */
-  async removePerson(contractId: string, personId: string): Promise<void> {
-    await delay(150)
-    if (people[contractId]) {
-      people[contractId] = people[contractId].filter((p) => p.id !== personId)
-    }
-  },
-}
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-/**
- * Convert form values to ContractPerson
- */
-function formToPerson(
-  data: ContractPersonFormValues,
-  contractId: string,
-  roles: ContractPersonRole[],
-): ContractPerson {
-  const now = new Date().toISOString()
-  return {
-    id: data.id || generateId(),
-    contractId,
-    nameId: data.nameId || generateId(),
-    roles,
-    addedAfterContractExecution: data.addedAfterContractExecution ?? false,
-    firstName: data.firstName,
-    middleName: data.middleName,
-    lastName: data.lastName,
-    prefix: data.prefix,
-    suffix: data.suffix,
-    nickname: data.nickname,
-    companyName: data.companyName,
-    phone: data.phone,
-    email: data.email,
-    address: data.address,
-    dateOfBirth: data.dateOfBirth,
-    dateOfDeath: data.dateOfDeath,
-    nationalIdentifier: data.nationalIdentifier,
-    driversLicense: data.driversLicense,
-    driversLicenseState: data.driversLicenseState,
-    isVeteran: data.isVeteran,
-    createdAt: now,
-    updatedAt: now,
-  }
-}
-
-/**
- * Convert form values to SaleItem
- */
-function formToSaleItem(data: SaleItemFormValues, saleId: string, ordinal: number): SaleItem {
-  const now = new Date().toISOString()
-  return {
-    id: data.id || generateId(),
-    saleId,
-    itemId: data.itemId,
-    description: data.description,
-    needType: data.needType,
-    quantity: data.quantity,
-    unitPrice: data.unitPrice,
-    bookPrice: data.bookPrice ?? 0,
-    cost: data.cost ?? 0,
-    bookCost: data.bookCost ?? 0,
-    salesTaxEnabled: data.salesTaxEnabled ?? true,
-    serialNumber: data.serialNumber,
-    isCancelled: data.isCancelled ?? false,
-    ordinal,
-    sku: data.sku,
-    itemDescription: data.itemDescription,
-    itemType: data.itemType,
-    salesTax:
-      data.salesTax?.map((t) => ({
-        id: t.id || generateId(),
-        saleItemId: data.id || '',
-        taxProfileItemId: t.taxProfileItemId,
-        taxRate: t.taxRate,
-        taxAmount: t.taxAmount,
-      })) ?? [],
-    discounts:
-      data.discounts?.map((d) => ({
-        id: d.id || generateId(),
-        saleItemId: data.id || '',
-        discountTypeId: d.discountTypeId,
-        description: d.description,
-        amount: d.amount,
-        percentage: d.percentage,
-      })) ?? [],
-    trust:
-      data.trust?.map((t) => ({
-        id: t.id || generateId(),
-        saleItemId: data.id || '',
-        trustFundType: t.trustFundType,
-        amount: t.amount,
-      })) ?? [],
-    createdAt: now,
-    updatedAt: now,
-  }
-}
-
-/**
- * Convert form values to ContractFinancing
- */
-function formToFinancing(data: ContractFinancingFormValues, contractId: string): ContractFinancing {
-  const now = new Date().toISOString()
-  return {
-    id: data.id || generateId(),
-    contractId,
-    isFinanced: data.isFinanced,
-    downPayment: data.downPayment,
-    otherCredits: data.otherCredits ?? 0,
-    interestRate: data.interestRate,
-    term: data.term,
-    paymentsPerYear: data.paymentsPerYear,
-    firstPaymentDate: data.firstPaymentDate,
-    paymentAmount: data.paymentAmount,
-    useManualPaymentAmount: data.useManualPaymentAmount,
-    calculatedPaymentAmount: undefined,
-    totalFinanceCharges: data.totalFinanceCharges,
-    useManualFinanceCharges: data.useManualFinanceCharges,
-    calculatedTotalFinanceCharges: undefined,
-    finalPaymentAmount: undefined,
-    interestRebateDays: 0,
-    status: data.status,
-    receivesCouponBook: data.receivesCouponBook,
-    receivesStatement: data.receivesStatement,
-    lateFeeType: data.lateFeeType,
-    lateFeeAmount: data.lateFeeAmount,
-    lateFeeMax: data.lateFeeMax,
-    lateFeeGracePeriod: data.lateFeeGracePeriod,
-    imputedInterestRate: undefined,
-    totalImputedInterest: undefined,
-    createdAt: now,
-    updatedAt: now,
-  }
-}
-
-/**
- * Recalculate contract financial totals from sales and payments
- */
-async function recalculateContractTotals(contractId: string): Promise<void> {
-  const contract = contracts.find((c) => c.id === contractId)
-  if (!contract) return
-
-  const contractSales = sales[contractId] ?? []
-  const contractPayments = payments[contractId] ?? []
-
-  // Sum all active sales
-  let subtotal = 0
-  let taxTotal = 0
-  let discountTotal = 0
-
-  for (const sale of contractSales) {
-    if (sale.saleStatus !== SaleStatus.VOID) {
-      subtotal += sale.subtotal
-      taxTotal += sale.taxTotal
-      discountTotal += sale.discountTotal
-    }
-  }
-
-  const grandTotal = subtotal + taxTotal - discountTotal
-  const amountPaid = contractPayments.reduce((sum, p) => sum + p.amount, 0)
-  const balanceDue = grandTotal - amountPaid
-
-  contract.subtotal = subtotal
-  contract.taxTotal = taxTotal
-  contract.discountTotal = discountTotal
-  contract.grandTotal = grandTotal
-  contract.amountPaid = amountPaid
-  contract.balanceDue = balanceDue
-  contract.updatedAt = new Date().toISOString()
+  updateFinancing: (
+    contractId: string,
+    data: Partial<ContractFinancingFormValues>,
+  ): Effect.Effect<ContractFinancing, ApiError> =>
+    Effect.tryPromise({
+      try: async () => {
+        const client = getHttpClient()
+        const response = await client.put<ContractFinancing>(
+          apiUrls.contracts.financing.update(contractId),
+          data,
+        )
+        return response.data
+      },
+      catch: (error: unknown) => toApiError(error, 'financing', contractId),
+    }),
 }

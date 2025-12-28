@@ -5,7 +5,7 @@
  */
 
 // API
-export { contractApi } from './api'
+export { ContractApi } from './api'
 
 // Model (types, schemas, composables)
 export * from './model'

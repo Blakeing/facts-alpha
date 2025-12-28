@@ -58,6 +58,9 @@ export function usePeopleHandler(context: ContractSessionContext) {
   const beneficiary = ref<ContractPerson>(createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY))
   const coBuyers = ref<ContractPerson[]>([])
   const isDirty = ref(false)
+  
+  // Track original person IDs from server to distinguish new vs modified
+  const originalPersonIds = ref<Set<string>>(new Set())
 
   // ==========================================================================
   // Computed
@@ -280,6 +283,15 @@ export function usePeopleHandler(context: ContractSessionContext) {
       ? { ...serverBeneficiary }
       : createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY)
     coBuyers.value = (serverCoBuyers ?? []).map((c) => ({ ...c }))
+    
+    // Track original IDs to identify new vs modified people on save
+    originalPersonIds.value = new Set()
+    if (serverPurchaser?.id) originalPersonIds.value.add(serverPurchaser.id)
+    if (serverBeneficiary?.id) originalPersonIds.value.add(serverBeneficiary.id)
+    serverCoBuyers?.forEach((c) => {
+      if (c.id) originalPersonIds.value.add(c.id)
+    })
+    
     isDirty.value = false
   }
 
@@ -292,6 +304,20 @@ export function usePeopleHandler(context: ContractSessionContext) {
       beneficiary: { ...beneficiary.value },
       coBuyers: coBuyers.value.map((c) => ({ ...c })),
     }
+  }
+
+  /**
+   * Check if a person is new (not yet saved to server)
+   */
+  function isPersonNew(personId: string): boolean {
+    return !originalPersonIds.value.has(personId)
+  }
+
+  /**
+   * Check if a person was modified (existed on server)
+   */
+  function isPersonModified(personId: string): boolean {
+    return originalPersonIds.value.has(personId)
   }
 
   /**
@@ -309,6 +335,7 @@ export function usePeopleHandler(context: ContractSessionContext) {
     beneficiary.value = createEmptyPerson(ContractPersonRole.PRIMARY_BENEFICIARY)
     coBuyers.value = []
     isDirty.value = false
+    originalPersonIds.value = new Set()
   }
 
   // ==========================================================================
@@ -350,6 +377,8 @@ export function usePeopleHandler(context: ContractSessionContext) {
     // Session lifecycle
     applyFromServer,
     getFormValues,
+    isPersonNew,
+    isPersonModified,
     markClean,
     reset,
   }

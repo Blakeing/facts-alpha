@@ -39,18 +39,14 @@ function validateRoutePermissions(
   }
 
   // Check single permission requirement
-  if (meta.permissions) {
-    if (!userContext.userCanWithRequirement(meta.permissions)) {
+  if (meta.permissions && !userContext.userCanWithRequirement(meta.permissions)) {
       return false
     }
-  }
 
   // Check multiple permission options (need at least one)
-  if (meta.permissionsAny && meta.permissionsAny.length > 0) {
-    if (!userContext.userCanWithAnyRequirement(meta.permissionsAny)) {
+  if (meta.permissionsAny && meta.permissionsAny.length > 0 && !userContext.userCanWithAnyRequirement(meta.permissionsAny)) {
       return false
     }
-  }
 
   return true
 }
@@ -108,7 +104,7 @@ router.onError((err, to) => {
     if (localStorage.getItem('vuetify:dynamic-reload')) {
       console.error('Dynamic import error, reloading page did not fix it', err)
     } else {
-      console.log('Reloading page to fix dynamic import error')
+      // Reload page to fix dynamic import error (Vite workaround)
       localStorage.setItem('vuetify:dynamic-reload', 'true')
       location.assign(to.fullPath)
     }

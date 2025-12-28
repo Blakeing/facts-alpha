@@ -1,1 +1,1 @@
-export { locationApi } from './locationApi'
+export { LocationApi } from './locationApi'

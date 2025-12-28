@@ -91,9 +91,10 @@
 </template>
 
 <script lang="ts" setup>
+  import { runEffect } from '@facts/effect'
   import { computed } from 'vue'
   import {
-    locationApi,
+    LocationApi,
     type LocationListing,
     type LocationType,
     LocationTypeBadge,
@@ -121,7 +122,7 @@
   // Use the list controller for standardized list/edit workflow
   const { list, editDialog, showAdd, showEdit } = useListController({
     useList: useLocations,
-    getItem: locationApi.get,
+    getItem: (id: string) => runEffect(LocationApi.get(id)),
     queryKey: (id) => ['location', id],
   })
 
