@@ -1,8 +1,8 @@
 <template>
   <v-card
     class="mb-4"
-    variant="outlined"
     elevation="0"
+    variant="outlined"
   >
     <v-card-title class="d-flex align-center pa-3 pb-2">
       <span class="text-subtitle-1 font-weight-medium">{{ label }}</span>
@@ -17,8 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-defineProps<{
-  label: string
-}>()
+  defineProps<{
+    label: string
+  }>()
 </script>
-

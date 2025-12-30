@@ -34,4 +34,7 @@ const dataSource = httpDataSource
 // Effect-based API (using BaseApi factory)
 // =============================================================================
 
-export const LocationApi = BaseApi<LocationListing, Location, LocationFormValues>(dataSource, 'location')
+export const LocationApi = BaseApi<LocationListing, Location, LocationFormValues>(
+  dataSource,
+  'location',
+)

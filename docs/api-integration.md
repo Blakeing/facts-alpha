@@ -32,6 +32,7 @@ This document describes the backend BFF (Backend for Frontend) API integration p
 ```
 
 The frontend **only** communicates with the BFF. The BFF handles:
+
 - Authentication token forwarding
 - Tenant context management
 - Request routing to microservices
@@ -54,11 +55,11 @@ VITE_API_URL=https://api.facts.com/api/v1
 
 Every request must include:
 
-| Header | Description | Example |
-|--------|-------------|---------|
+| Header          | Description            | Example            |
+| --------------- | ---------------------- | ------------------ |
 | `Authorization` | Bearer token from auth | `Bearer eyJhbG...` |
-| `Tenant-Id` | Current tenant GUID | `a1b2c3d4-...` |
-| `Content-Type` | Request body type | `application/json` |
+| `Tenant-Id`     | Current tenant GUID    | `a1b2c3d4-...`     |
+| `Content-Type`  | Request body type      | `application/json` |
 
 ```typescript
 // Example HTTP client configuration
@@ -73,14 +74,14 @@ const httpClient = axios.create({
 httpClient.interceptors.request.use((config) => {
   const token = authService.getAccessToken()
   const tenantId = authService.getTenantId()
-  
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   if (tenantId) {
     config.headers['Tenant-Id'] = tenantId
   }
-  
+
   return config
 })
 ```
@@ -249,7 +250,7 @@ POST /api/v1/locations
     "identifier": "FH002",
     "name": "New Funeral Home",
     "type": 0,
-    "active": true,
+    "active": true
     // ... all LocationModel fields
   },
   "settings": {
@@ -277,6 +278,7 @@ GET /api/v1/contracts/listing/{locationId}?fromDate={date}&toDate={date}&needTyp
 ```
 
 **Query Parameters:**
+
 - `fromDate` - Filter by date range start (optional)
 - `toDate` - Filter by date range end (optional)
 - `needType` - Filter by need type (optional)
@@ -306,7 +308,7 @@ interface ContractSessionSaveModel {
   executeContract: boolean
   finalizeContract: boolean
   voidContract: boolean
-  contract: ContractSaveModel  // Includes nested sales with items
+  contract: ContractSaveModel // Includes nested sales with items
   payments: PaymentSaveModel[]
   commentFeed: CommentFeed
   data: ContractSessionDataSaveModel
@@ -317,7 +319,7 @@ interface ContractSaveModel {
   id: string
   contractNumber: string
   // ... contract fields
-  sales: ContractSaleSaveModel[]  // Nested sales
+  sales: ContractSaleSaveModel[] // Nested sales
   people: ContractPersonModel[]
   financing: ContractFinancingSaveModel | null
   // ... other fields
@@ -328,7 +330,7 @@ interface ContractSaleSaveModel {
   contractId: string
   saleType: SaleType
   saleStatus: SaleStatus
-  items: ContractSaleItemSaveModel[]  // Nested items
+  items: ContractSaleItemSaveModel[] // Nested items
   // ... other sale fields
 }
 ```
@@ -336,6 +338,7 @@ interface ContractSaleSaveModel {
 **Important:** The backend saves everything in **one database transaction**. This ensures atomicity - if any part fails, the entire save is rolled back.
 
 **Backend CREATE vs UPDATE Logic**: The backend automatically determines whether to CREATE or UPDATE entities based on IDs in the payload:
+
 - If an entity has an ID that exists in the database → UPDATE
 - If an entity has no ID or an ID that doesn't exist → CREATE
 - If an entity is missing from the payload but existed before → DELETE (optional, depends on business rules)
@@ -343,6 +346,7 @@ interface ContractSaleSaveModel {
 This means the frontend doesn't need to track which entities are new vs modified - just send the complete current state in the nested payload.
 
 **Implementation Status**: ✅ **COMPLETE** - Facts Alpha now uses the single-payload pattern with the BFF:
+
 1. **Single API call**: `POST /api/v1/contracts/save/draft` with complete `ContractSessionSaveModel`
 2. **Nested structure**: Contract + Sales + Items + Payments + People in one payload
 3. **No tracking needed**: BFF handles CREATE vs UPDATE logic based on entity IDs
@@ -396,7 +400,7 @@ public async Task<IActionResult> Post([FromBody] LocationEditModel model)
     // Additional runtime checks if needed
     if (!await permissions.HasAccess(tenantId, userId, category, option, level))
         return Unauthorized();
-    
+
     // ... proceed with action
 }
 ```
@@ -411,7 +415,7 @@ async function saveLocation(data: LocationFormValues) {
   if (!hasPermission('locations', 'edit')) {
     throw new Error('Permission denied')
   }
-  
+
   // Proceed with API call
 }
 ```
@@ -425,7 +429,7 @@ async function saveLocation(data: LocationFormValues) {
 export async function apiRequest<T>(
   method: string,
   url: string,
-  data?: unknown
+  data?: unknown,
 ): Promise<ApiResult<T>> {
   try {
     const response = await httpClient.request<T>({
@@ -438,7 +442,7 @@ export async function apiRequest<T>(
     if (axios.isAxiosError(error)) {
       const status = error.response?.status ?? 500
       const message = resolveErrorMessage(error)
-      
+
       return {
         success: false,
         error: { status, message },
@@ -454,10 +458,10 @@ export async function apiRequest<T>(
 function resolveErrorMessage(error: AxiosError): string {
   const status = error.response?.status
   const data = error.response?.data
-  
+
   switch (status) {
     case 400:
-      return typeof data === 'string' ? data : data?.title ?? 'Bad request'
+      return typeof data === 'string' ? data : (data?.title ?? 'Bad request')
     case 401:
       return 'Please log in to continue'
     case 403:
@@ -478,14 +482,12 @@ function resolveErrorMessage(error: AxiosError): string {
 
 ```typescript
 // For typed results (aligns with Effect TS future)
-type ApiResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: ApiError }
+type ApiResult<T> = { success: true; data: T } | { success: false; error: ApiError }
 
 interface ApiError {
   status: number
   message: string
-  fields?: Record<string, string[]>  // Validation errors
+  fields?: Record<string, string[]> // Validation errors
 }
 ```
 
@@ -551,4 +553,3 @@ When connecting to real API:
 - [Legacy Patterns](./legacy-patterns.md) - Patterns from legacy app
 - [Effect TS](./effect-ts.md) - Typed error handling strategy
 - [BFF Alignment Refactor](./bff-alignment-refactor.md) - Complete overview of BFF format alignment
-

@@ -21,6 +21,7 @@ import type {
   ContractPersonRole,
   ContractResponse,
   ContractSessionSaveModel,
+  NeedType,
   Sale,
   SaleItem,
 } from '../model/contract'
@@ -35,7 +36,7 @@ import type {
 import { type ApiError, NotFoundError, toApiError } from '@facts/effect'
 import { Effect } from 'effect'
 import { apiUrls, getHttpClient } from '@/shared/api'
-import { NeedType, SaleStatus, SaleType } from '../model/contract'
+import { SaleStatus, SaleType } from '../model/contract'
 import {
   contractToListing,
   formPersonToPerson,

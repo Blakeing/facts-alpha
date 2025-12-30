@@ -2,8 +2,8 @@
   <div>
     <v-list
       v-if="phones.length > 0"
-      density="compact"
       class="pa-0"
+      density="compact"
     >
       <v-list-item
         v-for="(phone, index) in phones"
@@ -19,56 +19,62 @@
           </v-icon>
         </template>
         <v-row
-          dense
           class="align-center"
+          dense
         >
-          <v-col cols="12" sm="4">
+          <v-col
+            cols="12"
+            sm="4"
+          >
             <FTextField
               v-model="phone.number"
+              density="compact"
               field="number"
-              :readonly="readonly"
+              hide-details
               placeholder="###-###-####"
-              density="compact"
-              hide-details
-            />
-          </v-col>
-          <v-col cols="12" sm="3">
-            <FSelect
-              v-model="phone.type"
-              field="type"
-              :options="phoneTypeOptions"
               :readonly="readonly"
-              density="compact"
-              hide-details
             />
           </v-col>
           <v-col
             cols="12"
             sm="3"
-            class="d-flex align-center"
           >
-            <v-checkbox
-              v-model="phone.preferred"
-              label="Preferred"
+            <FSelect
+              v-model="phone.type"
               density="compact"
-              :disabled="readonly"
+              field="type"
               hide-details
+              :options="phoneTypeOptions"
+              :readonly="readonly"
             />
           </v-col>
           <v-col
+            class="d-flex align-center"
+            cols="12"
+            sm="3"
+          >
+            <v-checkbox
+              v-model="phone.preferred"
+              density="compact"
+              :disabled="readonly"
+              hide-details
+              label="Preferred"
+            />
+          </v-col>
+          <v-col
+            class="d-flex justify-end"
             cols="12"
             sm="2"
-            class="d-flex justify-end"
           >
             <v-tooltip text="Remove phone number">
               <template #activator="{ props: tooltipProps }">
                 <v-btn
                   v-bind="tooltipProps"
-                  icon
-                  variant="text"
-                  size="small"
                   color="error"
                   :disabled="readonly"
+                  icon
+                  size="small"
+                  variant="text"
                   @click="removePhone(phone)"
                 >
                   <v-icon>mdi-delete-outline</v-icon>
@@ -87,10 +93,10 @@
     </v-list>
     <v-alert
       v-else
+      class="mt-2"
+      density="compact"
       type="info"
       variant="tonal"
-      density="compact"
-      class="mt-2"
     >
       No phone numbers added yet
     </v-alert>
@@ -98,39 +104,38 @@
 </template>
 
 <script lang="ts" setup>
-import type { Name, NamePhone } from '../model/name'
-import { computed } from 'vue'
-import { PhoneType } from '../model/name'
-import { FSelect, FTextField } from '@/shared/ui'
+  import type { Name, NamePhone } from '../model/name'
+  import { computed } from 'vue'
+  import { FSelect, FTextField } from '@/shared/ui'
+  import { PhoneType } from '../model/name'
 
-const props = defineProps<{
-  model: Name
-  readonly?: boolean
-}>()
+  const props = defineProps<{
+    model: Name
+    readonly?: boolean
+  }>()
 
-// Safe accessor for phones array
-const phones = computed(() => props.model?.phones ?? [])
+  // Safe accessor for phones array
+  const phones = computed(() => props.model?.phones ?? [])
 
-const phoneTypeOptions = [
-  { value: PhoneType.HOME, label: 'Home' },
-  { value: PhoneType.WORK, label: 'Work' },
-  { value: PhoneType.MOBILE, label: 'Mobile' },
-  { value: PhoneType.FAX, label: 'Fax' },
-]
+  const phoneTypeOptions = [
+    { value: PhoneType.HOME, label: 'Home' },
+    { value: PhoneType.WORK, label: 'Work' },
+    { value: PhoneType.MOBILE, label: 'Mobile' },
+    { value: PhoneType.FAX, label: 'Fax' },
+  ]
 
-const headers = [
-  { title: 'Number', key: 'number', align: 'start' },
-  { title: 'Type', key: 'type', align: 'start' },
-  { title: 'Preferred', key: 'preferred', align: 'center' },
-  { title: '', key: 'actions', width: '58px', sortable: false },
-]
+  const headers = [
+    { title: 'Number', key: 'number', align: 'start' },
+    { title: 'Type', key: 'type', align: 'start' },
+    { title: 'Preferred', key: 'preferred', align: 'center' },
+    { title: '', key: 'actions', width: '58px', sortable: false },
+  ]
 
-function removePhone(phone: NamePhone) {
-  if (!props.model?.phones) return
-  const idx = props.model.phones.indexOf(phone)
-  if (idx !== -1) {
-    props.model.phones.splice(idx, 1)
+  function removePhone(phone: NamePhone) {
+    if (!props.model?.phones) return
+    const idx = props.model.phones.indexOf(phone)
+    if (idx !== -1) {
+      props.model.phones.splice(idx, 1)
+    }
   }
-}
 </script>
-

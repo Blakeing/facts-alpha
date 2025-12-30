@@ -5,8 +5,8 @@
  * @see docs/data-models.md for field mapping details
  */
 
-import type { Entity, EntityState } from '@/shared/lib/entity'
 import type { Name } from '@/entities/name'
+import type { Entity, EntityState } from '@/shared/lib/entity'
 
 // =============================================================================
 // Backend-Aligned Enums

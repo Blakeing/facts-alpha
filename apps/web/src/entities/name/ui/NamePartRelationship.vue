@@ -96,7 +96,7 @@
     return [...props.relations]
       .toSorted((a, b) => a.description.localeCompare(b.description))
       .map((rel) => ({
-        label: rel.description,
+        title: rel.description,
         value: rel.id,
       }))
   })

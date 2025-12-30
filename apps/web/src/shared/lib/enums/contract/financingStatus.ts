@@ -1,6 +1,6 @@
+import { FinancingStatus } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { FinancingStatus } from '@/entities/contract/model/contract'
 
 class FinancingStatusController extends EnumController<FinancingStatus> {
   choices = [
@@ -13,4 +13,3 @@ export const financingStatusController = new FinancingStatusController()
 
 // Auto-register on module load
 enumRegistry.register('financingStatus', financingStatusController)
-

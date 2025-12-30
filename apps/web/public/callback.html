@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -9,20 +9,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/oidc-client/1.9.1/oidc-client.min.js"></script>
     <script>
       var mgr = new Oidc.UserManager({
-        response_mode: "query",
-        userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })
+        response_mode: 'query',
+        userStore: new Oidc.WebStorageStateStore({ store: window.localStorage }),
       })
         .signinRedirectCallback()
         .then(function (user) {
-          let url = "/";
-          if (user.state !== undefined) url = user.state;
+          let url = '/'
+          if (user.state !== undefined) url = user.state
 
-          window.location.href = ".." + url;
+          window.location.href = '..' + url
         })
         .catch(function (err) {
-          console.error("Callback error:", err);
-          window.location.href = "/";
-        });
+          console.error('Callback error:', err)
+          window.location.href = '/'
+        })
     </script>
   </body>
 </html>

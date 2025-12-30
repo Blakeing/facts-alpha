@@ -5,9 +5,9 @@
  * Aligned with legacy Facts app endpoints
  */
 
+import type { UserEffectivePermissions } from '@/shared/lib/security'
 import { getHttpClient } from './http/client'
 import { apiUrls } from './urls'
-import type { UserEffectivePermissions } from '@/shared/lib/security'
 
 export interface UserSettingsModel {
   timeout?: number
@@ -21,7 +21,9 @@ export class UsersApi {
    */
   async getUserPermissions(): Promise<UserEffectivePermissions> {
     const client = await getHttpClient()
-    const response = await client.get<UserEffectivePermissions>(apiUrls.users.userEffectivePermissions)
+    const response = await client.get<UserEffectivePermissions>(
+      apiUrls.users.userEffectivePermissions,
+    )
     return response.data
   }
 

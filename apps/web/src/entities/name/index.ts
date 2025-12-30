@@ -1,18 +1,6 @@
-export type {
-  Name,
-  NameAddress,
-  NameEmail,
-  NamePhone,
-  NameRelation,
-} from './model/name'
+export type { Name, NameAddress, NameEmail, NamePhone, NameRelation } from './model/name'
 
-export {
-  AddressType,
-  BranchOfService,
-  Gender,
-  MaritalStatus,
-  PhoneType,
-} from './model/name'
+export { AddressType, BranchOfService, Gender, MaritalStatus, PhoneType } from './model/name'
 
 export {
   formatAddressMultiLine,
@@ -31,5 +19,12 @@ export {
   isPerson,
 } from './model/nameHelpers'
 
-export * from './ui'
+export {
+  createEmptyAddress,
+  createEmptyEmail,
+  createEmptyPhone,
+  deepCopyName,
+  ensureNameArrays,
+} from './model/useNameModel'
 
+export * from './ui'

@@ -206,4 +206,3 @@ The permission system is designed to align with the legacy FACTS application:
 - Compatible permission data structure from backend
 
 When integrating with the real backend, the `UserEffectivePermissions` type matches the legacy API response format.
-

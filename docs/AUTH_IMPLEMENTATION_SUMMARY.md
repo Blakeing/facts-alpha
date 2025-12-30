@@ -7,11 +7,13 @@ All todos from the plan have been completed successfully. The Facts Alpha applic
 ## What Was Implemented
 
 ### 1. Endpoint Configuration System ✅
+
 - **Created** `apps/web/src/shared/config/endpoints.ts` - EndpointsProvider service
 - **Created** `apps/web/public/ep.json` - Runtime configuration file
 - Allows environment switching without rebuilding the app
 
 ### 2. OIDC Authentication Service ✅
+
 - **Installed** `oidc-client-ts` package
 - **Created** `apps/web/src/shared/lib/auth/authService.ts` - Full OIDC implementation
 - Configuration matches legacy app:
@@ -20,34 +22,40 @@ All todos from the plan have been completed successfully. The Facts Alpha applic
   - Scopes: `openid profile Facts offline_access`
 
 ### 3. OIDC Callback Pages ✅
+
 - **Created** `apps/web/public/callback.html` - Login redirect handler
 - **Created** `apps/web/public/silent-renew.html` - Token refresh handler
 
 ### 4. HTTP Client Integration ✅
+
 - **Modified** `apps/web/src/shared/api/http/config.ts` - Async config with endpoint loading
 - **Modified** `apps/web/src/shared/api/http/client.ts` - Request/response interceptors
 - **Modified** `apps/web/src/shared/api/sources/createHttpDataSource.ts` - Async client support
 - **Modified** `apps/web/src/entities/contract/api/contractApi.ts` - Async client support
 
 **Key Features:**
+
 - Automatic token injection on every request
 - Automatic Tenant-Id header
 - 401 error handling (redirects to login)
 - Token refresh support
 
 ### 5. User Permissions API ✅
+
 - **Created** `apps/web/src/shared/api/usersApi.ts` - Fetch permissions from BFF
 - Endpoints:
   - `GET /users/permissions` - UserEffectivePermissions
   - `GET /users/session` - User settings
 
 ### 6. User Context Store Updates ✅
+
 - **Modified** `apps/web/src/stores/userContext.ts`
 - **Added** tenant ID state
 - **Added** `initFromAuth()` method - Production auth flow
 - **Updated** logout to clear tenant ID
 
 ### 7. Router Authentication Guard ✅
+
 - **Modified** `apps/web/src/app/providers/router.ts`
 - Now enforces authentication:
   1. Checks if user is authenticated
@@ -56,6 +64,7 @@ All todos from the plan have been completed successfully. The Facts Alpha applic
   4. Validates permissions before allowing navigation
 
 ### 8. Application Bootstrap ✅
+
 - **Modified** `apps/web/src/main.ts`
 - Bootstrap sequence:
   1. Load `ep.json`
@@ -64,11 +73,13 @@ All todos from the plan have been completed successfully. The Facts Alpha applic
 - Error handling with user-friendly display
 
 ### 9. Documentation ✅
+
 - **Created** `docs/authentication.md` - Comprehensive auth documentation
 
 ## How to Use
 
 ### Development Mode (Default)
+
 ```bash
 pnpm dev
 # Uses JSON Server mock data
@@ -77,6 +88,7 @@ pnpm dev
 ```
 
 ### Production Mode (Real BFF)
+
 1. Update `apps/web/public/ep.json` with production URLs
 2. Set environment variable:
    ```bash
@@ -88,10 +100,10 @@ pnpm dev
 
 ## Configuration Files
 
-| File | Purpose |
-|------|---------|
-| `apps/web/public/ep.json` | Runtime endpoint configuration (dev/test/prod) |
-| `.env.development` (optional) | Override VITE_API_TYPE if needed |
+| File                          | Purpose                                        |
+| ----------------------------- | ---------------------------------------------- |
+| `apps/web/public/ep.json`     | Runtime endpoint configuration (dev/test/prod) |
+| `.env.development` (optional) | Override VITE_API_TYPE if needed               |
 
 ## Environment Switching
 
@@ -125,6 +137,7 @@ No rebuild required - just refresh the browser!
 ## Architecture Highlights
 
 ### Authentication Flow
+
 1. User navigates to app
 2. `main.ts` loads `ep.json` and initializes OIDC
 3. Router guard checks authentication
@@ -135,6 +148,7 @@ No rebuild required - just refresh the browser!
 8. App renders with full auth context
 
 ### API Call Flow
+
 1. Component makes API call via composable
 2. Effect API wraps HTTP request
 3. HTTP client gets instance (async)
@@ -148,9 +162,11 @@ No rebuild required - just refresh the browser!
 ## Testing
 
 ### Test Mock Auth (Local)
+
 Already working - uses `initMockUser()`
 
 ### Test Real Auth (Dev BFF)
+
 1. Update `ep.json` to point to dev endpoints
 2. Start app with `VITE_API_TYPE=bff pnpm dev`
 3. Will redirect to dev Identity Server
@@ -158,7 +174,9 @@ Already working - uses `initMockUser()`
 5. Permissions loaded from dev BFF
 
 ### Test Permission Restrictions
+
 In `apps/web/src/stores/userContext.ts`:
+
 ```typescript
 isAdmin: false,  // Toggle this in initMockUser()
 ```
@@ -166,9 +184,11 @@ isAdmin: false,  // Toggle this in initMockUser()
 ## Known Issues / Next Steps
 
 ### Minor Type Errors (Pre-existing)
+
 There are some TypeScript errors related to enum types (string vs number) from a previous refactoring. These existed before this PR and don't affect the auth implementation.
 
 ### Future Enhancements
+
 - [ ] Silent token renewal (automatic refresh before expiry)
 - [ ] Session timeout warning
 - [ ] SignalR integration for real-time updates
@@ -211,9 +231,9 @@ There are some TypeScript errors related to enum types (string vs number) from a
 ## Ready for Production
 
 The implementation is complete and ready for integration with the production BFF. Simply:
+
 1. Update `ep.json` with production URLs
 2. Set `VITE_API_TYPE=bff`
 3. Deploy
 
 No code changes needed!
-

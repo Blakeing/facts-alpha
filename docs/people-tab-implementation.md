@@ -7,6 +7,7 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
 ## Completed Features
 
 ### ContractPeople Component
+
 - **Location**: `apps/web/src/features/contract-dialog/ui/ContractPeople.vue`
 - **Features**:
   - Vertical tabs for person selection (buyer, beneficiary, co-buyers, etc.)
@@ -20,6 +21,7 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
   - Safe initialization with defensive checks
 
 ### Name Component System
+
 - **Location**: `apps/web/src/entities/name/ui/`
 - **Components Created**:
   - `NamePanel.vue` - Composite component orchestrating all name parts
@@ -40,6 +42,7 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
   - `NamePartDates.vue` - Birth date, death date, age, time of death
 
 ### People Handler Enhancements
+
 - **Location**: `apps/web/src/entities/contract/model/handlers/usePeopleHandler.ts`
 - **Enhancements**:
   - Added support for additional beneficiaries
@@ -52,17 +55,20 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
 ## Technical Decisions
 
 ### Styling
+
 - **All components use Vuetify defaults** - No custom CSS styles
 - Uses Vuetify grid system (`v-container`, `v-row`, `v-col`)
 - Uses Vuetify utility classes for spacing and layout
 - Responsive design with breakpoints
 
 ### Prop Mutations
+
 - **Known Issue**: `NamePanel.vue` directly mutates the `model` prop in `addPhone()` and `addEmail()` functions
 - **Rationale**: The Name model is designed to be mutable - parent components manage the lifecycle and expect direct mutations
 - **Status**: Documented with comments, linter warnings are expected and acceptable for this design pattern
 
 ### Array Safety
+
 - All components include defensive checks for missing arrays
 - Arrays are initialized if missing before rendering
 - Safe accessors with fallbacks (`?? []`)
@@ -70,11 +76,13 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
 ## Integration Points
 
 ### ContractDialog
+
 - Added "People" tab to sidebar navigation
 - Integrated ContractPeople component
 - Passes session properties correctly (`hasDraftStatus` instead of `isDraft`, `locationId` instead of `locationType`)
 
 ### ContractGeneral
+
 - Removed primary buyer/beneficiary forms (now handled in People tab)
 
 ## Known Limitations / TODOs
@@ -87,6 +95,7 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
 ## Files Modified
 
 ### New Files
+
 - `apps/web/src/entities/name/ui/NamePanel.vue`
 - `apps/web/src/entities/name/ui/NameEditorDialog.vue`
 - `apps/web/src/entities/name/ui/NamePartGroup.vue`
@@ -106,6 +115,7 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
 - `apps/web/src/features/contract-dialog/ui/ContractPeople.vue`
 
 ### Modified Files
+
 - `apps/web/src/features/contract-dialog/ui/ContractDialog.vue` - Added People tab
 - `apps/web/src/features/contract-dialog/ui/ContractGeneral.vue` - Removed buyer/beneficiary forms
 - `apps/web/src/entities/contract/model/handlers/usePeopleHandler.ts` - Enhanced with additional person types and role management
@@ -131,4 +141,3 @@ Implemented a comprehensive People management tab for the Contract dialog, conso
 6. Enhance read-only display for executed contracts
 7. Add bulk operations (add multiple people at once)
 8. Add person search/filter within the people list
-

@@ -53,4 +53,3 @@ The app runs at `http://localhost:3000` by default.
 ## Browser Support
 
 Modern browsers only (ES2022+). No IE11 support.
-

@@ -1,10 +1,10 @@
+import { ContractPersonRole } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { ContractPersonRole } from '@/entities/contract/model/contract'
 
 /**
  * Contract Person Role Controller
- * 
+ *
  * NOTE: This is a FLAGS enum (bitwise). Multiple roles can be combined.
  * Frontend uses string literals, but for display only.
  * Backend uses bitwise flags for storage.
@@ -23,4 +23,3 @@ export const contractPersonRoleController = new ContractPersonRoleController()
 
 // Auto-register on module load
 enumRegistry.register('contractPersonRole', contractPersonRoleController)
-

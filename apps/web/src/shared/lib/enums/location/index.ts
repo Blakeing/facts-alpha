@@ -2,7 +2,6 @@
 import './locationType'
 import './licenseType'
 
+export { locationLicenseTypeController } from './licenseType'
 // Re-export controllers
 export { locationTypeController } from './locationType'
-export { locationLicenseTypeController } from './licenseType'
-

@@ -2,10 +2,10 @@
   <div>
     <template v-if="!peopleList || peopleList.length === 0">
       <v-alert
+        class="mt-2"
+        density="compact"
         type="info"
         variant="tonal"
-        density="compact"
-        class="mt-2"
       >
         <template #prepend>
           <v-icon>mdi-information</v-icon>

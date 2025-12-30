@@ -1,6 +1,6 @@
+import { ItemType } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { ItemType } from '@/entities/contract/model/contract'
 
 class ItemTypeController extends EnumController<ItemType> {
   choices = [
@@ -15,4 +15,3 @@ export const itemTypeController = new ItemTypeController()
 
 // Auto-register on module load
 enumRegistry.register('itemType', itemTypeController)
-

@@ -245,14 +245,14 @@
               </div>
             </v-alert>
 
-            <!-- Name panel - always show if name exists -->
-            <div v-else-if="currentPerson.name && ensureNameArrays(currentPerson.name)">
+            <!-- Name panel - always readonly, editing done through dialog -->
+            <div v-else-if="currentPerson.name">
               <NamePanel
                 :hide-company="hideCompany(currentPerson)"
                 :hide-deceased-info="hideDeceasedInfo(currentPerson)"
                 :hide-s-s-n="hideSSN(currentPerson)"
                 :model="currentPerson.name"
-                :name-part-readonly="readonlyIfNotDraft"
+                name-part-readonly
                 :people-list="peopleNames"
                 :show-opt-out-marketing="showOptOutMarketing(currentPerson)"
               />
@@ -348,8 +348,6 @@
       .map((p: ContractPerson) => p.name!)
   })
 
-  const readonlyIfNotDraft = computed(() => !props.isDraft)
-
   // Cemetery locations can have additional beneficiaries
   // TODO: Determine based on location type (cemetery vs funeral) - currently allows for all
   const canHaveAdditionalBeneficiaries = computed(() => {
@@ -384,25 +382,6 @@
     if (!person?.name) return false
     const { first, last } = person.name
     return !!(first || last)
-  }
-
-  // Ensure name has required arrays for NamePanel
-  function ensureNameArrays(name: Name | null | undefined): name is Name {
-    if (!name) return false
-    // Ensure arrays exist (NamePanel handles empty arrays)
-    if (!Array.isArray(name.phones)) {
-      name.phones = []
-    }
-    if (!Array.isArray(name.addresses)) {
-      name.addresses = []
-    }
-    if (!Array.isArray(name.emailAddresses)) {
-      name.emailAddresses = []
-    }
-    if (!Array.isArray(name.relations)) {
-      name.relations = []
-    }
-    return true
   }
 
   function isPrimaryBuyer(person: ContractPerson): boolean {

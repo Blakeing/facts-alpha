@@ -19,22 +19,26 @@
   }
 
   const props = withDefaults(defineProps<Props>(), {
-    status: 'Draft'
+    status: 'Draft',
   })
 
   // Map status string to display color (matches legacy ContractList.vue)
   const statusColor = computed(() => {
     switch (props.status) {
-      case 'Executed':
+      case 'Executed': {
         return 'success'
-      case 'Finalized':
+      }
+      case 'Finalized': {
         return 'warning'
+      }
       case 'Void':
-      case 'Cancelled':
+      case 'Cancelled': {
         return 'error'
+      }
       case 'Draft':
-      default:
+      default: {
         return 'grey'
+      }
     }
   })
 </script>

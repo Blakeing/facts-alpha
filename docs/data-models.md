@@ -72,41 +72,41 @@ public enum LocationType {
 
 ### Frontend Type Mapping
 
-| Backend (C#)              | Frontend (TS)                               | Notes                                     |
-| ------------------------- | ------------------------------------------- | ----------------------------------------- |
-| `Id` (long)               | `id` (string)                               | Convert numeric to string                 |
-| `Identifier`              | `identifier`                                | Location code like "001"                  |
-| `Name`                    | `name`                                      |                                           |
-| `Address1`                | `address1`                                  |                                           |
-| `Address2`                | `address2`                                  |                                           |
-| `City`                    | `city`                                      |                                           |
-| `State`                   | `state`                                     | 2-letter code                             |
-| `PostalCode`              | `postalCode`                                |                                           |
-| `County`                  | `county`                                    | **Add to frontend**                       |
-| `Country`                 | `country`                                   |                                           |
-| `Latitude`                | `latitude`                                  | **Add to frontend**                       |
-| `Longitude`               | `longitude`                                 | **Add to frontend**                       |
-| `Mailing_Address1`        | `mailingAddress1`                           | Convert underscore to camelCase           |
-| `Mailing_Address2`        | `mailingAddress2`                           |                                           |
-| `Mailing_City`            | `mailingCity`                               |                                           |
-| `Mailing_State`           | `mailingState`                              |                                           |
-| `Mailing_PostalCode`      | `mailingPostalCode`                         |                                           |
-| `Mailing_County`          | `mailingCounty`                             | **Add to frontend**                       |
-| `Mailing_Country`         | `mailingCountry`                            |                                           |
-| `MailingSameAsPhysical`   | `mailingSameAsPhysical`                     |                                           |
-| `Phone`                   | `phone`                                     |                                           |
-| `Website`                 | `website`                                   |                                           |
-| `Email`                   | `email`                                     |                                           |
+| Backend (C#)              | Frontend (TS)                                                  | Notes                                         |
+| ------------------------- | -------------------------------------------------------------- | --------------------------------------------- |
+| `Id` (long)               | `id` (string)                                                  | Convert numeric to string                     |
+| `Identifier`              | `identifier`                                                   | Location code like "001"                      |
+| `Name`                    | `name`                                                         |                                               |
+| `Address1`                | `address1`                                                     |                                               |
+| `Address2`                | `address2`                                                     |                                               |
+| `City`                    | `city`                                                         |                                               |
+| `State`                   | `state`                                                        | 2-letter code                                 |
+| `PostalCode`              | `postalCode`                                                   |                                               |
+| `County`                  | `county`                                                       | **Add to frontend**                           |
+| `Country`                 | `country`                                                      |                                               |
+| `Latitude`                | `latitude`                                                     | **Add to frontend**                           |
+| `Longitude`               | `longitude`                                                    | **Add to frontend**                           |
+| `Mailing_Address1`        | `mailingAddress1`                                              | Convert underscore to camelCase               |
+| `Mailing_Address2`        | `mailingAddress2`                                              |                                               |
+| `Mailing_City`            | `mailingCity`                                                  |                                               |
+| `Mailing_State`           | `mailingState`                                                 |                                               |
+| `Mailing_PostalCode`      | `mailingPostalCode`                                            |                                               |
+| `Mailing_County`          | `mailingCounty`                                                | **Add to frontend**                           |
+| `Mailing_Country`         | `mailingCountry`                                               |                                               |
+| `MailingSameAsPhysical`   | `mailingSameAsPhysical`                                        |                                               |
+| `Phone`                   | `phone`                                                        |                                               |
+| `Website`                 | `website`                                                      |                                               |
+| `Email`                   | `email`                                                        |                                               |
 | `Type` (enum 0,1,2)       | `type` (LocationType enum: FUNERAL=0, CEMETERY=1, CORPORATE=2) | BFF sends numeric, frontend uses numeric enum |
-| `Active`                  | `active`                                    |                                           |
-| `IntercompanyGLAccountId` | `intercompanyGlAccountId`                   | **Add to frontend**                       |
-| `AccountingPeriod`        | `accountingPeriod`                          | **Add to frontend** (ISO string)          |
-| `GLGroupId`               | `glGroupId`                                 | **Add to frontend**                       |
-| `GLMaps`                  | `glMaps`                                    | **Add to frontend** (empty array for now) |
-| `Licenses`                | `licenses`                                  |                                           |
-| `TaxId`                   | `taxId`                                     |                                           |
-| `Timezone`                | `timezone`                                  | **Add to frontend**                       |
-| `ContractDisplayName`     | `contractDisplayName`                       | **Add to frontend**                       |
+| `Active`                  | `active`                                                       |                                               |
+| `IntercompanyGLAccountId` | `intercompanyGlAccountId`                                      | **Add to frontend**                           |
+| `AccountingPeriod`        | `accountingPeriod`                                             | **Add to frontend** (ISO string)              |
+| `GLGroupId`               | `glGroupId`                                                    | **Add to frontend**                           |
+| `GLMaps`                  | `glMaps`                                                       | **Add to frontend** (empty array for now)     |
+| `Licenses`                | `licenses`                                                     |                                               |
+| `TaxId`                   | `taxId`                                                        |                                               |
+| `Timezone`                | `timezone`                                                     | **Add to frontend**                           |
+| `ContractDisplayName`     | `contractDisplayName`                                          | **Add to frontend**                           |
 
 ### Updated Frontend Type
 
@@ -384,6 +384,7 @@ public class ContractPerson : Entity {
 **`Facts.Entities.Name`** (C#):
 
 The BFF returns ContractPerson with a nested `Name` object that includes:
+
 - Name fields: `first`, `last`, `middle`, `prefix`, `suffix`, `nickname`, `companyName`
 - Dates: `birthDate`, `deathDate`, `timeOfDeath`
 - Demographics: `gender`, `maritalStatus`, `ethnicity`, `race`, `isVeteran`
@@ -399,130 +400,130 @@ The BFF returns ContractPerson with a nested `Name` object that includes:
 
 **NeedType:**
 
-| Backend | Name | Frontend |
-|---------|------|----------|
-| 1 | `AN` | `'at_need'` |
-| 2 | `PN` | `'pre_need'` |
+| Backend | Name | Frontend     |
+| ------- | ---- | ------------ |
+| 1       | `AN` | `'at_need'`  |
+| 2       | `PN` | `'pre_need'` |
 
 **SaleType:**
 
-| Backend | Name | Frontend |
-|---------|------|----------|
-| 0 | `Contract` | `'contract'` |
-| 1 | `ContractAdjustment` | `'contract_adjustment'` |
-| 2 | `MiscCash` | `'misc_cash'` |
+| Backend | Name                 | Frontend                |
+| ------- | -------------------- | ----------------------- |
+| 0       | `Contract`           | `'contract'`            |
+| 1       | `ContractAdjustment` | `'contract_adjustment'` |
+| 2       | `MiscCash`           | `'misc_cash'`           |
 
 **SaleStatus:**
 
-| Backend | Name | Frontend |
-|---------|------|----------|
-| 0 | `Draft` | `'draft'` |
-| 1 | `Executed` | `'executed'` |
-| 2 | `Finalized` | `'finalized'` |
-| 3 | `Void` | `'void'` |
+| Backend | Name        | Frontend      |
+| ------- | ----------- | ------------- |
+| 0       | `Draft`     | `'draft'`     |
+| 1       | `Executed`  | `'executed'`  |
+| 2       | `Finalized` | `'finalized'` |
+| 3       | `Void`      | `'void'`      |
 
 **SaleAdjustmentType:**
 
-| Backend | Name | Frontend |
-|---------|------|----------|
-| 0 | `SalesTax` | `'sales_tax'` |
-| 1 | `Discount` | `'discount'` |
-| 2 | `Cancellation` | `'cancellation'` |
-| 3 | `Exchange` | `'exchange'` |
-| 4 | `Transfer` | `'transfer'` |
-| 5 | `Addendum` | `'addendum'` |
-| 6 | `NeedTypeSwap` | `'need_type_swap'` |
-| 7 | `LateFee` | `'late_fee'` |
-| 8 | `PropertyExchange` | `'property_exchange'` |
-| 9 | `ItemCredit` | `'item_credit'` |
+| Backend | Name               | Frontend              |
+| ------- | ------------------ | --------------------- |
+| 0       | `SalesTax`         | `'sales_tax'`         |
+| 1       | `Discount`         | `'discount'`          |
+| 2       | `Cancellation`     | `'cancellation'`      |
+| 3       | `Exchange`         | `'exchange'`          |
+| 4       | `Transfer`         | `'transfer'`          |
+| 5       | `Addendum`         | `'addendum'`          |
+| 6       | `NeedTypeSwap`     | `'need_type_swap'`    |
+| 7       | `LateFee`          | `'late_fee'`          |
+| 8       | `PropertyExchange` | `'property_exchange'` |
+| 9       | `ItemCredit`       | `'item_credit'`       |
 
 **ContractPersonRole** (Flags Enum - numeric):
 
-| Backend | Name | Frontend | Notes |
-|---------|------|----------|-------|
-| 0 | `Person` | `0` | Base role |
-| 1 | `PrimaryBuyer` | `1` | Flags enum - use bitwise AND to check |
-| 2 | `CoBuyer` | `2` | Flags enum - use bitwise AND to check |
-| 4 | `PrimaryBeneficiary` | `4` | Flags enum - use bitwise AND to check |
-| 8 | `AdditionalBeneficiary` | `8` | Flags enum - use bitwise AND to check |
+| Backend | Name                    | Frontend | Notes                                 |
+| ------- | ----------------------- | -------- | ------------------------------------- |
+| 0       | `Person`                | `0`      | Base role                             |
+| 1       | `PrimaryBuyer`          | `1`      | Flags enum - use bitwise AND to check |
+| 2       | `CoBuyer`               | `2`      | Flags enum - use bitwise AND to check |
+| 4       | `PrimaryBeneficiary`    | `4`      | Flags enum - use bitwise AND to check |
+| 8       | `AdditionalBeneficiary` | `8`      | Flags enum - use bitwise AND to check |
 
 **Note:** BFF returns `roles` as a **number** (flags enum), not an array. Use bitwise operations: `(person.roles & 1) !== 0` to check for PrimaryBuyer.
 
 **AtNeedType:**
 
-| Backend | Name | Frontend |
-|---------|------|----------|
-| 0 | `WalkIn` | `'walk_in'` |
-| 1 | `PN_Maturity` | `'pn_maturity'` |
+| Backend | Name          | Frontend        |
+| ------- | ------------- | --------------- |
+| 0       | `WalkIn`      | `'walk_in'`     |
+| 1       | `PN_Maturity` | `'pn_maturity'` |
 
 **PreNeedFundingType:**
 
-| Backend | Name | Frontend |
-|---------|------|----------|
-| 0 | `Trust` | `'trust'` |
-| 1 | `Insurance` | `'insurance'` |
+| Backend | Name        | Frontend      |
+| ------- | ----------- | ------------- |
+| 0       | `Trust`     | `'trust'`     |
+| 1       | `Insurance` | `'insurance'` |
 
 ### Frontend Type Mapping
 
 **Contract:**
 
-| Backend (C#) | Frontend (TS) | Notes |
-|--------------|---------------|-------|
-| `Id` | `id` | string |
-| `ContractNumber` | `contractNumber` | |
-| `PrePrintedContractNumber` | `prePrintedContractNumber` | |
-| `LocationId` | `locationId` | string |
-| `NeedType` | `needType` | Map to string enum |
-| `ContractTypeId` | `contractTypeId` | string, nullable |
-| `LeadSourceId` | `leadSourceId` | string, nullable |
-| `ContractSaleTypeId` | `contractSaleTypeId` | string, nullable |
-| `SalesPersonId` | `salesPersonId` | string, nullable |
-| `MarketingAgentId` | `marketingAgentId` | string, nullable |
-| `DateExecuted` | `dateExecuted` | ISO string |
-| `DateSigned` | `dateSigned` | ISO string |
-| `IsCancelled` | `isCancelled` | |
-| `IsConditionalSale` | `isConditionalSale` | |
-| `DateApproved` | `dateApproved` | ISO string, nullable |
-| `AtNeedType` | `atNeedType` | Map to string enum |
-| `PreNeedFundingType` | `preNeedFundingType` | Map to string enum |
-| `FirstCallId` | `firstCallId` | string, nullable |
-| `CommentFeedOwnerId` | `commentFeedOwnerId` | string, nullable |
-| `Sales` | `sales` | Loaded separately |
-| `People` | `people` | Loaded separately |
-| `Financing` | `financing` | Embedded |
+| Backend (C#)               | Frontend (TS)              | Notes                |
+| -------------------------- | -------------------------- | -------------------- |
+| `Id`                       | `id`                       | string               |
+| `ContractNumber`           | `contractNumber`           |                      |
+| `PrePrintedContractNumber` | `prePrintedContractNumber` |                      |
+| `LocationId`               | `locationId`               | string               |
+| `NeedType`                 | `needType`                 | Map to string enum   |
+| `ContractTypeId`           | `contractTypeId`           | string, nullable     |
+| `LeadSourceId`             | `leadSourceId`             | string, nullable     |
+| `ContractSaleTypeId`       | `contractSaleTypeId`       | string, nullable     |
+| `SalesPersonId`            | `salesPersonId`            | string, nullable     |
+| `MarketingAgentId`         | `marketingAgentId`         | string, nullable     |
+| `DateExecuted`             | `dateExecuted`             | ISO string           |
+| `DateSigned`               | `dateSigned`               | ISO string           |
+| `IsCancelled`              | `isCancelled`              |                      |
+| `IsConditionalSale`        | `isConditionalSale`        |                      |
+| `DateApproved`             | `dateApproved`             | ISO string, nullable |
+| `AtNeedType`               | `atNeedType`               | Map to string enum   |
+| `PreNeedFundingType`       | `preNeedFundingType`       | Map to string enum   |
+| `FirstCallId`              | `firstCallId`              | string, nullable     |
+| `CommentFeedOwnerId`       | `commentFeedOwnerId`       | string, nullable     |
+| `Sales`                    | `sales`                    | Loaded separately    |
+| `People`                   | `people`                   | Loaded separately    |
+| `Financing`                | `financing`                | Embedded             |
 
 **Sale:**
 
-| Backend (C#) | Frontend (TS) | Notes |
-|--------------|---------------|-------|
-| `Id` | `id` | string |
-| `ContractId` | `contractId` | string |
-| `SaleDate` | `saleDate` | ISO string |
-| `SaleNumber` | `saleNumber` | |
-| `SaleType` | `saleType` | Map to string enum |
-| `SaleStatus` | `saleStatus` | Map to string enum |
+| Backend (C#)         | Frontend (TS)        | Notes                        |
+| -------------------- | -------------------- | ---------------------------- |
+| `Id`                 | `id`                 | string                       |
+| `ContractId`         | `contractId`         | string                       |
+| `SaleDate`           | `saleDate`           | ISO string                   |
+| `SaleNumber`         | `saleNumber`         |                              |
+| `SaleType`           | `saleType`           | Map to string enum           |
+| `SaleStatus`         | `saleStatus`         | Map to string enum           |
 | `SaleAdjustmentType` | `saleAdjustmentType` | Map to string enum, nullable |
-| `AccountingPeriod` | `accountingPeriod` | ISO string |
-| `Memo` | `memo` | |
-| `Items` | `items` | Nested array |
+| `AccountingPeriod`   | `accountingPeriod`   | ISO string                   |
+| `Memo`               | `memo`               |                              |
+| `Items`              | `items`              | Nested array                 |
 
 **SaleItem:**
 
-| Backend (C#) | Frontend (TS) | Notes |
-|--------------|---------------|-------|
-| `Id` | `id` | string |
-| `SaleId` | `saleId` | string |
-| `ItemId` | `itemId` | string |
-| `Description` | `description` | |
-| `NeedType` | `needType` | Map to string enum |
-| `Quantity` | `quantity` | number |
-| `UnitPrice` | `unitPrice` | number |
-| `BookPrice` | `bookPrice` | number |
-| `Cost` | `cost` | number |
-| `IsCancelled` | `isCancelled` | |
-| `Ordinal` | `ordinal` | Sort order |
-| `SalesTax` | `salesTax` | Nested array |
-| `Discounts` | `discounts` | Nested array |
+| Backend (C#)  | Frontend (TS) | Notes              |
+| ------------- | ------------- | ------------------ |
+| `Id`          | `id`          | string             |
+| `SaleId`      | `saleId`      | string             |
+| `ItemId`      | `itemId`      | string             |
+| `Description` | `description` |                    |
+| `NeedType`    | `needType`    | Map to string enum |
+| `Quantity`    | `quantity`    | number             |
+| `UnitPrice`   | `unitPrice`   | number             |
+| `BookPrice`   | `bookPrice`   | number             |
+| `Cost`        | `cost`        | number             |
+| `IsCancelled` | `isCancelled` |                    |
+| `Ordinal`     | `ordinal`     | Sort order         |
+| `SalesTax`    | `salesTax`    | Nested array       |
+| `Discounts`   | `discounts`   | Nested array       |
 
 ### Updated Frontend Types
 
@@ -601,12 +602,12 @@ interface Contract {
   preNeedFundingType?: PreNeedFundingType
   firstCallId?: string
   commentFeedOwnerId?: string
-  
+
   // Related entities
   sales?: Sale[]
   people?: ContractPerson[]
   financing?: ContractFinancing
-  
+
   // Timestamps
   createdAt: string
   updatedAt: string
@@ -661,7 +662,7 @@ interface ContractPerson {
   id: string
   contractId: string
   nameId: string
-  roles: number  // Flags enum: 1=PrimaryBuyer, 2=CoBuyer, 4=PrimaryBeneficiary, 8=AdditionalBeneficiary
+  roles: number // Flags enum: 1=PrimaryBuyer, 2=CoBuyer, 4=PrimaryBeneficiary, 8=AdditionalBeneficiary
   addedAfterContractExecution: boolean
   // Nested Name object from BFF (includes phones[], addresses[], emailAddresses[])
   name: Name
@@ -701,21 +702,26 @@ const needTypeFromBackend = (value: number): NeedType => {
 
 const saleStatusFromBackend = (value: number): SaleStatus => {
   const map: Record<number, SaleStatus> = {
-    0: 'draft', 1: 'executed', 2: 'finalized', 3: 'void'
+    0: 'draft',
+    1: 'executed',
+    2: 'finalized',
+    3: 'void',
   }
   return map[value] ?? 'draft'
 }
 
 const saleTypeFromBackend = (value: number): SaleType => {
   const map: Record<number, SaleType> = {
-    0: 'contract', 1: 'contract_adjustment', 2: 'misc_cash'
+    0: 'contract',
+    1: 'contract_adjustment',
+    2: 'misc_cash',
   }
   return map[value] ?? 'contract'
 }
 
 // Frontend string to backend numeric
 const needTypeToBackend = (value: NeedType): number => {
-  const map: Record<NeedType, number> = { 'at_need': 1, 'pre_need': 2 }
+  const map: Record<NeedType, number> = { at_need: 1, pre_need: 2 }
   return map[value]
 }
 ```

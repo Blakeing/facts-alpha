@@ -83,9 +83,9 @@
   - [x] Simplified EnumController (removed conversion methods)
 - [x] **Name Entity & Reusable Components**:
   - [x] Name entity model (matching BFF structure with nested arrays)
-  - [x] Reusable NamePanel component (composite of NamePart* components)
+  - [x] Reusable NamePanel component (composite of NamePart\* components)
   - [x] NameEditorDialog for modal editing
-  - [x] Granular NamePart* components (Name, Addresses, Phones, Emails, etc.)
+  - [x] Granular NamePart\* components (Name, Addresses, Phones, Emails, etc.)
   - [x] All components use Vuetify defaults (no custom styles)
   - [x] Safe array accessors with fallbacks
 
@@ -106,4 +106,3 @@ See **[Roadmap](./roadmap.md)** for detailed development phases and timeline.
 
 - [x] Dark mode (removed for now, tokens ready for future implementation)
 - [x] Multi-tenant support (entity exists, not implemented - future phase)
-

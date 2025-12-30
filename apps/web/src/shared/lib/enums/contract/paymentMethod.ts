@@ -1,6 +1,6 @@
+import { PaymentMethod } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { PaymentMethod } from '@/entities/contract/model/contract'
 
 class PaymentMethodController extends EnumController<PaymentMethod> {
   choices = [
@@ -18,4 +18,3 @@ export const paymentMethodController = new PaymentMethodController()
 
 // Auto-register on module load
 enumRegistry.register('paymentMethod', paymentMethodController)
-

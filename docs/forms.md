@@ -208,4 +208,3 @@ For complex editing workflows (contracts, orders), use the **full-screen dialog 
 - **Instant open/close**: No navigation delay
 - **Modal workflow**: Forces completion or cancellation
 - **Complex forms**: Tabs, sub-dialogs, validation
-

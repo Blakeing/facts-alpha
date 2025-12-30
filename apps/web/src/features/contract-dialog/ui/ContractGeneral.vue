@@ -102,7 +102,6 @@
       </v-col>
     </v-row>
 
-
     <!-- Notes -->
     <v-row>
       <v-col cols="12">

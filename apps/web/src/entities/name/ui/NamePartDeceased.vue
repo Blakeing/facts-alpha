@@ -6,8 +6,8 @@
           v-model="model.weight"
           field="weight"
           label="Weight"
-          type="number"
           :readonly="readonly"
+          type="number"
         />
       </v-col>
       <v-col>
@@ -23,12 +23,11 @@
 </template>
 
 <script lang="ts" setup>
-import type { Name } from '../model/name'
-import { FTextField } from '@/shared/ui'
+  import type { Name } from '../model/name'
+  import { FTextField } from '@/shared/ui'
 
-defineProps<{
-  model: Name
-  readonly?: boolean
-}>()
+  defineProps<{
+    model: Name
+    readonly?: boolean
+  }>()
 </script>
-

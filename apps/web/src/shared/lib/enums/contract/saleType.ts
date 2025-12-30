@@ -1,6 +1,6 @@
+import { SaleType } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { SaleType } from '@/entities/contract/model/contract'
 
 class SaleTypeController extends EnumController<SaleType> {
   choices = [
@@ -14,4 +14,3 @@ export const saleTypeController = new SaleTypeController()
 
 // Auto-register on module load
 enumRegistry.register('saleType', saleTypeController)
-

@@ -1,6 +1,6 @@
+import { AtNeedType } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { AtNeedType } from '@/entities/contract/model/contract'
 
 class AtNeedTypeController extends EnumController<AtNeedType> {
   choices = [
@@ -13,4 +13,3 @@ export const atNeedTypeController = new AtNeedTypeController()
 
 // Auto-register on module load
 enumRegistry.register('atNeedType', atNeedTypeController)
-

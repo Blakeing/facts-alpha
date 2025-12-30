@@ -1,6 +1,6 @@
+import { PreNeedFundingType } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { PreNeedFundingType } from '@/entities/contract/model/contract'
 
 class PreNeedFundingTypeController extends EnumController<PreNeedFundingType> {
   choices = [
@@ -13,4 +13,3 @@ export const preNeedFundingTypeController = new PreNeedFundingTypeController()
 
 // Auto-register on module load
 enumRegistry.register('preNeedFundingType', preNeedFundingTypeController)
-

@@ -4,11 +4,11 @@
       <v-col cols="12">
         <v-checkbox
           v-model="model.optOutMarketing"
-          label="Opt out of Future Marketing"
-          :disabled="readonly || model.deceased || model.deathDate != null"
           color="primary"
           density="compact"
+          :disabled="readonly || model.deceased || model.deathDate != null"
           hide-details
+          label="Opt out of Future Marketing"
         />
       </v-col>
     </v-row>
@@ -16,21 +16,20 @@
 </template>
 
 <script lang="ts" setup>
-import { watch } from 'vue'
-import type { Name } from '../model/name'
+  import type { Name } from '../model/name'
+  import { watch } from 'vue'
 
-const props = defineProps<{
-  model: Name
-  readonly?: boolean
-}>()
+  const props = defineProps<{
+    model: Name
+    readonly?: boolean
+  }>()
 
-watch(
-  () => props.model.deceased,
-  (newValue) => {
-    if (newValue) {
-      props.model.optOutMarketing = true
-    }
-  },
-)
+  watch(
+    () => props.model.deceased,
+    (newValue) => {
+      if (newValue) {
+        props.model.optOutMarketing = true
+      }
+    },
+  )
 </script>
-

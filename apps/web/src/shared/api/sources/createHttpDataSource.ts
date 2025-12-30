@@ -18,7 +18,8 @@ export function createHttpDataSource<TListing, TEntity, TForm>(endpoints: {
       const url = typeof endpoints.list === 'function' ? endpoints.list(locationId) : endpoints.list
 
       // Add locationId as query param if provided and not already in the URL
-      const finalUrl = locationId && typeof endpoints.list === 'string' ? `${url}?locationId=${locationId}` : url
+      const finalUrl =
+        locationId && typeof endpoints.list === 'string' ? `${url}?locationId=${locationId}` : url
 
       const response = await client.get<TListing[]>(finalUrl)
       return response.data
@@ -32,7 +33,8 @@ export function createHttpDataSource<TListing, TEntity, TForm>(endpoints: {
 
     async create(data: TForm) {
       const client = await getHttpClient()
-      const url = endpoints.create || (typeof endpoints.list === 'string' ? endpoints.list : '/unknown')
+      const url =
+        endpoints.create || (typeof endpoints.list === 'string' ? endpoints.list : '/unknown')
       const response = await client.post<TEntity>(url, data)
       return response.data
     },
@@ -51,4 +53,3 @@ export function createHttpDataSource<TListing, TEntity, TForm>(endpoints: {
     },
   }
 }
-

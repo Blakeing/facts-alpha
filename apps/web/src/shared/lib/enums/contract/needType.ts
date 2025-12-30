@@ -1,6 +1,6 @@
+import { NeedType } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { NeedType } from '@/entities/contract/model/contract'
 
 class NeedTypeController extends EnumController<NeedType> {
   choices = [
@@ -13,4 +13,3 @@ export const needTypeController = new NeedTypeController()
 
 // Auto-register on module load
 enumRegistry.register('needType', needTypeController)
-

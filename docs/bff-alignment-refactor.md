@@ -30,6 +30,7 @@ Facts Alpha has been refactored to **exactly match** the BFF (Backend for Fronte
 **Deleted:** Entire `/apps/web/src/shared/api/mappers/` directory
 
 **Why:** The BFF already handles all necessary conversions:
+
 - ✅ **ID Conversion**: `LongToStringConverter` converts `long` → `string`
 - ✅ **Field Casing**: `CamelCaseNamingStrategy` converts `PascalCase` → `camelCase`
 - ✅ **Field Names**: BFF sends `dateCreated`/`dateLastModified` (not `createdAt`/`updatedAt`)
@@ -40,16 +41,17 @@ Facts Alpha has been refactored to **exactly match** the BFF (Backend for Fronte
 
 **Changed:** All enums from string literals to numeric enums
 
-| Enum | Before | After |
-|------|--------|-------|
-| `NeedType` | `'at_need' \| 'pre_need'` | `enum { AT_NEED = 1, PRE_NEED = 2 }` |
-| `SaleStatus` | `'draft' \| 'executed' \| ...` | `enum { DRAFT = 0, EXECUTED = 1, ... }` |
-| `LocationType` | `'funeral' \| 'cemetery' \| ...` | `enum { FUNERAL = 0, CEMETERY = 1, ... }` |
-| `SaleType` | String literals | `enum { CONTRACT = 0, ... }` |
-| `PaymentMethod` | String literals | `enum { CASH = 0, CHECK = 1, ... }` |
-| All other enums | String literals | Numeric enums matching C# backend |
+| Enum            | Before                           | After                                     |
+| --------------- | -------------------------------- | ----------------------------------------- |
+| `NeedType`      | `'at_need' \| 'pre_need'`        | `enum { AT_NEED = 1, PRE_NEED = 2 }`      |
+| `SaleStatus`    | `'draft' \| 'executed' \| ...`   | `enum { DRAFT = 0, EXECUTED = 1, ... }`   |
+| `LocationType`  | `'funeral' \| 'cemetery' \| ...` | `enum { FUNERAL = 0, CEMETERY = 1, ... }` |
+| `SaleType`      | String literals                  | `enum { CONTRACT = 0, ... }`              |
+| `PaymentMethod` | String literals                  | `enum { CASH = 0, CHECK = 1, ... }`       |
+| All other enums | String literals                  | Numeric enums matching C# backend         |
 
 **Files Updated:**
+
 - All enum definitions in `/apps/web/src/entities/*/model/*.ts`
 - All enum controllers in `/apps/web/src/shared/lib/enums/**/*.ts`
 - All form schemas using `z.nativeEnum()` instead of `z.enum()`
@@ -59,12 +61,13 @@ Facts Alpha has been refactored to **exactly match** the BFF (Backend for Fronte
 
 **Changed:** Timestamp field names to match BFF
 
-| Before | After | Applied To |
-|--------|-------|------------|
-| `createdAt` | `dateCreated` | All entities, handlers, API calls |
+| Before      | After              | Applied To                        |
+| ----------- | ------------------ | --------------------------------- |
+| `createdAt` | `dateCreated`      | All entities, handlers, API calls |
 | `updatedAt` | `dateLastModified` | All entities, handlers, API calls |
 
 **Files Updated:**
+
 - All entity interfaces
 - All handler functions (`useItemsHandler`, `usePeopleHandler`, `usePaymentsHandler`)
 - All API client methods
@@ -75,26 +78,29 @@ Facts Alpha has been refactored to **exactly match** the BFF (Backend for Fronte
 **Changed:** `/apps/web/src/shared/lib/enums/EnumController.ts`
 
 **Removed:**
+
 - `fromApi()` / `toApi()` conversion methods (no longer needed)
 - `value` field in `EnumChoice` (now just `id` and `name`)
 
 **Kept:**
+
 - `getLabel()` for display labels
 - `selectItems` for UI components
 - `sortedChoices` for sorted lists
 
 **Updated Structure:**
+
 ```typescript
 // Before
 interface EnumChoice<TValue extends string> {
   id: number
-  value: TValue  // String literal
+  value: TValue // String literal
   name: string
 }
 
 // After
 interface EnumChoice<TEnum extends number> {
-  id: TEnum      // Numeric enum value
+  id: TEnum // Numeric enum value
   name: string
 }
 ```
@@ -104,10 +110,12 @@ interface EnumChoice<TEnum extends number> {
 **Changed:** All Zod schemas to use `z.nativeEnum()` for numeric enums
 
 **Files Updated:**
+
 - `/apps/web/src/entities/contract/model/contractSchema.ts`
 - `/apps/web/src/entities/location/model/locationSchema.ts`
 
 **Example:**
+
 ```typescript
 // Before
 needType: z.enum([NeedType.AT_NEED, NeedType.PRE_NEED])
@@ -152,6 +160,7 @@ Frontend Entities (string IDs, camelCase, numeric enums)
 **Changed:** ContractPerson now uses nested `Name` object matching BFF structure exactly
 
 **Before (flattened):**
+
 ```typescript
 interface ContractPerson {
   firstName: string
@@ -163,11 +172,12 @@ interface ContractPerson {
 ```
 
 **After (nested, matching BFF):**
+
 ```typescript
 interface ContractPerson {
   nameId: string
-  roles: number  // Flags enum
-  name: Name  // Nested object with phones[], addresses[], emailAddresses[]
+  roles: number // Flags enum
+  name: Name // Nested object with phones[], addresses[], emailAddresses[]
 }
 
 interface Name {
@@ -179,7 +189,8 @@ interface Name {
 }
 ```
 
-**Impact:** 
+**Impact:**
+
 - Removed transformation/flattening logic from `contractApi.ts`
 - Components now access `person.name.first` instead of `person.firstName`
 - Helper functions in `nameHelpers.ts` provide utilities for working with nested structure
@@ -190,6 +201,7 @@ interface Name {
 **Changed:** `contractApi.ts` now handles BFF response wrapper
 
 **BFF Response Format:**
+
 ```typescript
 interface ContractResponse {
   contract: Contract
@@ -222,6 +234,7 @@ interface ContractResponse {
 ### When Connecting to Production
 
 **No changes needed!** The frontend now expects:
+
 - String IDs (BFF sends via `LongToStringConverter`)
 - camelCase field names (BFF sends via `CamelCaseNamingStrategy`)
 - Numeric enum values (BFF sends C# enum values directly)
@@ -232,6 +245,7 @@ Simply point the API client to the production BFF URL - everything will work.
 ## Files Changed Summary
 
 ### Created
+
 - `/apps/web/src/shared/lib/entity/types.ts` - Entity base types
 - `/apps/web/src/shared/lib/entity/index.ts` - Entity exports
 - `/apps/web/src/entities/name/model/name.ts` - Name entity types (BFF-aligned)
@@ -239,9 +253,11 @@ Simply point the API client to the production BFF URL - everything will work.
 - `/apps/web/src/entities/name/index.ts` - Name entity exports
 
 ### Deleted
+
 - `/apps/web/src/shared/api/mappers/` - Entire directory (no longer needed)
 
 ### Modified
+
 - All entity model files (`contract.ts`, `location.ts`, `tenant.ts`)
 - All enum controller files (`**/enums/**/*.ts`)
 - All form schema files (`contractSchema.ts`, `locationSchema.ts`)
@@ -268,4 +284,3 @@ Simply point the API client to the production BFF URL - everything will work.
 - [API Integration](./api-integration.md) - Updated to reflect no enum conversion needed
 - [Data Models](./data-models.md) - Updated enum and field name conventions
 - [Legacy Patterns](./legacy-patterns.md) - Entity base type pattern source
-

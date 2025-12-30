@@ -227,10 +227,11 @@
 
   /**
    * Add a new phone number to the model
-   * Note: Direct prop mutation is intentional - Name model is designed to be mutable.
-   * The parent component manages the model lifecycle and expects direct mutations.
+   * Note: Direct prop mutation is intentional here. NamePanel is used inside NameEditorDialog
+   * which passes a deep-cloned mutable copy. The parent owns the model lifecycle.
    */
   function addPhone() {
+    /* eslint-disable vue/no-mutating-props */
     if (!props.model.phones) {
       props.model.phones = []
     }
@@ -244,14 +245,16 @@
       dateCreated: new Date().toISOString(),
       dateLastModified: new Date().toISOString(),
     })
+    /* eslint-enable vue/no-mutating-props */
   }
 
   /**
    * Add a new email address to the model
-   * Note: Direct prop mutation is intentional - Name model is designed to be mutable.
-   * The parent component manages the model lifecycle and expects direct mutations.
+   * Note: Direct prop mutation is intentional here. NamePanel is used inside NameEditorDialog
+   * which passes a deep-cloned mutable copy. The parent owns the model lifecycle.
    */
   function addEmail() {
+    /* eslint-disable vue/no-mutating-props */
     if (!props.model.emailAddresses) {
       props.model.emailAddresses = []
     }
@@ -264,6 +267,7 @@
       dateCreated: new Date().toISOString(),
       dateLastModified: new Date().toISOString(),
     })
+    /* eslint-enable vue/no-mutating-props */
   }
 
   function handleRelationSelected(

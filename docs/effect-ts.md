@@ -137,6 +137,7 @@ This aligns with the backend's `Response<T>` pattern and ensures all API errors 
 ### The Problem: Raw Axios Errors
 
 Without `toApiError`, you get raw Axios errors that are:
+
 - ❌ **Untyped** - TypeScript doesn't know what properties exist
 - ❌ **Inconsistent** - Different error shapes for different failure modes
 - ❌ **Hard to handle** - Manual status code checking everywhere
@@ -170,6 +171,7 @@ try {
 ```
 
 **What the error object looks like:**
+
 ```typescript
 // AxiosError structure (varies by error type)
 {
@@ -187,6 +189,7 @@ try {
 ### The Solution: Typed Effect Errors
 
 With `toApiError`, you get:
+
 - ✅ **Fully typed** - TypeScript knows exactly what properties exist
 - ✅ **Consistent** - Same error shape for same failure modes
 - ✅ **Pattern matchable** - Discriminated unions with `_tag` property
@@ -203,6 +206,7 @@ Effect.tryPromise({
 ```
 
 **What the error object looks like:**
+
 ```typescript
 // NotFoundError - Clean, typed structure
 {
@@ -217,6 +221,7 @@ Effect.tryPromise({
 #### Scenario 1: 404 Not Found
 
 **❌ Without `toApiError`:**
+
 ```typescript
 // In API layer
 async function getContract(id: string): Promise<Contract> {
@@ -235,7 +240,7 @@ async function getContract(id: string): Promise<Contract> {
 // In UI layer
 const errorMsg = computed(() => {
   if (!query.error.value) return null
-  
+
   // Can't pattern match - must check error.message or instanceof
   if (query.error.value instanceof Error) {
     return query.error.value.message
@@ -245,6 +250,7 @@ const errorMsg = computed(() => {
 ```
 
 **✅ With `toApiError`:**
+
 ```typescript
 // In API layer
 const getContract = (id: string): Effect.Effect<Contract, ApiError> =>
@@ -256,10 +262,10 @@ const getContract = (id: string): Effect.Effect<Contract, ApiError> =>
 // In UI layer
 const errorMsg = computed(() => {
   if (!query.error.value) return null
-  
+
   // Type-safe pattern matching!
   return handleError(query.error.value, {
-    NotFoundError: (e) => `Contract "${e.id}" not found`,  // TypeScript knows e.id exists!
+    NotFoundError: (e) => `Contract "${e.id}" not found`, // TypeScript knows e.id exists!
     NetworkError: (e) => `Network error: ${e.message}`,
     default: errorMessage,
   })
@@ -269,6 +275,7 @@ const errorMsg = computed(() => {
 #### Scenario 2: 400 Validation Error
 
 **❌ Without `toApiError`:**
+
 ```typescript
 // Backend returns:
 // {
@@ -297,6 +304,7 @@ try {
 ```
 
 **✅ With `toApiError`:**
+
 ```typescript
 // Backend returns same format, but toApiError extracts it cleanly
 
@@ -329,6 +337,7 @@ handleError(error, {
 #### Scenario 3: Network Error (Timeout)
 
 **❌ Without `toApiError`:**
+
 ```typescript
 try {
   await client.get('/api/v1/contracts')
@@ -345,6 +354,7 @@ try {
 ```
 
 **✅ With `toApiError`:**
+
 ```typescript
 Effect.tryPromise({
   try: () => client.get('/api/v1/contracts'),
@@ -394,15 +404,15 @@ HTTP Request
 
 ### Benefits Summary
 
-| Aspect | Without `toApiError` | With `toApiError` |
-|--------|---------------------|-------------------|
-| **Type Safety** | ❌ `unknown` or `Error` | ✅ `ApiError` union type |
-| **Pattern Matching** | ❌ Manual `if/else` chains | ✅ `handleError()` with discriminated unions |
-| **Error Properties** | ❌ Must check/cast manually | ✅ TypeScript knows exact properties |
-| **Consistency** | ❌ Varies by error type | ✅ Same shape for same error types |
-| **Effect Integration** | ❌ Doesn't work with Effect | ✅ Native Effect error types |
-| **Code Clarity** | ❌ Verbose error checking | ✅ Clean, declarative error handling |
-| **Maintainability** | ❌ Error handling scattered | ✅ Centralized error mapping |
+| Aspect                 | Without `toApiError`        | With `toApiError`                            |
+| ---------------------- | --------------------------- | -------------------------------------------- |
+| **Type Safety**        | ❌ `unknown` or `Error`     | ✅ `ApiError` union type                     |
+| **Pattern Matching**   | ❌ Manual `if/else` chains  | ✅ `handleError()` with discriminated unions |
+| **Error Properties**   | ❌ Must check/cast manually | ✅ TypeScript knows exact properties         |
+| **Consistency**        | ❌ Varies by error type     | ✅ Same shape for same error types           |
+| **Effect Integration** | ❌ Doesn't work with Effect | ✅ Native Effect error types                 |
+| **Code Clarity**       | ❌ Verbose error checking   | ✅ Clean, declarative error handling         |
+| **Maintainability**    | ❌ Error handling scattered | ✅ Centralized error mapping                 |
 
 ### Complete Example: End-to-End Error Flow
 
@@ -460,17 +470,17 @@ NotFoundError {
 export function runEffectQuery<T, E>(effect: Effect.Effect<T, E>): () => Promise<T> {
   return async () => {
     const exit = await Effect.runPromiseExit(effect)
-    
+
     if (Exit.isSuccess(exit)) {
       return exit.value
     }
-    
+
     // Extract typed error and throw it
     const cause = exit.cause
     if (Cause.isFailType(cause)) {
-      throw cause.error  // ← NotFoundError is thrown (not wrapped!)
+      throw cause.error // ← NotFoundError is thrown (not wrapped!)
     }
-    
+
     throw new Error(Cause.pretty(cause))
   }
 }
@@ -498,18 +508,18 @@ NotFoundError {
 ```typescript
 const errorMsg = computed(() => {
   if (!query.error.value) return null
-  
+
   // Type-safe pattern matching!
   return handleError(query.error.value, {
     NotFoundError: (e) => `Contract "${e.id}" not found`,
     // ↑ TypeScript knows e.id exists!
-    
+
     NetworkError: (e) => `Network error: ${e.message}`,
     // ↑ TypeScript knows e.message exists!
-    
+
     UnauthorizedError: () => 'Please log in to view this contract',
-    
-    default: errorMessage,  // Fallback for other errors
+
+    default: errorMessage, // Fallback for other errors
   })
 })
 
@@ -527,7 +537,7 @@ const errorMsg = computed(() => {
 </template>
 
 <script setup lang="ts">
-const { contract, isLoading, errorMessage } = useContract('123')
+  const { contract, isLoading, errorMessage } = useContract('123')
 </script>
 ```
 
@@ -828,16 +838,16 @@ entities/location/
 
 ## Function Reference
 
-| Function            | Purpose                               | Example                                                      |
-| ------------------- | ------------------------------------- | ------------------------------------------------------------ |
-| `runEffect`         | Run Effect as Promise (direct exec)   | `const contract = await runEffect(ContractApi.get(id))`      |
-| `runEffectQuery`    | Convert Effect to TanStack Query fn   | `queryFn: runEffectQuery(ContractApi.list())`                |
-| `runEffectMutation` | Convert Effect fn to mutation fn      | `mutationFn: runEffectMutation((data) => ContractApi.create(data))` |
-| `toApiError`        | Map HTTP errors to typed Effect errors | `catch: (error) => toApiError(error, 'contract', id)`        |
-| `handleError`       | Pattern match on errors               | `handleError(error, { NetworkError: (e) => ... })`           |
-| `errorMessage`      | Convert error to user-friendly string | `errorMessage(error)`                                        |
-| `isApiError`        | Type guard for ApiError               | `if (isApiError(error)) { ... }`                             |
-| `getErrorTag`        | Get error tag safely                  | `getErrorTag(error) // 'NotFoundError' \| undefined`         |
+| Function            | Purpose                                | Example                                                             |
+| ------------------- | -------------------------------------- | ------------------------------------------------------------------- |
+| `runEffect`         | Run Effect as Promise (direct exec)    | `const contract = await runEffect(ContractApi.get(id))`             |
+| `runEffectQuery`    | Convert Effect to TanStack Query fn    | `queryFn: runEffectQuery(ContractApi.list())`                       |
+| `runEffectMutation` | Convert Effect fn to mutation fn       | `mutationFn: runEffectMutation((data) => ContractApi.create(data))` |
+| `toApiError`        | Map HTTP errors to typed Effect errors | `catch: (error) => toApiError(error, 'contract', id)`               |
+| `handleError`       | Pattern match on errors                | `handleError(error, { NetworkError: (e) => ... })`                  |
+| `errorMessage`      | Convert error to user-friendly string  | `errorMessage(error)`                                               |
+| `isApiError`        | Type guard for ApiError                | `if (isApiError(error)) { ... }`                                    |
+| `getErrorTag`       | Get error tag safely                   | `getErrorTag(error) // 'NotFoundError' \| undefined`                |
 
 ## Official Effect Patterns Used
 

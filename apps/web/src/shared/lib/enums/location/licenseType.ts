@@ -1,6 +1,6 @@
+import { LocationLicenseType } from '@/entities/location/model/location'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
-import { LocationLicenseType } from '@/entities/location/model/location'
 
 class LocationLicenseTypeController extends EnumController<LocationLicenseType> {
   choices = [
@@ -15,4 +15,3 @@ export const locationLicenseTypeController = new LocationLicenseTypeController()
 
 // Auto-register on module load
 enumRegistry.register('locationLicenseType', locationLicenseTypeController)
-
