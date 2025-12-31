@@ -5,29 +5,12 @@
  * These transformations mimic what the BFF would do server-side.
  */
 
-import type {
-  Contract,
-  ContractListing,
-  ContractPerson,
-  ContractPersonRole,
-  Sale,
-} from '../model/contract'
+import type { ApiError } from '@facts/effect'
+import type { Contract, ContractListing, ContractPerson, Sale } from '../model/contract'
 import type { ContractPersonFormValues } from '../model/contractSchema'
-import { NeedType, SaleStatus, SaleType } from '../model/contract'
-
-// =============================================================================
-// ID Generation
-// =============================================================================
-
-/**
- * Generate a temporary ID for immediate use
- * Uses "0" to match legacy app pattern - backend will CREATE new entities
- * These IDs are replaced by backend-generated IDs on save
- * @param _prefix - Optional prefix (ignored, kept for compatibility)
- */
-export function generateId(_prefix?: string): string {
-  return '0'
-}
+import { Effect } from 'effect'
+import { nextId } from '@/shared/api'
+import { ContractPersonRole, NeedType, SaleStatus, SaleType } from '../model/contract'
 
 // =============================================================================
 // Contract Number Generation
@@ -75,38 +58,43 @@ export function generateContractNumber(
 
 /**
  * Convert form person data to ContractPerson entity
+ * Assigns IDs using nextId() - matches legacy app pattern
+ * Form data already has the correct Name structure, we just assign IDs
+ *
+ * @param formData - Person form data (already has Name structure)
+ * @param contractId - Contract ID to associate person with
+ * @param role - ContractPersonRole enum value
  */
 export function formPersonToPerson(
   formData: ContractPersonFormValues,
   contractId: string,
-  roles: ContractPersonRole[],
-): ContractPerson {
-  const now = new Date().toISOString()
-  return {
-    id: generateId(),
-    contractId,
-    nameId: generateId(), // Temporary ID - backend will assign proper ID on save
-    roles,
-    addedAfterContractExecution: formData.addedAfterContractExecution ?? false,
-    firstName: formData.firstName,
-    middleName: formData.middleName,
-    lastName: formData.lastName,
-    prefix: formData.prefix,
-    suffix: formData.suffix,
-    nickname: formData.nickname,
-    companyName: formData.companyName,
-    phone: formData.phone,
-    email: formData.email,
-    address: formData.address,
-    dateOfBirth: formData.dateOfBirth,
-    dateOfDeath: formData.dateOfDeath,
-    nationalIdentifier: formData.nationalIdentifier,
-    driversLicense: formData.driversLicense,
-    driversLicenseState: formData.driversLicenseState,
-    isVeteran: formData.isVeteran,
-    dateCreated: now,
-    dateLastModified: now,
-  }
+  role: ContractPersonRole,
+): Effect.Effect<ContractPerson, ApiError> {
+  return Effect.gen(function* () {
+    const now = new Date().toISOString()
+    const id = yield* nextId()
+    const nameId = formData.nameId || (yield* nextId())
+
+    // Assign ID to name if not already set (legacy pattern: check for "0" or missing)
+    const name = { ...formData.name }
+    if (!name.id || name.id === '0') {
+      name.id = nameId
+    }
+
+    return {
+      id,
+      contractId,
+      nameId,
+      roles: role,
+      addedAfterContractExecution: formData.addedAfterContractExecution ?? false,
+      name: name as ContractPerson['name'], // Form data already has correct structure
+      conversion: formData.conversion ?? null,
+      conversionId: formData.conversionId ?? null,
+      conversionSource: formData.conversionSource ?? null,
+      dateCreated: now,
+      dateLastModified: now,
+    }
+  })
 }
 
 // =============================================================================
@@ -124,8 +112,10 @@ export function contractToListing(
 ): ContractListing {
   // Find people for this contract
   const people = allPeople.filter((p) => p.contractId === contract.id)
-  const primaryBuyer = people.find((p) => p.roles.includes('primary_buyer'))
-  const primaryBeneficiary = people.find((p) => p.roles.includes('primary_beneficiary'))
+  const primaryBuyer = people.find((p) => (p.roles & ContractPersonRole.PRIMARY_BUYER) !== 0)
+  const primaryBeneficiary = people.find(
+    (p) => (p.roles & ContractPersonRole.PRIMARY_BENEFICIARY) !== 0,
+  )
 
   // Find primary sale for this contract
   const sales = allSales.filter((s) => s.contractId === contract.id)
@@ -137,15 +127,15 @@ export function contractToListing(
     prePrintedContractNumber: contract.prePrintedContractNumber,
     locationId: contract.locationId,
     needType: contract.needType,
-    saleStatus: (primarySale?.saleStatus as SaleStatus) || SaleStatus.DRAFT,
+    contractStatus: primarySale?.saleStatus ?? SaleStatus.DRAFT,
     isCancelled: contract.isCancelled,
     dateExecuted: contract.dateExecuted,
     dateSigned: contract.dateSigned,
     primaryBuyerName: primaryBuyer
-      ? `${primaryBuyer.firstName} ${primaryBuyer.lastName}`.trim()
+      ? `${primaryBuyer.name.first} ${primaryBuyer.name.last}`.trim()
       : '',
     primaryBeneficiaryName: primaryBeneficiary
-      ? `${primaryBeneficiary.firstName} ${primaryBeneficiary.lastName}`.trim()
+      ? `${primaryBeneficiary.name.first} ${primaryBeneficiary.name.last}`.trim()
       : '',
     salesPersonName: contract.salesPersonName,
     grandTotal: contract.grandTotal,

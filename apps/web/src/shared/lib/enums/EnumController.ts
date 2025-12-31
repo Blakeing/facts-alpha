@@ -19,8 +19,8 @@ export interface EnumChoice<TEnum extends number = number> {
  *
  * @example
  * ```typescript
- * // Get label for display
- * const label = saleStatusController.getLabel(SaleStatus.DRAFT);
+ * // Get description for display (legacy-compatible)
+ * const label = saleStatusController.getDescription(SaleStatus.DRAFT);
  *
  * // Use in select component
  * <FEnumSelect :controller="saleStatusController" v-model="status" />
@@ -48,11 +48,12 @@ export abstract class EnumController<TEnum extends number = number> {
   }
 
   /**
-   * Get display label by enum value
-   * @param value - Numeric enum value
+   * Get description by enum value (legacy-compatible method name)
+   * @param id - Numeric enum value
    * @param missing - Default label if not found
    */
-  getLabel(value: TEnum, missing = 'Unknown'): string {
-    return this.choices.find((c) => c.id === value)?.name ?? missing
+  getDescription(id: TEnum, missing = 'Unknown'): string {
+    return this.choices.find((c) => c.id === id)?.name ?? missing
   }
+
 }

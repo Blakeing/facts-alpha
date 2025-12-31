@@ -20,11 +20,21 @@ export {
 } from './model/nameHelpers'
 
 export {
+  type NameAddressFormValues,
+  nameAddressSchema,
+  type NameEmailFormValues,
+  nameEmailSchema,
+  type NameFormValues,
+  type NamePhoneFormValues,
+  namePhoneSchema,
+  nameSchema,
+} from './model/nameSchema'
+
+export {
   createEmptyAddress,
   createEmptyEmail,
+  createEmptyName,
   createEmptyPhone,
-  deepCopyName,
-  ensureNameArrays,
 } from './model/useNameModel'
 
 export * from './ui'

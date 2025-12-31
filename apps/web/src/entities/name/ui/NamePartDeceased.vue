@@ -3,7 +3,7 @@
     <v-row dense>
       <v-col>
         <FTextField
-          v-model="model.weight"
+          v-model="weight"
           field="weight"
           label="Weight"
           :readonly="readonly"
@@ -12,7 +12,7 @@
       </v-col>
       <v-col>
         <FTextField
-          v-model="model.condition"
+          v-model="condition"
           field="condition"
           label="Condition"
           :readonly="readonly"
@@ -24,10 +24,16 @@
 
 <script lang="ts" setup>
   import type { Name } from '../model/name'
+  import { toRef } from 'vue'
   import { FTextField } from '@/shared/ui'
 
-  defineProps<{
+  const props = defineProps<{
     model: Name
     readonly?: boolean
   }>()
+
+  // Use toRef for direct reactive mutation
+  // This works because edit contexts pass cloned models that can be mutated
+  const weight = toRef(props.model, 'weight')
+  const condition = toRef(props.model, 'condition')
 </script>

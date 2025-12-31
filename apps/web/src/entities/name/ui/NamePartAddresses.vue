@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -- Working copy pattern: model is mutable -->
 <template>
   <div>
     <NamePartGroup label="Physical Address">
@@ -16,16 +17,17 @@
     <v-row dense>
       <v-col cols="12">
         <v-switch
-          v-model="mailingAddressSameAsPhysicalLocal"
+          v-model="model.mailingAddressSameAsPhysical"
           color="primary"
           density="compact"
           :disabled="readonly"
           hide-details
           label="Mailing address same as physical"
+          @update:model-value="handleMailingToggle"
         />
       </v-col>
     </v-row>
-    <template v-if="!mailingAddressSameAsPhysicalLocal">
+    <template v-if="!model.mailingAddressSameAsPhysical">
       <NamePartGroup label="Mailing Address">
         <NamePartAddress
           v-if="mailingAddress"
@@ -42,23 +44,78 @@
     </template>
   </div>
 </template>
+<!-- eslint-enable vue/no-mutating-props -->
 
 <script lang="ts" setup>
   import type { Name, NameAddress } from '../model/name'
-  import { computed, ref, watch } from 'vue'
+  import { computed, onMounted } from 'vue'
   import { AddressType } from '../model/name'
   import NamePartAddress from './NamePartAddress.vue'
   import NamePartGroup from './NamePartGroup.vue'
 
+  /**
+   * NamePartAddresses - Manages physical and mailing addresses
+   *
+   * WORKING COPY PATTERN:
+   * This component receives a mutable Name object from NamePanel.
+   * Direct v-model binding and array mutation is intentional.
+   * Address initialization happens once on mount.
+   */
+
   const props = defineProps<{
-    model: Name
+    model: Name // Mutable working copy
     readonly?: boolean
   }>()
 
-  function createEmptyAddress(type: AddressType): NameAddress {
+  // Simple computed to find addresses
+  const physicalAddress = computed(() =>
+    props.model.addresses.find((a) => a.addressType === AddressType.PHYSICAL),
+  )
+
+  const mailingAddress = computed(() =>
+    props.model.addresses.find((a) => a.addressType === AddressType.MAILING),
+  )
+
+  // Initialize addresses on mount (one-time, simple, no watchers!)
+  onMounted(() => {
+    if (props.readonly) return
+
+    // Ensure physical address exists
+    if (!props.model.addresses.some((a) => a.addressType === AddressType.PHYSICAL)) {
+      // eslint-disable-next-line vue/no-mutating-props
+      props.model.addresses.push(createAddress(AddressType.PHYSICAL))
+    }
+
+    // Ensure mailing address exists if needed
+    if (
+      !props.model.mailingAddressSameAsPhysical &&
+      !props.model.addresses.some((a) => a.addressType === AddressType.MAILING)
+    ) {
+      // eslint-disable-next-line vue/no-mutating-props
+      props.model.addresses.push(createAddress(AddressType.MAILING))
+    }
+  })
+
+  function handleMailingToggle(sameAsPhysical: boolean | null = false) {
+    if (sameAsPhysical) {
+      // Remove mailing address
+      const idx = props.model.addresses.findIndex((a) => a.addressType === AddressType.MAILING)
+      // eslint-disable-next-line vue/no-mutating-props
+      if (idx !== -1) props.model.addresses.splice(idx, 1)
+    } else {
+      // Add mailing address if needed
+      if (!props.model.addresses.some((a) => a.addressType === AddressType.MAILING)) {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.model.addresses.push(createAddress(AddressType.MAILING))
+      }
+    }
+  }
+
+  function createAddress(type: AddressType): NameAddress {
     return {
       id: '0',
-      nameId: props.model?.id || '0',
+      nameId: props.model.id || '0',
+      addressType: type,
       address1: '',
       address2: '',
       city: '',
@@ -68,73 +125,8 @@
       country: 'USA',
       primary: true,
       active: true,
-      addressType: type,
       dateCreated: new Date().toISOString(),
       dateLastModified: new Date().toISOString(),
     }
   }
-
-  // Local ref for switch - synced with model when editable
-  const mailingAddressSameAsPhysicalLocal = ref(props.model?.mailingAddressSameAsPhysical ?? false)
-
-  // Sync from model
-  watch(
-    () => props.model?.mailingAddressSameAsPhysical,
-    (val) => {
-      mailingAddressSameAsPhysicalLocal.value = val ?? false
-    },
-    { immediate: true },
-  )
-
-  // Sync to model (only when not readonly)
-  watch(mailingAddressSameAsPhysicalLocal, (same) => {
-    if (props.readonly || !props.model) return
-    props.model.mailingAddressSameAsPhysical = same
-
-    // Manage mailing address based on toggle
-    if (same) {
-      // Remove mailing address
-      const idx =
-        props.model.addresses?.findIndex((a) => a.addressType === AddressType.MAILING) ?? -1
-      if (idx !== -1) {
-        props.model.addresses.splice(idx, 1)
-      }
-    } else if (!mailingAddress.value) {
-      // Create mailing address if needed
-      if (!props.model.addresses) props.model.addresses = []
-      props.model.addresses.push(createEmptyAddress(AddressType.MAILING))
-    }
-  })
-
-  // Physical address - just find, create only when editing
-  const physicalAddress = computed(() => {
-    const addresses = props.model?.addresses ?? []
-    let addr = addresses.find((a) => a.addressType === AddressType.PHYSICAL)
-
-    // Only create if not readonly and doesn't exist
-    if (!addr && !props.readonly && props.model) {
-      addr = createEmptyAddress(AddressType.PHYSICAL)
-      if (!props.model.addresses) props.model.addresses = []
-      props.model.addresses.push(addr)
-    }
-
-    return addr || null
-  })
-
-  // Mailing address - just find, create only when editing and needed
-  const mailingAddress = computed(() => {
-    if (mailingAddressSameAsPhysicalLocal.value) return null
-
-    const addresses = props.model?.addresses ?? []
-    let addr = addresses.find((a) => a.addressType === AddressType.MAILING)
-
-    // Only create if not readonly and doesn't exist
-    if (!addr && !props.readonly && props.model) {
-      addr = createEmptyAddress(AddressType.MAILING)
-      if (!props.model.addresses) props.model.addresses = []
-      props.model.addresses.push(addr)
-    }
-
-    return addr || null
-  })
 </script>

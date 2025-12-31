@@ -101,8 +101,8 @@
     readonly?: boolean
   }>()
 
-  // Safe accessor for emailAddresses array
-  const emails = computed(() => props.model?.emailAddresses ?? [])
+  // Email addresses array (guaranteed to exist by schema)
+  const emails = computed(() => props.model.emailAddresses)
 
   const headers = [
     { title: 'Email Address', key: 'address', align: 'start' },
@@ -112,9 +112,9 @@
 
   function removeEmail(email: NameEmail) {
     if (!props.model?.emailAddresses) return
-    const idx = props.model.emailAddresses.indexOf(email)
-    if (idx !== -1) {
-      props.model.emailAddresses.splice(idx, 1)
+    const emailIndex = props.model.emailAddresses.indexOf(email)
+    if (emailIndex !== -1) {
+      props.model.emailAddresses.splice(emailIndex, 1)
     }
   }
 </script>

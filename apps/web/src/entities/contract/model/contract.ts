@@ -66,15 +66,15 @@ export enum SaleAdjustmentType {
 /**
  * Contract Person Role - Flags enum for person's role(s) on contract
  * Backend: ContractPersonRole (flags: Person=0, PrimaryBuyer=1, CoBuyer=2, etc.)
+ * This is a bitwise flags enum - multiple roles can be combined using | operator
  */
-export const ContractPersonRole = {
-  PERSON: 'person',
-  PRIMARY_BUYER: 'primary_buyer',
-  CO_BUYER: 'co_buyer',
-  PRIMARY_BENEFICIARY: 'primary_beneficiary',
-  ADDITIONAL_BENEFICIARY: 'additional_beneficiary',
-} as const
-export type ContractPersonRole = (typeof ContractPersonRole)[keyof typeof ContractPersonRole]
+export enum ContractPersonRole {
+  PERSON = 0,
+  PRIMARY_BUYER = 1,
+  CO_BUYER = 2,
+  PRIMARY_BENEFICIARY = 4,
+  ADDITIONAL_BENEFICIARY = 8,
+}
 
 /**
  * At-Need Type - How an at-need contract was initiated
@@ -99,35 +99,36 @@ export enum PreNeedFundingType {
 /**
  * Financing Status
  * Backend: ContractFinancingStatus (Pending=0, Calculated=1)
+ * Matches BFF exactly - numeric enum
  */
-export const FinancingStatus = {
-  PENDING: 'pending',
-  CALCULATED: 'calculated',
-} as const
-export type FinancingStatus = (typeof FinancingStatus)[keyof typeof FinancingStatus]
+export enum FinancingStatus {
+  PENDING = 0,
+  CALCULATED = 1,
+}
 
 /**
  * Late Fee Type
  * Backend: LateFeeType (None=0, FixedAmount=1, PercentageOfPaymentAmount=2)
+ * Matches BFF exactly - numeric enum
  */
-export const LateFeeType = {
-  NONE: 'none',
-  FIXED_AMOUNT: 'fixed_amount',
-  PERCENTAGE_OF_PAYMENT: 'percentage_of_payment',
-} as const
-export type LateFeeType = (typeof LateFeeType)[keyof typeof LateFeeType]
+export enum LateFeeType {
+  NONE = 0,
+  FIXED_AMOUNT = 1,
+  PERCENTAGE_OF_PAYMENT = 2,
+}
 
 /**
  * Item Type - Category of sale item
- * Backend: ItemType
+ * Backend: ItemType (Service=0, Merchandise=1, CashAdvance=2, Property=3, Other=4)
+ * Matches BFF exactly - numeric enum
  */
-export const ItemType = {
-  SERVICE: 'service',
-  MERCHANDISE: 'merchandise',
-  CASH_ADVANCE: 'cash_advance',
-  PROPERTY: 'property',
-} as const
-export type ItemType = (typeof ItemType)[keyof typeof ItemType]
+export enum ItemType {
+  SERVICE = 0,
+  MERCHANDISE = 1,
+  CASH_ADVANCE = 2,
+  PROPERTY = 3,
+  OTHER = 4,
+}
 
 /**
  * Payment Method
@@ -494,26 +495,10 @@ export interface ContractListing {
 }
 
 // =============================================================================
-// Enum Labels & Helpers
+// Enum Helpers
 // =============================================================================
 
-export const needTypeLabels: Record<NeedType, string> = {
-  [NeedType.AT_NEED]: 'At-Need',
-  [NeedType.PRE_NEED]: 'Pre-Need',
-}
-
-export const needTypeOptions = [
-  { title: 'At-Need', value: NeedType.AT_NEED },
-  { title: 'Pre-Need', value: NeedType.PRE_NEED },
-]
-
-export const saleStatusLabels: Record<SaleStatus, string> = {
-  [SaleStatus.DRAFT]: 'Draft',
-  [SaleStatus.EXECUTED]: 'Executed',
-  [SaleStatus.FINALIZED]: 'Finalized',
-  [SaleStatus.VOID]: 'Void',
-}
-
+// Sale status colors (not provided by controller)
 export const saleStatusColors: Record<SaleStatus, string> = {
   [SaleStatus.DRAFT]: 'grey',
   [SaleStatus.EXECUTED]: 'warning',
@@ -521,109 +506,15 @@ export const saleStatusColors: Record<SaleStatus, string> = {
   [SaleStatus.VOID]: 'error',
 }
 
-export const saleStatusOptions = [
-  { title: 'Draft', value: SaleStatus.DRAFT },
-  { title: 'Executed', value: SaleStatus.EXECUTED },
-  { title: 'Finalized', value: SaleStatus.FINALIZED },
-  { title: 'Void', value: SaleStatus.VOID },
-]
-
-export const atNeedTypeLabels: Record<AtNeedType, string> = {
-  [AtNeedType.WALK_IN]: 'Walk-In',
-  [AtNeedType.PN_MATURITY]: 'Pre-Need Maturity',
-}
-
-export const atNeedTypeOptions = [
-  { title: 'Walk-In', value: AtNeedType.WALK_IN },
-  { title: 'Pre-Need Maturity', value: AtNeedType.PN_MATURITY },
-]
-
-export const preNeedFundingTypeLabels: Record<PreNeedFundingType, string> = {
-  [PreNeedFundingType.TRUST]: 'Trust',
-  [PreNeedFundingType.INSURANCE]: 'Insurance',
-}
-
-export const preNeedFundingTypeOptions = [
-  { title: 'Trust', value: PreNeedFundingType.TRUST },
-  { title: 'Insurance', value: PreNeedFundingType.INSURANCE },
-]
-
-export const contractPersonRoleLabels: Record<ContractPersonRole, string> = {
-  [ContractPersonRole.PERSON]: 'Person',
-  [ContractPersonRole.PRIMARY_BUYER]: 'Primary Buyer',
-  [ContractPersonRole.CO_BUYER]: 'Co-Buyer',
-  [ContractPersonRole.PRIMARY_BENEFICIARY]: 'Primary Beneficiary',
-  [ContractPersonRole.ADDITIONAL_BENEFICIARY]: 'Additional Beneficiary',
-}
-
-export const itemTypeLabels: Record<ItemType, string> = {
-  [ItemType.SERVICE]: 'Service',
-  [ItemType.MERCHANDISE]: 'Merchandise',
-  [ItemType.CASH_ADVANCE]: 'Cash Advance',
-  [ItemType.PROPERTY]: 'Property',
-}
-
-export const itemTypeOptions = [
-  { title: 'Service', value: ItemType.SERVICE },
-  { title: 'Merchandise', value: ItemType.MERCHANDISE },
-  { title: 'Cash Advance', value: ItemType.CASH_ADVANCE },
-  { title: 'Property', value: ItemType.PROPERTY },
-]
-
-export const paymentMethodLabels: Record<PaymentMethod, string> = {
-  [PaymentMethod.CASH]: 'Cash',
-  [PaymentMethod.CHECK]: 'Check',
-  [PaymentMethod.CREDIT_CARD]: 'Credit Card',
-  [PaymentMethod.ACH]: 'ACH',
-  [PaymentMethod.INSURANCE]: 'Insurance',
-  [PaymentMethod.FINANCING]: 'Financing',
-  [PaymentMethod.OTHER]: 'Other',
-}
-
-export const paymentMethodOptions = [
-  { title: 'Cash', value: PaymentMethod.CASH },
-  { title: 'Check', value: PaymentMethod.CHECK },
-  { title: 'Credit Card', value: PaymentMethod.CREDIT_CARD },
-  { title: 'ACH', value: PaymentMethod.ACH },
-  { title: 'Insurance', value: PaymentMethod.INSURANCE },
-  { title: 'Financing', value: PaymentMethod.FINANCING },
-  { title: 'Other', value: PaymentMethod.OTHER },
-]
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-export function getNeedTypeLabel(type: NeedType): string {
-  return needTypeLabels[type] || String(type)
-}
-
-export function getSaleStatusLabel(status: SaleStatus): string {
-  return saleStatusLabels[status] || String(status)
-}
-
 export function getSaleStatusColor(status: SaleStatus): string {
   return saleStatusColors[status] || 'grey'
-}
-
-export function getContractPersonRoleLabel(role: ContractPersonRole): string {
-  return contractPersonRoleLabels[role] || role
-}
-
-export function getItemTypeLabel(type: ItemType): string {
-  return itemTypeLabels[type] || type
-}
-
-export function getPaymentMethodLabel(method: PaymentMethod): string {
-  return paymentMethodLabels[method] || method
 }
 
 /**
  * Get display name for a contract person
  */
 export function getContractPersonDisplayName(person: ContractPerson): string {
-  const parts = [person.firstName, person.middleName, person.lastName].filter(Boolean)
-  return parts.join(' ')
+  return [person.name.first, person.name.middle, person.name.last].filter(Boolean).join(' ')
 }
 
 /**
@@ -631,28 +522,13 @@ export function getContractPersonDisplayName(person: ContractPerson): string {
  */
 /**
  * Check if a person has a specific role
- * Handles both:
- * - Array format: roles: ['primary_buyer'] or roles: [1]
- * - Flags format: roles: 1 (BFF returns this)
+ * Uses bitwise flags: roles is a number where each bit represents a role
+ * BFF: PrimaryBuyer = 1, CoBuyer = 2, PrimaryBeneficiary = 4, AdditionalBeneficiary = 8
  */
-function hasRole(person: ContractPerson, roleValue: number, roleString: string): boolean {
+function hasRole(person: ContractPerson, role: ContractPersonRole): boolean {
   const roles = person.roles
-  if (!roles && roles !== 0) return false
-
-  // If roles is a number (flags enum from BFF), use bitwise check
-  if (typeof roles === 'number') {
-    return (roles & roleValue) !== 0
-  }
-
-  // If roles is an array, check for both string and numeric values
-  if (Array.isArray(roles)) {
-    return (
-      roles.includes(roleString as ContractPersonRole) ||
-      roles.includes(roleValue as unknown as ContractPersonRole)
-    )
-  }
-
-  return false
+  if (roles === undefined || roles === null) return false
+  return (roles & role) !== 0
 }
 
 /**
@@ -662,10 +538,10 @@ function hasRole(person: ContractPerson, roleValue: number, roleString: string):
 export function getPrimaryBuyer(people: ContractPerson[]): ContractPerson | undefined {
   console.log(
     '[getPrimaryBuyer] People:',
-    people?.map((p) => ({ name: p.firstName, roles: p.roles, rolesType: typeof p.roles })),
+    people?.map((p) => ({ name: p.name.first, roles: p.roles, rolesType: typeof p.roles })),
   )
-  const found = people.find((p) => hasRole(p, 1, ContractPersonRole.PRIMARY_BUYER))
-  console.log('[getPrimaryBuyer] Found:', found?.firstName)
+  const found = people.find((p) => hasRole(p, ContractPersonRole.PRIMARY_BUYER))
+  console.log('[getPrimaryBuyer] Found:', found?.name.first)
   return found
 }
 
@@ -674,7 +550,7 @@ export function getPrimaryBuyer(people: ContractPerson[]): ContractPerson | unde
  * BFF: PrimaryBeneficiary = 4 (flags enum)
  */
 export function getPrimaryBeneficiary(people: ContractPerson[]): ContractPerson | undefined {
-  return people.find((p) => hasRole(p, 4, ContractPersonRole.PRIMARY_BENEFICIARY))
+  return people.find((p) => hasRole(p, ContractPersonRole.PRIMARY_BENEFICIARY))
 }
 
 /**
@@ -682,7 +558,7 @@ export function getPrimaryBeneficiary(people: ContractPerson[]): ContractPerson 
  * BFF: CoBuyer = 2 (flags enum)
  */
 export function getCoBuyers(people: ContractPerson[]): ContractPerson[] {
-  return people.filter((p) => hasRole(p, 2, ContractPersonRole.CO_BUYER))
+  return people.filter((p) => hasRole(p, ContractPersonRole.CO_BUYER))
 }
 
 /**
@@ -741,6 +617,14 @@ export interface ContractNameRole {
 }
 
 /**
+ * Contract Person with nameRoles - Used in save models
+ * Extends ContractPerson to include nameRoles for save/load operations
+ */
+export interface ContractPersonWithRoles extends ContractPerson {
+  nameRoles?: ContractNameRole[]
+}
+
+/**
  * Comment Feed - For contract comments/notes
  */
 export interface CommentFeed {
@@ -786,7 +670,7 @@ export interface ContractSaveModel {
   notes?: string
 
   // Related entities (nested)
-  people: ContractPerson[]
+  people: ContractPersonWithRoles[]
   sales: Sale[]
   financing?: ContractFinancing
 

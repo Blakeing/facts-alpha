@@ -113,7 +113,7 @@
           <FSelect
             v-model="newItem.itemType"
             label="Item Type"
-            :options="itemTypeOptions"
+            :options="itemTypeController.selectItems"
           />
         </v-col>
         <v-col
@@ -147,7 +147,8 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue'
-  import { itemTypeOptions, type SaleItem } from '@/entities/contract'
+  import { type SaleItem, ItemType } from '@/entities/contract'
+  import { itemTypeController } from '@/shared/lib/enums/contract'
   import { formatCurrency } from '@/shared/lib'
   import {
     FButton,
@@ -162,7 +163,7 @@
   interface ItemFormData {
     sku: string
     description: string
-    itemType: 'service' | 'merchandise' | 'cash_advance' | 'property'
+    itemType: ItemType
     quantity: number
     unitPrice: number
   }
@@ -193,7 +194,7 @@
     {
       key: 'itemType',
       title: 'Type',
-      valueFormatter: (p) => getItemTypeLabel(p.value as string),
+      valueFormatter: (p) => itemTypeController.getDescription(p.value as number),
     },
     { key: 'quantity', title: 'Qty', align: 'center', width: 80 },
     {
@@ -216,21 +217,15 @@
   const defaultItem: ItemFormData = {
     sku: '',
     description: '',
-    itemType: 'service',
+    itemType: ItemType.SERVICE,
     quantity: 1,
     unitPrice: 0,
   }
 
   const newItem = ref<ItemFormData>({ ...defaultItem })
 
-  function getItemTypeLabel(itemType: string): string {
-    const labels: Record<string, string> = {
-      service: 'Service',
-      merchandise: 'Merchandise',
-      cash_advance: 'Cash Advance',
-      property: 'Property',
-    }
-    return labels[itemType] || itemType
+  function getItemTypeLabel(itemType: number): string {
+    return itemTypeController.getDescription(itemType)
   }
 
   function getItemDiscountTotal(item: SaleItem): number {

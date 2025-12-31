@@ -10,28 +10,38 @@
           <v-row dense>
             <v-col cols="12">
               <FSelect
-                v-model="model.needType"
+                v-model="session.needType.value"
                 field="needType"
                 label="Need Type"
-                :options="needTypeOptions"
-                :readonly="!isEditable"
+                :options="needTypeController.selectItems"
+                :readonly="!session.isEditable.value"
               />
             </v-col>
             <v-col cols="12">
               <FDatePicker
-                v-model="model.dateSigned"
+                v-model="session.saleDate.value"
+                field="saleDate"
+                :label="saleDateLabel"
+                :readonly="!session.hasDraftStatus.value"
+                required
+              />
+            </v-col>
+            <v-col cols="12">
+              <FDatePicker
+                v-model="session.contractDate.value"
                 field="dateSigned"
-                label="Date Signed"
-                :readonly="!isEditable"
+                label="Contract/Sign Date"
+                :readonly="!session.hasDraftStatus.value"
+                required
               />
             </v-col>
             <v-col cols="12">
               <FTextField
-                v-model="model.prePrintedContractNumber"
+                v-model="session.prePrintedContractNumber.value"
                 field="prePrintedContractNumber"
                 label="Pre-Printed Contract #"
                 placeholder="Optional"
-                :readonly="!isEditable"
+                :readonly="!session.isEditable.value"
               />
             </v-col>
           </v-row>
@@ -40,7 +50,7 @@
 
       <!-- Financials (read-only summary) -->
       <v-col
-        v-if="contract"
+        v-if="contract || session.financials.value"
         cols="12"
         md="6"
       >
@@ -52,21 +62,21 @@
             <v-list-item>
               <v-list-item-title>Subtotal</v-list-item-title>
               <template #append>
-                <span class="text-body-1">{{ formatCurrency(contract.subtotal) }}</span>
+                <span class="text-body-1">{{ formatCurrency(financials.subtotal) }}</span>
               </template>
             </v-list-item>
             <v-list-item>
               <v-list-item-title>Discounts</v-list-item-title>
               <template #append>
                 <span class="text-body-1 text-success">
-                  -{{ formatCurrency(contract.discountTotal) }}
+                  -{{ formatCurrency(financials.discountTotal) }}
                 </span>
               </template>
             </v-list-item>
             <v-list-item>
               <v-list-item-title>Tax</v-list-item-title>
               <template #append>
-                <span class="text-body-1">{{ formatCurrency(contract.taxTotal) }}</span>
+                <span class="text-body-1">{{ formatCurrency(financials.taxTotal) }}</span>
               </template>
             </v-list-item>
             <v-divider class="my-2" />
@@ -74,7 +84,7 @@
               <v-list-item-title class="font-weight-bold">Grand Total</v-list-item-title>
               <template #append>
                 <span class="text-body-1 font-weight-bold">
-                  {{ formatCurrency(contract.grandTotal) }}
+                  {{ formatCurrency(financials.grandTotal) }}
                 </span>
               </template>
             </v-list-item>
@@ -82,7 +92,7 @@
               <v-list-item-title>Amount Paid</v-list-item-title>
               <template #append>
                 <span class="text-body-1 text-success">
-                  {{ formatCurrency(contract.amountPaid) }}
+                  {{ formatCurrency(financials.amountPaid) }}
                 </span>
               </template>
             </v-list-item>
@@ -91,28 +101,13 @@
               <template #append>
                 <span
                   class="text-body-1 font-weight-bold"
-                  :class="{ 'text-error': contract.balanceDue > 0 }"
+                  :class="{ 'text-error': financials.balanceDue > 0 }"
                 >
-                  {{ formatCurrency(contract.balanceDue) }}
+                  {{ formatCurrency(financials.balanceDue) }}
                 </span>
               </template>
             </v-list-item>
           </v-list>
-        </FCard>
-      </v-col>
-    </v-row>
-
-    <!-- Notes -->
-    <v-row>
-      <v-col cols="12">
-        <FCard title="Notes">
-          <FTextarea
-            v-model="model.notes"
-            field="notes"
-            placeholder="Add any notes about this contract..."
-            :readonly="!isEditable"
-            :rows="4"
-          />
         </FCard>
       </v-col>
     </v-row>
@@ -121,9 +116,10 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
-  import { type ContractFormValues, needTypeOptions } from '@/entities/contract'
+  import { NeedType, useSession } from '@/entities/contract'
   import { formatCurrency } from '@/shared/lib'
-  import { FCard, FDatePicker, FSelect, FTextarea, FTextField } from '@/shared/ui'
+  import { needTypeController } from '@/shared/lib/enums/contract'
+  import { FCard, FDatePicker, FSelect, FTextField } from '@/shared/ui'
 
   /**
    * Contract display data for financial summary
@@ -137,18 +133,22 @@
     balanceDue: number
   }
 
-  /**
-   * Uses Vue 3.4+ defineModel for proper two-way binding.
-   * Parent uses: <ContractGeneral v-model="model" />
-   */
-  const model = defineModel<ContractFormValues>({ required: true })
-
-  defineProps<{
+  const props = defineProps<{
     /** Contract data for financial summary (read-only) */
     contract?: ContractDisplayData | null
-    /** Whether the contract is editable (draft status) */
-    isEditable?: boolean
   }>()
+
+  // Inject session from provide/inject
+  const session = useSession()
+
+  // Sale date label changes based on need type (like legacy)
+  // Cemetery or Pre-Need = "Sale Date", Funeral At-Need = "Service Date"
+  const saleDateLabel = computed(() => {
+    return session.needType.value === NeedType.PRE_NEED ? 'Sale Date' : 'Service Date'
+  })
+
+  // Use session financials if contract prop not provided
+  const financials = computed(() => props.contract ?? session.financials.value)
 </script>
 
 <style scoped>

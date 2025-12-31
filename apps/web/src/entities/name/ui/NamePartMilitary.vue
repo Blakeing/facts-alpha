@@ -16,7 +16,7 @@
         cols="6"
       >
         <FSelect
-          v-model="model.branchOfService"
+          v-model="branchOfService"
           clearable
           field="branchOfService"
           label="Branch Of Service"
@@ -42,11 +42,16 @@
   const isVeteran = computed({
     get: () => props.model.isVeteran,
     set: (val: boolean) => {
+      props.model.branchOfService = val ? props.model.branchOfService : BranchOfService.NONE
       props.model.isVeteran = val
-      if (!val) {
-        props.model.branchOfService = BranchOfService.NONE
-      }
     },
+  })
+
+  const branchOfService = computed({
+    get: () => props.model.branchOfService,
+    set: (value: BranchOfService) => {
+      props.model.branchOfService = value
+    }
   })
 
   const branchOfServiceOptions = [

@@ -8,35 +8,27 @@
  */
 
 import type { ContractPayment } from '../contract'
-import type { ContractSessionContext } from '../contractSessionContext'
-import { computed, ref } from 'vue'
+import type { ContractSession } from '../useContractSession'
+import { computed } from 'vue'
 import { PaymentMethod } from '../contract'
+import { createBaseHandler } from './createBaseHandler'
 
-export interface PaymentFormData {
-  date: string
-  method: PaymentMethod
-  amount: number
-  saleId?: string
-  reference?: string
-  checkNumber?: string
-  notes?: string
-}
+// PaymentFormData removed - using edit session pattern instead
 
-export function usePaymentsHandler(context: ContractSessionContext) {
+export function usePaymentsHandler(session: ContractSession) {
   // ==========================================================================
-  // State
+  // Base Handler - Common state and operations
   // ==========================================================================
 
-  const payments = ref<ContractPayment[]>([])
-  const isDirty = ref(false)
+  const base = createBaseHandler<ContractPayment>({ session })
 
   // ==========================================================================
   // Computed
   // ==========================================================================
 
-  const total = computed(() => payments.value.reduce((sum, p) => sum + p.amount, 0))
+  const total = computed(() => base.items.value.reduce((sum, p) => sum + p.amount, 0))
 
-  const paymentCount = computed(() => payments.value.length)
+  const paymentCount = computed(() => base.items.value.length)
 
   const paymentsByMethod = computed(() => {
     const grouped: Record<PaymentMethod, ContractPayment[]> = {
@@ -49,7 +41,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
       [PaymentMethod.OTHER]: [],
     }
 
-    for (const payment of payments.value) {
+    for (const payment of base.items.value) {
       if (grouped[payment.method]) {
         grouped[payment.method].push(payment)
       }
@@ -69,7 +61,7 @@ export function usePaymentsHandler(context: ContractSessionContext) {
       [PaymentMethod.OTHER]: 0,
     }
 
-    for (const payment of payments.value) {
+    for (const payment of base.items.value) {
       if (totals[payment.method] !== undefined) {
         totals[payment.method] += payment.amount
       }
@@ -85,24 +77,19 @@ export function usePaymentsHandler(context: ContractSessionContext) {
   /**
    * Add a new payment
    */
-  function addPayment(data: PaymentFormData): ContractPayment {
+  function addPayment(): ContractPayment {
     const now = new Date().toISOString()
     const newPayment: ContractPayment = {
       id: '0',
-      contractId: context.contractId.value,
-      saleId: data.saleId,
-      date: data.date,
-      method: data.method,
-      amount: data.amount,
-      reference: data.reference,
-      checkNumber: data.checkNumber,
-      notes: data.notes,
+      contractId: session.contractId.value || '',
+      date: now.split('T')[0] || now, // Today's date
+      method: PaymentMethod.CASH,
+      amount: 0,
       dateCreated: now,
       dateLastModified: now,
     }
 
-    payments.value.push(newPayment)
-    isDirty.value = true
+    base.addItem(newPayment)
     return newPayment
   }
 
@@ -110,97 +97,22 @@ export function usePaymentsHandler(context: ContractSessionContext) {
    * Remove a payment by ID
    */
   function removePayment(paymentId: string): boolean {
-    const index = payments.value.findIndex((p) => p.id === paymentId)
-    if (index === -1) return false
-
-    payments.value.splice(index, 1)
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Update payment amount
-   */
-  function updatePaymentAmount(paymentId: string, amount: number): boolean {
-    const payment = payments.value.find((p) => p.id === paymentId)
-    if (!payment) return false
-
-    payment.amount = amount
-    payment.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Update payment method
-   */
-  function updatePaymentMethod(paymentId: string, method: PaymentMethod): boolean {
-    const payment = payments.value.find((p) => p.id === paymentId)
-    if (!payment) return false
-
-    payment.method = method
-    payment.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Update payment reference
-   */
-  function updatePaymentReference(paymentId: string, reference: string): boolean {
-    const payment = payments.value.find((p) => p.id === paymentId)
-    if (!payment) return false
-
-    payment.reference = reference
-    payment.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Update payment check number
-   */
-  function updatePaymentCheckNumber(paymentId: string, checkNumber: string): boolean {
-    const payment = payments.value.find((p) => p.id === paymentId)
-    if (!payment) return false
-
-    payment.checkNumber = checkNumber
-    payment.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Update payment notes
-   */
-  function updatePaymentNotes(paymentId: string, notes: string): boolean {
-    const payment = payments.value.find((p) => p.id === paymentId)
-    if (!payment) return false
-
-    payment.notes = notes
-    payment.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Update payment date
-   */
-  function updatePaymentDate(paymentId: string, date: string): boolean {
-    const payment = payments.value.find((p) => p.id === paymentId)
-    if (!payment) return false
-
-    payment.date = date
-    payment.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
+    return base.removeById(paymentId)
   }
 
   /**
    * Get a payment by ID
    */
   function getPayment(paymentId: string): ContractPayment | undefined {
-    return payments.value.find((p) => p.id === paymentId)
+    return base.findById(paymentId)
+  }
+
+  /**
+   * Apply an updated payment to canonical state
+   * Finds the payment by ID and replaces it
+   */
+  function applyPaymentUpdate(payment: ContractPayment): boolean {
+    return base.applyUpdate(payment)
   }
 
   // ==========================================================================
@@ -209,32 +121,33 @@ export function usePaymentsHandler(context: ContractSessionContext) {
 
   /**
    * Apply payments from server data
+   *
+   * IMPORTANT: Deep clone server data to create mutable copies.
+   * Vue Query returns readonly reactive proxies that cannot be mutated directly.
    */
   function applyFromServer(serverPayments: ContractPayment[]) {
-    payments.value = serverPayments.map((payment) => ({ ...payment }))
-    isDirty.value = false
+    base.applyFromServer(serverPayments)
   }
 
   /**
    * Get current payments for saving
    */
   function getPayments(): ContractPayment[] {
-    return payments.value.map((payment) => ({ ...payment }))
+    return base.getAll()
   }
 
   /**
    * Mark payments as clean (after save)
    */
   function markClean() {
-    isDirty.value = false
+    base.markClean()
   }
 
   /**
    * Reset to empty state
    */
   function reset() {
-    payments.value = []
-    isDirty.value = false
+    base.reset()
   }
 
   // ==========================================================================
@@ -242,9 +155,9 @@ export function usePaymentsHandler(context: ContractSessionContext) {
   // ==========================================================================
 
   return {
-    // State (as computed for reactivity)
-    payments: computed(() => payments.value),
-    isDirty: computed(() => isDirty.value),
+    // State (from base handler)
+    payments: base.items,
+    isDirty: base.isDirty,
 
     // Computed
     total,
@@ -255,13 +168,8 @@ export function usePaymentsHandler(context: ContractSessionContext) {
     // Actions
     addPayment,
     removePayment,
-    updatePaymentAmount,
-    updatePaymentMethod,
-    updatePaymentReference,
-    updatePaymentCheckNumber,
-    updatePaymentNotes,
-    updatePaymentDate,
     getPayment,
+    applyPaymentUpdate,
 
     // Session lifecycle
     applyFromServer,

@@ -20,26 +20,32 @@
           lg="10"
           xl="8"
         >
-          <NamePanel
-            v-if="editModel"
-            :hide-company="hideCompany"
-            :hide-dates="hideDates"
-            :hide-deceased-info="hideDeceasedInfo"
-            :hide-demo="hideDemo"
-            :hide-email="hideEmail"
-            :hide-military="hideMilitary"
-            :hide-phone="hidePhone"
-            :hide-relationships="hideRelationships"
-            :hide-s-s-n="hideSSN"
-            :inverse-relations="inverseRelations"
-            :is-name-required="isNameRequired"
-            :model="editModel"
-            :name-part-readonly="!namePartEditable"
-            :people-list="peopleList"
-            :relations="relations"
-            :show-opt-out-marketing="showOptOutMarketing"
-            @set-relation="handleRelationSelected"
-          />
+          <FFormProvider
+            :get-error="getError"
+            :touch="touch"
+            :validate-if-touched="validateIfTouched"
+          >
+            <NamePanel
+              v-if="model"
+              :hide-company="hideCompany"
+              :hide-dates="hideDates"
+              :hide-deceased-info="hideDeceasedInfo"
+              :hide-demo="hideDemo"
+              :hide-email="hideEmail"
+              :hide-military="hideMilitary"
+              :hide-phone="hidePhone"
+              :hide-relationships="hideRelationships"
+              :hide-s-s-n="hideSSN"
+              :inverse-relations="inverseRelations"
+              :is-name-required="isNameRequired"
+              :model="model as Name"
+              :name-part-readonly="!namePartEditable"
+              :people-list="peopleList"
+              :relations="relations"
+              :show-opt-out-marketing="showOptOutMarketing"
+              @set-relation="handleRelationSelected"
+            />
+          </FFormProvider>
         </v-col>
       </v-row>
     </v-container>
@@ -49,8 +55,15 @@
 <script lang="ts" setup>
   import type { Name } from '../model/name'
   import { computed, ref, watch } from 'vue'
-  import { FButton, FFullScreenDialog } from '@/shared/ui'
-  import { PhoneType } from '../model/name'
+  import {
+    FButton,
+    FFormProvider,
+    FFullScreenDialog,
+    useDirtyForm,
+    useFormModel,
+  } from '@/shared/ui'
+  import { nameSchema } from '../model/nameSchema'
+  import { createEmptyName } from '../model/useNameModel'
   import NamePanel from './NamePanel.vue'
 
   interface PersonRelation {
@@ -98,85 +111,67 @@
 
   const busy = ref(false)
   const error = ref<string | null>(null)
-  const editModel = ref<Name | null>(null)
 
-  function deepCopy<T>(obj: T): T {
-    return structuredClone(obj)
-  }
+  // Form model with validation
+  const { model, validate, getError, touch, validateIfTouched, reset } = useFormModel(
+    nameSchema,
+    () => props.model ?? createEmptyName(),
+  )
 
-  // Ensure all required arrays exist on the model
-  function ensureArraysExist() {
-    if (!editModel.value) return
-    if (!Array.isArray(editModel.value.phones)) {
-      editModel.value.phones = []
-    }
-    if (!Array.isArray(editModel.value.addresses)) {
-      editModel.value.addresses = []
-    }
-    if (!Array.isArray(editModel.value.emailAddresses)) {
-      editModel.value.emailAddresses = []
-    }
-    if (!Array.isArray(editModel.value.relations)) {
-      editModel.value.relations = []
-    }
-  }
+  // Dirty tracking for unsaved changes
+  const { takeSnapshot, canClose } = useDirtyForm(() => model.value)
 
-  function ensurePhone() {
-    if (!editModel.value) return
-    ensureArraysExist()
-    if (editModel.value.phones.length === 0) {
-      editModel.value.phones.push({
-        id: '0',
-        nameId: editModel.value.id || '0',
-        number: '',
-        type: PhoneType.MOBILE,
-        preferred: true,
-        active: true,
-        dateCreated: new Date().toISOString(),
-        dateLastModified: new Date().toISOString(),
-      })
+  // Reset form when dialog opens
+  watch(dialogValue, (visible) => {
+    if (visible) {
+      error.value = null
+      reset(props.model ?? createEmptyName())
+      takeSnapshot()
     }
-  }
+  })
 
-  function ensureEmail() {
-    if (!editModel.value) return
-    ensureArraysExist()
-    if (editModel.value.emailAddresses.length === 0) {
-      editModel.value.emailAddresses.push({
-        id: '0',
-        nameId: editModel.value.id || '0',
-        address: '',
-        preferred: true,
-        active: true,
-        dateCreated: new Date().toISOString(),
-        dateLastModified: new Date().toISOString(),
-      })
-    }
-  }
-
+  // Update form when model prop changes (only if dialog is open)
   watch(
     () => props.model,
     (newValue) => {
-      if (newValue) {
-        editModel.value = deepCopy(newValue)
-        ensurePhone()
-        ensureEmail()
-      } else {
-        editModel.value = null
+      if (dialogValue.value) {
+        reset(newValue ?? createEmptyName())
+        takeSnapshot()
       }
     },
-    { immediate: true },
   )
 
-  function close() {
-    emit('update:modelValue', false)
+  async function close() {
+    const confirmed = await canClose(() =>
+      Promise.resolve(confirm('You have unsaved changes. Discard them?')),
+    )
+    if (confirmed) {
+      emit('update:modelValue', false)
+    }
   }
 
   function save() {
-    if (!editModel.value) return
-    emit('save', editModel.value)
+    const { valid } = validate()
+    if (!valid) {
+      error.value = 'Please fix validation errors before saving'
+      return
+    }
+
+    // Convert form values to Name (ensure required fields are set)
+    // Note: Nested arrays (phones, addresses, emails) may need timestamps added
+    // but for now we cast since the schema validation ensures structure is correct
+    const now = new Date().toISOString()
+    const nameToSave = {
+      ...model.value,
+      id: model.value.id ?? props.model?.id ?? '0',
+      dateCreated: props.model?.dateCreated ?? now,
+      dateLastModified: now,
+    } as Name
+
+    emit('save', nameToSave)
+    takeSnapshot() // Reset dirty state after save
     if (!props.saveWithoutAutoClose) {
-      close()
+      emit('update:modelValue', false)
     }
   }
 

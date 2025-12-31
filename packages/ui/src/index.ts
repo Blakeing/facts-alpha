@@ -13,7 +13,7 @@ export * from './tokens'
 // Composables
 // =============================================================================
 export { useTokens } from './composables'
-export { useFormModel, useFormSave, useDirtyForm, useConfirm } from './composables'
+export { useFormModel, useFormSave, useDirtyForm, useConfirm, useSessionValidator } from './composables'
 export { provideFormContext, useFormContext, FORM_CONTEXT_KEY } from './composables'
 export { useListController, useEntityForm, useSubEntityMutations } from './composables'
 export type {
@@ -24,6 +24,7 @@ export type {
   ConfirmOptions,
   ConfirmState,
   UseConfirmReturn,
+  UseSessionValidatorReturn,
   FormContext,
   EditDialogState,
   UseListControllerOptions,

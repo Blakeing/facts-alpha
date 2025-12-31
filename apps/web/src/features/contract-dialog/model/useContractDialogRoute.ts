@@ -1,7 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-export type ContractTab = 'general' | 'items' | 'payments'
+export type ContractTab = 'general' | 'items' | 'payments' | 'people'
 
 interface UseContractDialogRouteOptions {
   /**
@@ -56,7 +56,7 @@ export function useContractDialogRoute(options: UseContractDialogRouteOptions) {
   const currentTab = computed((): ContractTab => {
     const params = route.params as { tab?: string }
     const tab = params.tab
-    if (tab === 'items' || tab === 'payments') return tab
+    if (tab === 'items' || tab === 'payments' || tab === 'people') return tab
     return 'general'
   })
 

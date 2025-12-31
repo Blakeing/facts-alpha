@@ -114,8 +114,8 @@
     readonly?: boolean
   }>()
 
-  // Safe accessor for phones array
-  const phones = computed(() => props.model?.phones ?? [])
+  // Phones array (guaranteed to exist by schema)
+  const phones = computed(() => props.model.phones)
 
   const phoneTypeOptions = [
     { value: PhoneType.HOME, label: 'Home' },
@@ -133,9 +133,9 @@
 
   function removePhone(phone: NamePhone) {
     if (!props.model?.phones) return
-    const idx = props.model.phones.indexOf(phone)
-    if (idx !== -1) {
-      props.model.phones.splice(idx, 1)
+    const phoneIndex = props.model.phones.indexOf(phone)
+    if (phoneIndex !== -1) {
+      props.model.phones.splice(phoneIndex, 1)
     }
   }
 </script>

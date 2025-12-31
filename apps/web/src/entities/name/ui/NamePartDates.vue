@@ -32,7 +32,7 @@
     <v-row dense>
       <v-col cols="5">
         <FTextField
-          v-model="model.timeOfDeath"
+          v-model="timeOfDeath"
           field="timeOfDeath"
           label="Time of Death"
           placeholder="HH:MM"
@@ -44,7 +44,7 @@
         cols="3"
       >
         <v-checkbox
-          v-model="model.deceased"
+          v-model="deceased"
           color="primary"
           density="compact"
           :disabled="readonly"
@@ -58,7 +58,7 @@
 
 <script lang="ts" setup>
   import type { Name } from '../model/name'
-  import { computed, ref, watch } from 'vue'
+  import { computed } from 'vue'
   import { FDatePicker, FTextField } from '@/shared/ui'
 
   const props = defineProps<{
@@ -68,63 +68,77 @@
 
   const maxDate = new Date().toISOString().split('T')[0]
 
-  const birthDate = ref<string | null>(props.model.birthDate)
-  const deathDate = ref<string | null>(props.model.deathDate)
-  const age = ref<number | null>(props.model.age)
+  const birthDate = computed({
+    get: () => props.model.birthDate,
+    set: (value: string | null) => {
+      props.model.birthDate = value
+
+      // Calculate age if both dates are present
+      if (value && props.model.deathDate) {
+        const birth = new Date(value)
+        const death = new Date(props.model.deathDate)
+
+        if (!isNaN(birth.getTime()) && !isNaN(death.getTime())) {
+          let calculatedAge = death.getFullYear() - birth.getFullYear()
+          const monthDiff = death.getMonth() - birth.getMonth()
+
+          if (monthDiff < 0 || (monthDiff === 0 && death.getDate() < birth.getDate())) {
+            calculatedAge--
+          }
+
+          props.model.age = calculatedAge
+        }
+      }
+    },
+  })
+
+  const deathDate = computed({
+    get: () => props.model.deathDate,
+    set: (value: string | null) => {
+      props.model.deathDate = value
+      props.model.deceased = !!value
+
+      // Calculate age if both dates are present
+      if (value && props.model.birthDate) {
+        const birth = new Date(props.model.birthDate)
+        const death = new Date(value)
+
+        if (!isNaN(birth.getTime()) && !isNaN(death.getTime())) {
+          let calculatedAge = death.getFullYear() - birth.getFullYear()
+          const monthDiff = death.getMonth() - birth.getMonth()
+
+          if (monthDiff < 0 || (monthDiff === 0 && death.getDate() < birth.getDate())) {
+            calculatedAge--
+          }
+
+          props.model.age = calculatedAge
+        }
+      }
+    },
+  })
+
+  const age = computed({
+    get: () => props.model.age,
+    set: (value: number | null) => {
+      props.model.age = value
+    },
+  })
+
+  const timeOfDeath = computed({
+    get: () => props.model.timeOfDeath,
+    set: (value: string) => {
+      props.model.timeOfDeath = value
+    },
+  })
+
+  const deceased = computed({
+    get: () => props.model.deceased,
+    set: (value: boolean) => {
+      props.model.deceased = value
+    },
+  })
 
   const shouldDisableAge = computed(() => {
-    return !!(birthDate.value && deathDate.value)
+    return !!(props.model.birthDate && props.model.deathDate)
   })
-
-  function updateAgeIfBothDatesPresent() {
-    if (birthDate.value && deathDate.value) {
-      const birth = new Date(birthDate.value)
-      const death = new Date(deathDate.value)
-
-      if (isNaN(birth.getTime()) || isNaN(death.getTime())) {
-        return
-      }
-
-      let calculatedAge = death.getFullYear() - birth.getFullYear()
-      const monthDiff = death.getMonth() - birth.getMonth()
-
-      if (monthDiff < 0 || (monthDiff === 0 && death.getDate() < birth.getDate())) {
-        calculatedAge--
-      }
-
-      age.value = calculatedAge
-      props.model.age = calculatedAge
-    }
-  }
-
-  watch(birthDate, (newVal) => {
-    props.model.birthDate = newVal
-    updateAgeIfBothDatesPresent()
-  })
-
-  watch(deathDate, (newVal) => {
-    props.model.deathDate = newVal
-    if (props.model.deathDate) {
-      props.model.deceased = true
-    }
-    updateAgeIfBothDatesPresent()
-  })
-
-  watch(age, (newVal) => {
-    props.model.age = newVal
-  })
-
-  watch(
-    () => props.model.birthDate,
-    (newVal) => {
-      birthDate.value = newVal
-    },
-  )
-
-  watch(
-    () => props.model.deathDate,
-    (newVal) => {
-      deathDate.value = newVal
-    },
-  )
 </script>

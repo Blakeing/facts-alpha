@@ -36,38 +36,10 @@ export {
 } from './contract'
 
 // =============================================================================
-// Labels & Options
+// Enum Helpers
 // =============================================================================
 
-export {
-  // At-Need Type
-  atNeedTypeLabels,
-  atNeedTypeOptions,
-  // Contract Person Role
-  contractPersonRoleLabels,
-  getContractPersonRoleLabel,
-  getItemTypeLabel,
-  getNeedTypeLabel,
-  getPaymentMethodLabel,
-  getSaleStatusColor,
-  getSaleStatusLabel,
-  // Item Type
-  itemTypeLabels,
-  itemTypeOptions,
-  // Need Type
-  needTypeLabels,
-  needTypeOptions,
-  // Payment Method
-  paymentMethodLabels,
-  paymentMethodOptions,
-  // Pre-Need Funding Type
-  preNeedFundingTypeLabels,
-  preNeedFundingTypeOptions,
-  saleStatusColors,
-  // Sale Status
-  saleStatusLabels,
-  saleStatusOptions,
-} from './contract'
+export { getSaleStatusColor } from './contract'
 
 // =============================================================================
 // Helper Functions
@@ -80,6 +52,12 @@ export {
   getPrimaryBeneficiary,
   getPrimaryBuyer,
 } from './contract'
+
+// =============================================================================
+// Enum Controllers
+// =============================================================================
+
+export { contractPersonRoleController } from './ContractPersonRoleController'
 
 // =============================================================================
 // Schemas
@@ -125,8 +103,7 @@ export type {
 // Session Context
 // =============================================================================
 
-export { CONTRACT_SESSION_KEY } from './contractSessionContext'
-export type { ContractSessionContext } from './contractSessionContext'
+export { CONTRACT_SESSION_KEY } from './useContractSession'
 
 // =============================================================================
 // Handlers
@@ -136,23 +113,22 @@ export { useItemsHandler } from './handlers/useItemsHandler'
 export type { ItemsHandler } from './handlers/useItemsHandler'
 
 export { usePaymentsHandler } from './handlers/usePaymentsHandler'
-export type { PaymentFormData, PaymentsHandler } from './handlers/usePaymentsHandler'
+export type { PaymentsHandler } from './handlers/usePaymentsHandler'
 
 export { usePeopleHandler } from './handlers/usePeopleHandler'
-export type { PeopleHandler, PersonFormData } from './handlers/usePeopleHandler'
+export type { PeopleHandler } from './handlers/usePeopleHandler'
 
 // =============================================================================
 // Composables
 // =============================================================================
 
 export { useContract } from './useContract'
-export { useContractMutations } from './useContractMutations'
 export { CONTRACTS_QUERY_KEY, type ContractStatusString, useContracts } from './useContracts'
 
 // Session Architecture
-export { useContractSession, useContractSessionContext } from './useContractSession'
-export type {
-  ContractFinancials,
-  ContractSession,
-  UseContractSessionOptions,
-} from './useContractSession'
+export { useContractSession, useSession } from './useContractSession'
+export type { ContractSession, UseContractSessionOptions } from './useContractSession'
+
+// Financials
+export { useContractFinancials } from './useContractFinancials'
+export type { ContractFinancials } from './useContractFinancials'

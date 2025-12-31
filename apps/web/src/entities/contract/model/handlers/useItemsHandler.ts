@@ -11,10 +11,11 @@
  */
 
 import type { SaleItem } from '../contract'
-import type { ContractSessionContext } from '../contractSessionContext'
+import type { ContractSession } from '../useContractSession'
 import { computed, ref } from 'vue'
 import { useCatalogStore } from '@/stores/catalog'
 import { NeedType } from '../contract'
+import { createBaseHandler } from './createBaseHandler'
 
 export interface ItemsHandlerState {
   items: SaleItem[]
@@ -45,15 +46,19 @@ function createEmptySaleItem(saleId: string, needType: NeedType, ordinal: number
   }
 }
 
-export function useItemsHandler(context: ContractSessionContext) {
+export function useItemsHandler(session: ContractSession) {
   const catalog = useCatalogStore()
 
   // ==========================================================================
-  // State
+  // Base Handler - Common state and operations
   // ==========================================================================
 
-  const items = ref<SaleItem[]>([])
-  const isDirty = ref(false)
+  const base = createBaseHandler<SaleItem>({ session })
+
+  // ==========================================================================
+  // Additional State
+  // ==========================================================================
+
   const currentSaleId = ref<string>('')
   const currentNeedType = ref<NeedType>(NeedType.AT_NEED)
 
@@ -61,7 +66,7 @@ export function useItemsHandler(context: ContractSessionContext) {
   // Computed Totals - Reactive, no events needed!
   // ==========================================================================
 
-  const activeItems = computed(() => items.value.filter((item) => !item.isCancelled))
+  const activeItems = computed(() => base.items.value.filter((item) => !item.isCancelled))
 
   const subtotal = computed(() =>
     activeItems.value.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
@@ -91,7 +96,7 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Add an item from the catalog
    */
   function addItem(catalogItemId: string): SaleItem | null {
-    if (!context.isEditable.value) return null
+    if (!base.guardEdit()) return null
 
     const catalogItem = catalog.getItemById(catalogItemId)
     if (!catalogItem) return null
@@ -120,10 +125,10 @@ export function useItemsHandler(context: ContractSessionContext) {
       bookCost: catalogItem.cost ?? 0,
       salesTaxEnabled: true,
       isCancelled: false,
-      ordinal: items.value.length,
+      ordinal: base._items.value.length,
       sku: catalogItem.sku,
       itemDescription: catalogItem.description,
-      itemType: catalogItem.category as 'service' | 'merchandise' | 'cash_advance' | 'property',
+      itemType: catalogItem.category,
       salesTax:
         taxRate > 0
           ? [
@@ -142,8 +147,7 @@ export function useItemsHandler(context: ContractSessionContext) {
       dateLastModified: now,
     }
 
-    items.value.push(newItem)
-    isDirty.value = true
+    base.addItem(newItem)
     return newItem
   }
 
@@ -153,7 +157,7 @@ export function useItemsHandler(context: ContractSessionContext) {
   function addCustomItem(
     data: Partial<Omit<SaleItem, 'id' | 'saleId' | 'dateCreated' | 'dateLastModified'>>,
   ): SaleItem | null {
-    if (!context.isEditable.value) return null
+    if (!base.guardEdit()) return null
 
     // Use temp saleId for new items so they get saved (real saleId means already saved)
     // If currentSaleId is a real ID (not temp), use 'temp-sale-id' for new items
@@ -163,7 +167,7 @@ export function useItemsHandler(context: ContractSessionContext) {
         : currentSaleId.value || 'temp-sale-id'
 
     const now = new Date().toISOString()
-    const baseItem = createEmptySaleItem(tempSaleId, currentNeedType.value, items.value.length)
+    const baseItem = createEmptySaleItem(tempSaleId, currentNeedType.value, base._items.value.length)
 
     const newItem: SaleItem = {
       ...baseItem,
@@ -172,8 +176,7 @@ export function useItemsHandler(context: ContractSessionContext) {
       dateLastModified: now,
     }
 
-    items.value.push(newItem)
-    isDirty.value = true
+    base.addItem(newItem)
     return newItem
   }
 
@@ -181,14 +184,14 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Remove an item by ID (marks as cancelled rather than delete)
    */
   function removeItem(itemId: string): boolean {
-    if (!context.isEditable.value) return false
+    if (!base.guardEdit()) return false
 
-    const item = items.value.find((i) => i.id === itemId)
+    const item = base.findById(itemId)
     if (!item) return false
 
     item.isCancelled = true
     item.dateLastModified = new Date().toISOString()
-    isDirty.value = true
+    base._isDirty.value = true
     return true
   }
 
@@ -196,55 +199,36 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Hard delete an item (for items not yet saved)
    */
   function deleteItem(itemId: string): boolean {
-    if (!context.isEditable.value) return false
-
-    const index = items.value.findIndex((i) => i.id === itemId)
-    if (index === -1) return false
-
-    items.value.splice(index, 1)
-    isDirty.value = true
-    return true
+    return base.removeById(itemId)
   }
 
   /**
-   * Update item quantity
+   * Get an item by ID
    */
-  function updateItemQuantity(itemId: string, quantity: number): boolean {
-    if (!context.isEditable.value) return false
-
-    const item = items.value.find((i) => i.id === itemId)
-    if (!item) return false
-
-    item.quantity = quantity
-    recalculateItemTax(item)
-    item.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
+  function getItem(itemId: string): SaleItem | undefined {
+    return base.findById(itemId)
   }
 
   /**
-   * Update item unit price
+   * Apply an updated item to canonical state
+   * Finds the item by ID and replaces it, recalculating tax if needed
    */
-  function updateItemPrice(itemId: string, unitPrice: number): boolean {
-    if (!context.isEditable.value) return false
+  function applyItemUpdate(item: SaleItem): boolean {
+    if (!base.guardEdit()) return false
 
-    const item = items.value.find((i) => i.id === itemId)
-    if (!item) return false
-
-    item.unitPrice = unitPrice
+    // Recalculate tax if price or quantity changed
     recalculateItemTax(item)
-    item.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
+
+    return base.applyUpdate(item)
   }
 
   /**
    * Add a discount to an item
    */
   function addItemDiscount(itemId: string, description: string, amount: number): boolean {
-    if (!context.isEditable.value) return false
+    if (!base.guardEdit()) return false
 
-    const item = items.value.find((i) => i.id === itemId)
+    const item = base.findById(itemId)
     if (!item) return false
 
     // Ensure discounts array exists
@@ -259,7 +243,7 @@ export function useItemsHandler(context: ContractSessionContext) {
       amount,
     })
     item.dateLastModified = new Date().toISOString()
-    isDirty.value = true
+    base._isDirty.value = true
     return true
   }
 
@@ -267,9 +251,9 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Remove a discount from an item
    */
   function removeItemDiscount(itemId: string, discountId: string): boolean {
-    if (!context.isEditable.value) return false
+    if (!base.guardEdit()) return false
 
-    const item = items.value.find((i) => i.id === itemId)
+    const item = base.findById(itemId)
     if (!item || !item.discounts) return false
 
     const index = item.discounts.findIndex((d) => d.id === discountId)
@@ -277,30 +261,8 @@ export function useItemsHandler(context: ContractSessionContext) {
 
     item.discounts.splice(index, 1)
     item.dateLastModified = new Date().toISOString()
-    isDirty.value = true
+    base._isDirty.value = true
     return true
-  }
-
-  /**
-   * Update item description
-   */
-  function updateItemDescription(itemId: string, description: string): boolean {
-    if (!context.isEditable.value) return false
-
-    const item = items.value.find((i) => i.id === itemId)
-    if (!item) return false
-
-    item.description = description
-    item.dateLastModified = new Date().toISOString()
-    isDirty.value = true
-    return true
-  }
-
-  /**
-   * Get an item by ID
-   */
-  function getItem(itemId: string): SaleItem | undefined {
-    return items.value.find((i) => i.id === itemId)
   }
 
   // ==========================================================================
@@ -323,7 +285,7 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Recalculate all items (e.g., when tax rates change)
    */
   function recalculateAll() {
-    for (const item of items.value) {
+    for (const item of base._items.value) {
       recalculateItemTax(item)
     }
   }
@@ -334,16 +296,19 @@ export function useItemsHandler(context: ContractSessionContext) {
 
   /**
    * Apply items from server data
+   * 
+   * IMPORTANT: Deep clone server data to create mutable copies.
+   * Vue Query returns readonly reactive proxies that cannot be mutated directly.
    */
   function applyFromServer(serverItems: SaleItem[]) {
-    items.value = serverItems.map((item) => ({
+    // Process items to ensure arrays are initialized
+    const processedItems = serverItems.map((item) => ({
       ...item,
-      // Ensure arrays are initialized if missing from server data
       salesTax: item.salesTax ?? [],
       discounts: item.discounts ?? [],
       trust: item.trust ?? [],
     }))
-    isDirty.value = false
+    base.applyFromServer(processedItems)
   }
 
   /**
@@ -358,22 +323,21 @@ export function useItemsHandler(context: ContractSessionContext) {
    * Get current items for saving
    */
   function getItems(): SaleItem[] {
-    return items.value.map((item) => ({ ...item }))
+    return base.getAll()
   }
 
   /**
    * Mark items as clean (after save)
    */
   function markClean() {
-    isDirty.value = false
+    base.markClean()
   }
 
   /**
    * Reset to empty state
    */
   function reset() {
-    items.value = []
-    isDirty.value = false
+    base.reset()
     currentSaleId.value = ''
     currentNeedType.value = NeedType.AT_NEED
   }
@@ -383,10 +347,10 @@ export function useItemsHandler(context: ContractSessionContext) {
   // ==========================================================================
 
   return {
-    // State (as computed for reactivity)
-    items: computed(() => items.value),
+    // State (from base handler)
+    items: base.items,
     activeItems,
-    isDirty: computed(() => isDirty.value),
+    isDirty: base.isDirty,
 
     // Computed totals
     subtotal,
@@ -399,12 +363,10 @@ export function useItemsHandler(context: ContractSessionContext) {
     addCustomItem,
     removeItem,
     deleteItem,
-    updateItemQuantity,
-    updateItemPrice,
     addItemDiscount,
     removeItemDiscount,
-    updateItemDescription,
     getItem,
+    applyItemUpdate,
     recalculateAll,
 
     // Session lifecycle

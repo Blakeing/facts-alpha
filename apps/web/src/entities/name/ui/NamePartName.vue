@@ -1,9 +1,10 @@
+<!-- eslint-disable vue/no-mutating-props -- Working copy pattern: model is mutable -->
 <template>
   <div>
     <v-row dense>
       <v-col>
         <FTextField
-          v-model="prefix"
+          v-model="model.prefix"
           field="prefix"
           label="Prefix"
           maxlength="50"
@@ -12,7 +13,7 @@
       </v-col>
       <v-col>
         <FTextField
-          v-model="first"
+          v-model="model.first"
           field="first"
           label="First"
           maxlength="255"
@@ -22,7 +23,7 @@
       </v-col>
       <v-col>
         <FTextField
-          v-model="middle"
+          v-model="model.middle"
           field="middle"
           label="Middle"
           maxlength="255"
@@ -31,7 +32,7 @@
       </v-col>
       <v-col>
         <FTextField
-          v-model="last"
+          v-model="model.last"
           field="last"
           label="Last"
           maxlength="255"
@@ -41,7 +42,7 @@
       </v-col>
       <v-col>
         <FTextField
-          v-model="suffix"
+          v-model="model.suffix"
           field="suffix"
           label="Suffix"
           maxlength="50"
@@ -51,21 +52,27 @@
     </v-row>
   </div>
 </template>
+<!-- eslint-enable vue/no-mutating-props -->
 
 <script lang="ts" setup>
   import type { Name } from '../model/name'
-  import { toRef } from 'vue'
   import { FTextField } from '@/shared/ui'
 
-  const props = defineProps<{
-    model: Name
+  /**
+   * NamePartName - Name fields (prefix, first, middle, last, suffix)
+   *
+   * WORKING COPY PATTERN:
+   * This component receives a mutable Name object from the parent (NamePanel).
+   * Direct v-model binding mutates the model, which is intentional and expected.
+   * The parent (NameEditorDialog) owns the model lifecycle and clones it.
+   */
+
+  defineProps<{
+    model: Name // Mutable working copy
     namePartReadonly?: boolean
     isNameRequired?: boolean
   }>()
 
-  const prefix = toRef(props.model, 'prefix')
-  const first = toRef(props.model, 'first')
-  const middle = toRef(props.model, 'middle')
-  const last = toRef(props.model, 'last')
-  const suffix = toRef(props.model, 'suffix')
+  // No emits needed - direct mutation via v-model
+  // No computed properties - just pass model.field directly to v-model
 </script>

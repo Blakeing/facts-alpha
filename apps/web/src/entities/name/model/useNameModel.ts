@@ -1,34 +1,57 @@
 import type { AddressType, Name, NameAddress, NameEmail, NamePhone } from './name'
 import { PhoneType } from './name'
 
-/**
- * Creates a deep copy of a Name model using structuredClone.
- * Useful when you need a mutable copy of readonly data (e.g., from Vue Query).
- */
-export function deepCopyName(name: Name | null | undefined): Name | null {
-  if (!name) return null
-  return structuredClone(name)
-}
+// =============================================================================
+// Factory Functions
+// =============================================================================
 
 /**
- * Ensures all required arrays exist on a Name model.
- * Mutates the name object in place.
+ * Create an empty Name entity with default values
  */
-export function ensureNameArrays(name: Name): Name {
-  if (!Array.isArray(name.phones)) {
-    name.phones = []
+export function createEmptyName(): Name {
+  return {
+    id: '0',
+    first: '',
+    last: '',
+    middle: '',
+    prefix: '',
+    suffix: '',
+    nickname: '',
+    companyName: '',
+    maidenName: '',
+    birthDate: null,
+    deathDate: null,
+    timeOfDeath: null,
+    age: null,
+    deceased: false,
+    weight: null,
+    condition: null,
+    nationalIdentifier: '',
+    driversLicense: '',
+    driversLicenseState: '',
+    gender: null,
+    maritalStatus: 0,
+    ethnicity: null,
+    race: null,
+    isVeteran: false,
+    branchOfService: 0,
+    mailingAddressSameAsPhysical: true,
+    optOutMarketing: false,
+    conversion: null,
+    conversionId: null,
+    conversionSource: null,
+    phones: [],
+    addresses: [],
+    emailAddresses: [],
+    relations: [],
+    dateCreated: new Date().toISOString(),
+    dateLastModified: new Date().toISOString(),
   }
-  if (!Array.isArray(name.addresses)) {
-    name.addresses = []
-  }
-  if (!Array.isArray(name.emailAddresses)) {
-    name.emailAddresses = []
-  }
-  if (!Array.isArray(name.relations)) {
-    name.relations = []
-  }
-  return name
 }
+
+// =============================================================================
+// Factory Functions for Nested Entities
+// =============================================================================
 
 /**
  * Creates an empty phone entry

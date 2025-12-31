@@ -11,9 +11,23 @@
  * @see docs/data-models.md for Contract structure
  */
 
+import type { ItemsHandler } from './handlers/useItemsHandler'
+import type { PaymentsHandler } from './handlers/usePaymentsHandler'
+import type { PeopleHandler } from './handlers/usePeopleHandler'
 import { runEffect, runEffectQuery } from '@facts/effect'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, inject, type MaybeRefOrGetter, provide, ref, toValue, watch } from 'vue'
+import {
+  computed,
+  type ComputedRef,
+  inject,
+  type InjectionKey,
+  type MaybeRefOrGetter,
+  provide,
+  ref,
+  type Ref,
+  toValue,
+  watch,
+} from 'vue'
 import { ContractApi } from '../api/contractApi'
 import {
   type Contract,
@@ -25,29 +39,93 @@ import {
   SaleType,
 } from './contract'
 import { ContractSaveModelBuilder } from './ContractSaveModelBuilder'
-import { CONTRACT_SESSION_KEY, type ContractSessionContext } from './contractSessionContext'
+import { type ContractFormValues, getDefaultContractFormValues } from './contractSchema'
 import { useItemsHandler } from './handlers/useItemsHandler'
 import { usePaymentsHandler } from './handlers/usePaymentsHandler'
 import { usePeopleHandler } from './handlers/usePeopleHandler'
+import { type ContractFinancials, useContractFinancials } from './useContractFinancials'
+import { useContractStatus } from './useContractStatus'
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/**
+ * Injection key for the full contract session
+ *
+ * Components should use useSession() helper for type-safe access.
+ * Using 'any' here to avoid circular dependency - actual type comes from useContractSession.
+ */
+export const CONTRACT_SESSION_KEY: InjectionKey<any> = Symbol('contractSession')
+
+/**
+ * Full contract session interface - matches legacy ContractSession pattern
+ * Handlers receive this to access full session state and other handlers
+ */
+export interface ContractSession {
+  // Core IDs
+  contractId: ComputedRef<string>
+  contractNumber: ComputedRef<string>
+  locationId: Ref<string>
+  isNewContract: ComputedRef<boolean>
+
+  // Loading state
+  isLoading: ComputedRef<boolean>
+  isError: ComputedRef<boolean>
+  loadError: Ref<Error | null>
+  isSaving: Ref<boolean>
+  saveError: Ref<Error | null>
+
+  // Contract metadata
+  needType: Ref<NeedType>
+  contractDate: Ref<string> // Date signed (on Contract)
+  saleDate: Ref<string> // Sale/Service date (on Sale)
+  prePrintedContractNumber: Ref<string>
+
+  // Status
+  status: ComputedRef<SaleStatus>
+  isEditable: ComputedRef<boolean>
+  isExecuted: ComputedRef<boolean>
+  isVoided: ComputedRef<boolean>
+  isFinalized: ComputedRef<boolean>
+  hasFinalizedStatus: ComputedRef<boolean>
+  hasDraftStatus: ComputedRef<boolean>
+
+  // Can-do checks
+  canSaveDraftOrFinal: ComputedRef<boolean>
+  canFinalize: ComputedRef<boolean>
+  canExecute: ComputedRef<boolean>
+  canVoid: ComputedRef<boolean>
+  canBackToDraft: ComputedRef<boolean>
+
+  // Computed
+  financials: ComputedRef<ContractFinancials>
+  isDirty: ComputedRef<boolean>
+  hasRequiredFields: ComputedRef<boolean>
+  hasSignature: ComputedRef<boolean>
+
+  // Handlers (cross-accessible like legacy)
+  items: ItemsHandler
+  payments: PaymentsHandler
+  people: PeopleHandler
+
+  // Status actions
+  finalize: () => void
+  execute: () => void
+  voidContract: (reason?: string) => void
+  backToDraft: () => void
+
+  // Session actions
+  save: () => Promise<Contract | null>
+  reset: () => void
+  toValidationData: () => ContractFormValues
+}
 
 export interface UseContractSessionOptions {
   /** Callback when contract is saved */
   onSave?: (contract: Contract) => void
   /** Callback when save fails */
   onSaveError?: (error: Error) => void
-}
-
-export interface ContractFinancials {
-  subtotal: number
-  taxTotal: number
-  discountTotal: number
-  grandTotal: number
-  amountPaid: number
-  balanceDue: number
 }
 
 // =============================================================================
@@ -71,91 +149,149 @@ export function useContractSession(
 
   // Contract metadata
   const needType = ref<NeedType>(NeedType.AT_NEED)
-  const contractDate = ref<string>(new Date().toISOString().split('T')[0] ?? '')
+  const contractDate = ref<string>(new Date().toISOString().split('T')[0] ?? '') // Date signed
+  const saleDate = ref<string>(new Date().toISOString().split('T')[0] ?? '') // Sale/Service date
   const locationId = ref<string>('')
+  const prePrintedContractNumber = ref<string>('')
 
   // ==========================================================================
-  // Status - Based on primary sale status (like backend)
+  // Status Management - Extracted to composable
   // ==========================================================================
 
-  const saleStatus = ref<SaleStatus>(SaleStatus.DRAFT)
-  const dateSigned = ref<string | undefined>(undefined)
-  const dateExecuted = ref<string | undefined>(undefined)
-  const isCancelled = ref(false)
+  const status = useContractStatus()
 
-  // Derived status booleans (matches legacy ContractSession pattern)
-  const isExecuted = computed(() => saleStatus.value === SaleStatus.EXECUTED)
-  const isVoided = computed(() => saleStatus.value === SaleStatus.VOID || isCancelled.value)
-  const isFinalized = computed(
-    () => saleStatus.value === SaleStatus.FINALIZED || saleStatus.value === SaleStatus.EXECUTED,
-  )
-  const hasFinalizedStatus = computed(() => saleStatus.value === SaleStatus.FINALIZED)
-  const hasDraftStatus = computed(() => saleStatus.value === SaleStatus.DRAFT)
+  // ==========================================================================
+  // Session Context - Create partial session object for handlers
+  // ==========================================================================
 
-  // Editable = not executed and not voided (like legacy)
-  const isEditable = computed(() => !isExecuted.value && !isVoided.value && hasDraftStatus.value)
+  // Create partial session object (handlers will be attached later)
+  const session = {
+    // Core IDs
+    contractId,
+    contractNumber: computed(() => ''), // Will be set after query
+    locationId,
+    isNewContract,
+
+    // Loading state (will be set after query)
+    isLoading: computed(() => false),
+    isError: computed(() => false),
+    loadError: ref<Error | null>(null),
+    isSaving,
+    saveError,
+
+    // Contract metadata
+    needType,
+    contractDate,
+    saleDate,
+    prePrintedContractNumber,
+
+    // Status (from status composable)
+    status: status.status,
+    isEditable: status.isEditable,
+    isExecuted: status.isExecuted,
+    isVoided: status.isVoided,
+    isFinalized: status.isFinalized,
+    hasFinalizedStatus: status.hasFinalizedStatus,
+    hasDraftStatus: status.hasDraftStatus,
+
+    // Can-do checks (will be set after handlers)
+    canSaveDraftOrFinal: computed(() => false),
+    canFinalize: computed(() => false),
+    canExecute: computed(() => false),
+    canVoid: computed(() => false),
+    canBackToDraft: computed(() => false),
+
+    // Computed (will be set after handlers)
+    financials: computed(() => ({
+      subtotal: 0,
+      taxTotal: 0,
+      discountTotal: 0,
+      grandTotal: 0,
+      amountPaid: 0,
+      balanceDue: 0,
+    })),
+    isDirty: computed(() => false),
+    hasRequiredFields: computed(() => false),
+    hasSignature: computed(() => !!status.dateSigned.value),
+
+    // Handlers (will be attached after creation)
+    items: null as any,
+    payments: null as any,
+    people: null as any,
+
+    // Status actions (will be set later)
+    finalize: () => {},
+    execute: () => {},
+    voidContract: (_reason?: string) => {},
+    backToDraft: () => {},
+
+    // Session actions (will be set later)
+    save: async () => null as Contract | null,
+    reset: () => {},
+    toValidationData: () => getDefaultContractFormValues(''),
+  } as ContractSession
+
+  // ==========================================================================
+  // Handler Composables - Pass full session (like legacy)
+  // ==========================================================================
+
+  const items = useItemsHandler(session)
+  const payments = usePaymentsHandler(session)
+  const people = usePeopleHandler(session)
+
+  // Attach handlers to session
+  session.items = items
+  session.payments = payments
+  session.people = people
 
   // ==========================================================================
   // Validation
   // ==========================================================================
 
   const hasRequiredFields = computed(() => people.hasPurchaser.value && people.hasBeneficiary.value)
-  const hasSignature = computed(() => !!dateSigned.value)
+  const hasSignature = computed(() => !!status.dateSigned.value)
 
   // ==========================================================================
   // Can-do checks (like legacy: combines status + validation)
   // ==========================================================================
 
   // Can save as draft or finalize = not executed, not voided
-  const canSaveDraftOrFinal = computed(() => !isExecuted.value && !isVoided.value)
+  const canSaveDraftOrFinal = computed(() => !status.isExecuted.value && !status.isVoided.value)
 
   // Can finalize = can save + is in draft + has required fields
   const canFinalize = computed(
-    () => canSaveDraftOrFinal.value && hasDraftStatus.value && hasRequiredFields.value,
+    () => canSaveDraftOrFinal.value && status.hasDraftStatus.value && hasRequiredFields.value,
   )
 
   // Can execute = can save + is finalized (not draft) + has signature
   const canExecute = computed(
-    () => canSaveDraftOrFinal.value && hasFinalizedStatus.value && hasSignature.value,
+    () => canSaveDraftOrFinal.value && status.hasFinalizedStatus.value && hasSignature.value,
   )
 
   // Can void = is finalized or executed (not draft, not already voided)
-  const canVoid = computed(() => !isVoided.value && !hasDraftStatus.value)
+  const canVoid = computed(() => !status.isVoided.value && !status.hasDraftStatus.value)
 
   // Can go back to draft = is finalized (not executed, not voided)
   const canBackToDraft = computed(
-    () => hasFinalizedStatus.value && !isExecuted.value && !isVoided.value,
+    () => status.hasFinalizedStatus.value && !status.isExecuted.value && !status.isVoided.value,
   )
 
-  // ==========================================================================
-  // Session Context - Shared with handlers via provide/inject
-  // ==========================================================================
-
-  // Need to create a computed for status to pass to context
-  const statusComputed = computed(() => saleStatus.value)
-
-  const context: ContractSessionContext = {
-    contractId,
-    isNewContract,
-    status: statusComputed,
-    isEditable,
-  }
-
-  // Provide context to child components
-  provide(CONTRACT_SESSION_KEY, context)
-
-  // ==========================================================================
-  // Handler Composables
-  // ==========================================================================
-
-  const items = useItemsHandler(context)
-  const payments = usePaymentsHandler(context)
-  const people = usePeopleHandler(context)
+  // Update session with computed values
+  session.canSaveDraftOrFinal = canSaveDraftOrFinal
+  session.canFinalize = canFinalize
+  session.canExecute = canExecute
+  session.canVoid = canVoid
+  session.canBackToDraft = canBackToDraft
+  session.hasRequiredFields = hasRequiredFields
+  session.hasSignature = hasSignature
 
   // For new contracts, set up a temporary sale context so items can be added before first save
   if (isNewContract.value) {
     items.setSaleContext('temp-sale-id', needType.value)
   }
+
+  // Update session with computed values that depend on handlers
+  session.hasRequiredFields = hasRequiredFields
 
   // ==========================================================================
   // Query for Existing Contract
@@ -233,14 +369,14 @@ export function useContractSession(
 
         // Apply metadata
         needType.value = contract.needType
-        contractDate.value = contract.dateExecuted ?? contract.dateSigned ?? ''
+        contractDate.value = contract.dateSigned ?? contract.dateExecuted ?? ''
+        // Convert ISO datetime to date-only string for date picker
+        const saleDateValue = primarySale?.saleDate
+        saleDate.value = saleDateValue ? saleDateValue.split('T')[0] || '' : ''
         locationId.value = contract.locationId
 
         // Apply status from primary sale or contract state
-        saleStatus.value = primarySale?.saleStatus ?? SaleStatus.DRAFT
-        dateSigned.value = contract.dateSigned
-        dateExecuted.value = contract.dateExecuted
-        isCancelled.value = contract.isCancelled
+        status.applyStatus(primarySale, contract)
       }
     },
     { immediate: true },
@@ -251,22 +387,19 @@ export function useContractSession(
   // ==========================================================================
 
   const contractNumber = computed(() => existingContract.value?.contractNumber ?? '')
+  session.contractNumber = contractNumber
+
+  // Update session with query state (useQuery returns ComputedRef)
+  session.isLoading = isLoading as ComputedRef<boolean>
+  session.isError = isError as ComputedRef<boolean>
+  session.loadError = loadError as Ref<Error | null>
 
   // ==========================================================================
-  // Computed Financials - Derived from handlers
+  // Computed Financials - Derived from handlers (extracted to composable)
   // ==========================================================================
 
-  const financials = computed<ContractFinancials>(() => {
-    const grandTotal = items.subtotal.value + items.taxTotal.value - items.discountTotal.value
-    return {
-      subtotal: items.subtotal.value,
-      taxTotal: items.taxTotal.value,
-      discountTotal: items.discountTotal.value,
-      grandTotal,
-      amountPaid: payments.total.value,
-      balanceDue: grandTotal - payments.total.value,
-    }
-  })
+  const financials = useContractFinancials(items, payments)
+  session.financials = financials
 
   // ==========================================================================
   // Dirty Tracking - Aggregated from all handlers
@@ -275,36 +408,17 @@ export function useContractSession(
   const isDirty = computed(
     () => items.isDirty.value || payments.isDirty.value || people.isDirty.value,
   )
+  session.isDirty = isDirty
 
   // ==========================================================================
-  // Status Actions - Simple status updates (like legacy setters)
+  // Status Actions - From status composable
   // ==========================================================================
 
-  function finalize() {
-    if (canFinalize.value) {
-      saleStatus.value = SaleStatus.FINALIZED
-    }
-  }
-
-  function execute() {
-    if (canExecute.value) {
-      saleStatus.value = SaleStatus.EXECUTED
-      dateExecuted.value = new Date().toISOString()
-    }
-  }
-
-  function voidContract(_reason = 'Voided by user') {
-    if (canVoid.value) {
-      saleStatus.value = SaleStatus.VOID
-      // Note: voidReason would be stored separately if needed
-    }
-  }
-
-  function backToDraft() {
-    if (canBackToDraft.value) {
-      saleStatus.value = SaleStatus.DRAFT
-    }
-  }
+  // Attach status actions to session (from status composable)
+  session.finalize = status.finalize
+  session.execute = status.execute
+  session.voidContract = status.voidContract
+  session.backToDraft = status.backToDraft
 
   // ==========================================================================
   // Save Operation - Helper Functions
@@ -315,17 +429,22 @@ export function useContractSession(
    * Updates all handlers with fresh server data after save
    */
   function applyServerResponse(contract: Contract): void {
+    // Get primary sale
+    const primarySale = contract.sales?.find((s) => s.saleType === SaleType.CONTRACT)
+
     // Update metadata
     needType.value = contract.needType
     contractDate.value = contract.dateSigned ?? contract.dateExecuted ?? ''
+    // Convert ISO datetime to date-only string for date picker
+    const saleDateValue = primarySale?.saleDate
+    saleDate.value = saleDateValue ? saleDateValue.split('T')[0] || '' : ''
     locationId.value = contract.locationId
+    prePrintedContractNumber.value = contract.prePrintedContractNumber ?? ''
 
-    // Get primary sale and update items
-    const primarySale = contract.sales?.find((s) => s.saleType === SaleType.CONTRACT)
+    // Update items from primary sale
     if (primarySale) {
       items.setSaleContext(primarySale.id, contract.needType)
       items.applyFromServer(primarySale.items ?? [])
-      saleStatus.value = primarySale.saleStatus ?? SaleStatus.DRAFT
     }
 
     // Update payments
@@ -337,10 +456,8 @@ export function useContractSession(
     const coBuyers = getCoBuyers(contract.people ?? [])
     people.applyFromServer(buyer, beneficiary, coBuyers)
 
-    // Update status fields
-    dateSigned.value = contract.dateSigned
-    dateExecuted.value = contract.dateExecuted
-    isCancelled.value = contract.isCancelled
+    // Update status (from status composable)
+    status.applyStatus(primarySale, contract)
   }
 
   // ==========================================================================
@@ -358,7 +475,7 @@ export function useContractSession(
       const saveModel = ContractSaveModelBuilder.buildSaveModel({
         contractId,
         contractNumber,
-        status: saleStatus,
+        status: status.saleStatus,
         needType,
         contractDate,
         locationId,
@@ -403,92 +520,85 @@ export function useContractSession(
     people.reset()
     needType.value = NeedType.AT_NEED
     contractDate.value = new Date().toISOString().split('T')[0] ?? ''
+    saleDate.value = new Date().toISOString().split('T')[0] ?? ''
     locationId.value = ''
+    prePrintedContractNumber.value = ''
     saveError.value = null
-    saleStatus.value = SaleStatus.DRAFT
-    dateSigned.value = undefined
-    dateExecuted.value = undefined
-    isCancelled.value = false
+    // Reset status (status composable manages its own state)
+    status.saleStatus.value = SaleStatus.DRAFT
+    status.dateSigned.value = undefined
+    status.dateExecuted.value = undefined
+    status.isCancelled.value = false
   }
 
   // ==========================================================================
-  // Return
+  // Validation Data Conversion
   // ==========================================================================
 
-  return {
-    // Core state
-    contractId,
-    contractNumber,
-    isNewContract,
-    isLoading,
-    isError,
-    loadError,
-    isSaving,
-    saveError,
+  /**
+   * Convert session state to ContractFormValues for validation
+   * This allows useSessionValidator to validate session data against the schema
+   */
+  function toValidationData(): ContractFormValues {
+    const peopleData = people.getFormValues()
+    const defaults = getDefaultContractFormValues(locationId.value)
 
-    // Contract metadata
-    needType,
-    contractDate,
-    locationId,
-
-    // Status (simple ref + derived booleans)
-    status: statusComputed,
-    isEditable,
-    isExecuted,
-    isVoided,
-    isFinalized,
-    hasFinalizedStatus,
-    hasDraftStatus,
-
-    // Can-do checks
-    canSaveDraftOrFinal,
-    canFinalize,
-    canExecute,
-    canVoid,
-    canBackToDraft,
-
-    // Computed
-    financials,
-    isDirty,
-    hasRequiredFields,
-    hasSignature,
-
-    // Handlers (expose full handler objects)
-    items,
-    payments,
-    people,
-
-    // Status actions
-    finalize,
-    execute,
-    voidContract,
-    backToDraft,
-
-    // Session actions
-    save,
-    reset,
+    return {
+      locationId: locationId.value,
+      prePrintedContractNumber: prePrintedContractNumber.value,
+      needType: needType.value,
+      atNeedType: defaults.atNeedType, // TODO: Add to session if needed
+      salesPersonId: '', // TODO: Add to session if needed
+      marketingAgentId: '', // TODO: Add to session if needed
+      dateSigned: status.dateSigned.value ?? contractDate.value ?? '',
+      isConditionalSale: false, // TODO: Add to session if needed
+      primaryBuyer: peopleData.purchaser,
+      coBuyers: peopleData.coBuyers,
+      primaryBeneficiary: peopleData.beneficiary,
+      additionalBeneficiaries: peopleData.additionalBeneficiaries,
+      financing: defaults.financing, // TODO: Add financing handler if needed
+      fundingDetails: defaults.fundingDetails, // TODO: Add funding details handler if needed
+    }
   }
+
+  // ==========================================================================
+  // Attach Session Actions
+  // ==========================================================================
+
+  session.save = save
+  session.reset = reset
+  session.toValidationData = toValidationData
+
+  // ==========================================================================
+  // Provide and Return
+  // ==========================================================================
+
+  // Provide full session to child components via inject
+  provide(CONTRACT_SESSION_KEY, session)
+
+  return session
 }
 
 // =============================================================================
-// Context Hook for Child Components
+// Session Hook for Child Components
 // =============================================================================
 
 /**
- * Hook for child components to access the contract session context
+ * Hook for child components to access the full contract session
  *
- * @throws Error if called outside of a contract session
+ * @throws Error if called outside of a ContractDialog
  */
-export function useContractSessionContext(): ContractSessionContext {
-  const context = inject(CONTRACT_SESSION_KEY)
-  if (!context) {
-    throw new Error('useContractSessionContext must be used within a ContractSession provider')
+export function useSession(): ContractSession {
+  const session = inject(CONTRACT_SESSION_KEY) as ContractSession | undefined
+  if (!session) {
+    throw new Error('useSession must be used within ContractDialog')
   }
-  return context
+  return session
 }
 
 // =============================================================================
 // Types Export
 // =============================================================================
 
-export type ContractSession = ReturnType<typeof useContractSession>
+// ContractSession is defined as an interface above, not a type alias
+// This ensures handlers can reference it before the composable is fully defined

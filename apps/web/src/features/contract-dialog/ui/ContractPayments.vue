@@ -145,7 +145,7 @@
           <FSelect
             v-model="newPayment.method"
             label="Payment Method"
-            :options="paymentMethodOptions"
+            :options="paymentMethodController.selectItems"
           />
         </v-col>
         <v-col cols="12">
@@ -182,10 +182,8 @@
   import {
     type ContractPayment,
     type ContractPaymentFormValues,
-    getPaymentMethodLabel,
     type PaymentMethod,
     PaymentMethod as PaymentMethodEnum,
-    paymentMethodOptions,
   } from '@/entities/contract'
   import { formatCurrency, formatDate } from '@/shared/lib'
   import {
@@ -230,7 +228,7 @@
     {
       key: 'method',
       title: 'Method',
-      valueFormatter: (p) => getPaymentMethodLabel(p.value as PaymentMethod),
+      valueFormatter: (p) => paymentMethodController.getDescription(p.value as PaymentMethod),
     },
     {
       key: 'amount',

@@ -88,5 +88,8 @@ export default createVuetify({
     VDateInput: {
       density: 'compact',
     },
+    VTab: {
+      rounded: '0',
+    },
   },
 })

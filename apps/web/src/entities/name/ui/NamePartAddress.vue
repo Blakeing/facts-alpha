@@ -3,7 +3,7 @@
     <v-row dense>
       <v-col cols="12">
         <FTextField
-          v-model="model.address1"
+          v-model="address1"
           field="address1"
           label="Address"
           maxlength="255"
@@ -14,7 +14,7 @@
     <v-row dense>
       <v-col cols="6">
         <FTextField
-          v-model="model.city"
+          v-model="city"
           field="city"
           label="City"
           maxlength="255"
@@ -23,7 +23,7 @@
       </v-col>
       <v-col cols="3">
         <FSelect
-          v-model="model.state"
+          v-model="state"
           field="state"
           label="State"
           :options="stateOptions"
@@ -32,7 +32,7 @@
       </v-col>
       <v-col cols="3">
         <FTextField
-          v-model="model.postalCode"
+          v-model="postalCode"
           field="postalCode"
           label="Postal Code"
           maxlength="10"
@@ -43,7 +43,7 @@
     <v-row dense>
       <v-col cols="12">
         <FSelect
-          v-model="model.country"
+          v-model="country"
           field="country"
           label="Country"
           :options="countryOptions"
@@ -56,7 +56,21 @@
 
 <script lang="ts" setup>
   import type { NameAddress } from '../model/name'
+  import { toRef } from 'vue'
   import { FSelect, FTextField } from '@/shared/ui'
+
+  const props = defineProps<{
+    model: NameAddress
+    readonly?: boolean
+  }>()
+
+  // Use toRef for direct reactive mutation
+  // This works because edit contexts pass cloned models that can be mutated
+  const address1 = toRef(props.model, 'address1')
+  const city = toRef(props.model, 'city')
+  const state = toRef(props.model, 'state')
+  const postalCode = toRef(props.model, 'postalCode')
+  const country = toRef(props.model, 'country')
 
   // Simple US states list - can be enhanced later
   const stateOptions = [
@@ -116,9 +130,4 @@
     { value: 'USA', label: 'United States' },
     { value: 'Canada', label: 'Canada' },
   ]
-
-  defineProps<{
-    model: NameAddress
-    readonly?: boolean
-  }>()
 </script>

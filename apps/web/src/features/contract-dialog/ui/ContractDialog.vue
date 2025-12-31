@@ -22,7 +22,7 @@
         size="small"
         variant="elevated"
       >
-        {{ getSaleStatusLabel(session.status.value) }}
+        {{ saleStatusController.getDescription(session.status.value) }}
       </v-chip>
     </template>
 
@@ -68,7 +68,6 @@
           <v-tab
             class="contract-sidebar-tab"
             prepend-icon="mdi-file-document-outline"
-            rounded="0"
             value="general"
           >
             General
@@ -77,7 +76,6 @@
           <v-tab
             class="contract-sidebar-tab"
             prepend-icon="mdi-package-variant"
-            rounded="0"
             value="items"
           >
             Items
@@ -93,7 +91,6 @@
           <v-tab
             class="contract-sidebar-tab"
             prepend-icon="mdi-credit-card-outline"
-            rounded="0"
             value="payments"
           >
             Payments
@@ -109,7 +106,6 @@
           <v-tab
             class="contract-sidebar-tab"
             prepend-icon="mdi-account-group"
-            rounded="0"
             value="people"
           >
             People
@@ -130,11 +126,7 @@
                 :touch="touch"
                 :validate-if-touched="validateIfTouched"
               >
-                <ContractGeneral
-                  v-model="model"
-                  :contract="existingContract"
-                  :is-editable="session.isEditable.value"
-                />
+                <ContractGeneral />
               </FFormProvider>
             </div>
           </v-window-item>
@@ -144,7 +136,7 @@
               <ContractItems
                 :contract-id="props.contractId"
                 :is-editable="session.isEditable.value"
-                :items="session.items.items.value"
+                :items="session.items.items.value as SaleItem[]"
                 @add="handleAddItem"
                 @remove="handleRemoveItem"
               />
@@ -157,7 +149,7 @@
                 :contract-id="props.contractId"
                 :financials="session.financials.value"
                 :is-editable="session.isEditable.value"
-                :payments="session.payments.payments.value"
+                :payments="session.payments.payments.value as ContractPayment[]"
                 @add="handleAddPayment"
                 @remove="handleRemovePayment"
               />
@@ -166,23 +158,7 @@
 
           <v-window-item value="people">
             <div class="content-panel">
-              <template v-if="session.people">
-                <ContractPeople
-                  :is-draft="session.hasDraftStatus.value"
-                  :is-executed="session.isExecuted.value"
-                  :is-finalized="session.isFinalized.value"
-                  :is-voided="session.isVoided.value"
-                  :location-id="session.locationId.value"
-                  :need-type="session.needType.value"
-                  :people="session.people"
-                />
-              </template>
-              <div
-                v-else
-                class="d-flex align-center justify-center pa-12"
-              >
-                <v-progress-circular indeterminate />
-              </div>
+              <ContractPeople />
             </div>
           </v-window-item>
         </v-window>
@@ -221,17 +197,18 @@
 
 <script lang="ts" setup>
   import { useVModel } from '@vueuse/core'
-  import { computed, ref, watch } from 'vue'
+  import { computed, onErrorCaptured, ref, watch } from 'vue'
   import {
     contractFormSchema,
-    type ContractFormValues,
+    type ContractPayment,
     type ContractPaymentFormValues,
-    getDefaultContractFormValues,
     getSaleStatusColor,
-    getSaleStatusLabel,
+    type ItemType,
     type PaymentMethod,
+    type SaleItem,
     useContractSession,
   } from '@/entities/contract'
+  import { saleStatusController } from '@/shared/lib/enums/contract'
   import {
     type ActionMenuItem,
     FActionsMenu,
@@ -241,9 +218,8 @@
     FFormProvider,
     FFullScreenDialog,
     useConfirm,
-    useFormModel,
+    useSessionValidator,
   } from '@/shared/ui'
-  import { useUserContextStore } from '@/stores'
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'
   import ContractPayments from './ContractPayments.vue'
@@ -273,6 +249,15 @@
   const dialogModel = useVModel(props, 'modelValue', emit)
   const errorMessage = ref<string | null>(null)
 
+  // Global error handler for this component
+  function errorHandler(error: Error) {
+    console.error('[ContractDialog] Global error handler caught:', error)
+    console.error('[ContractDialog] Error stack:', error.stack)
+  }
+
+  // Set up global error handler for this component
+  onErrorCaptured(errorHandler)
+
   // Tab state - internal state, initialized from prop
   const activeTab = ref<'general' | 'items' | 'payments' | 'people'>(
     (props.initialTab as 'general' | 'items' | 'payments' | 'people') || 'general',
@@ -282,32 +267,27 @@
   watch(
     () => props.initialTab,
     (newTab) => {
-      activeTab.value = newTab
+      try {
+        activeTab.value = newTab
+      } catch (error) {
+        console.error('[ContractDialog] Error in initialTab watcher:', error)
+        throw error
+      }
     },
   )
 
   // Emit tab changes for parent to optionally update route
   watch(activeTab, (tab) => {
-    emit('tab-change', tab)
+    try {
+      emit('tab-change', tab)
+    } catch (error) {
+      console.error('[ContractDialog] Error in activeTab watcher:', error)
+      throw error
+    }
   })
 
   // Confirmation dialog for unsaved changes
   const confirmDialog = useConfirm()
-
-  // Helper to check if purchaser has meaningful data
-  // BFF returns person with nested name object
-  function hasPurchaserData(purchaser: {
-    id?: string
-    nameId?: string
-    name?: { first?: string }
-  }): boolean {
-    // Check for either embedded name data OR a valid reference (nameId or id not '0')
-    return !!(
-      purchaser.name?.first ||
-      (purchaser.nameId && purchaser.nameId !== '0') ||
-      (purchaser.id && purchaser.id !== '0')
-    )
-  }
 
   // ==========================================================================
   // Contract Session - Main orchestration
@@ -325,174 +305,23 @@
     },
   )
 
-  // Get existing contract for display - includes financials from session
-  const existingContract = computed(() => {
-    if (session.isNewContract.value) return null
-
-    const fin = session.financials.value
-
-    // Construct a Contract-like object for display purposes
-    // Note: This is a partial object used only for UI display, not the full Contract type
-    return {
-      id: session.contractId.value,
-      contractNumber: session.contractNumber.value,
-      needType: session.needType.value,
-      locationId: session.locationId.value,
-      dateSigned: session.contractDate.value,
-      isCancelled: false,
-      isConditionalSale: false,
-      subtotal: fin.subtotal,
-      taxTotal: fin.taxTotal,
-      discountTotal: fin.discountTotal,
-      grandTotal: fin.grandTotal,
-      amountPaid: fin.amountPaid,
-      balanceDue: fin.balanceDue,
-      dateCreated: new Date().toISOString(),
-      dateLastModified: new Date().toISOString(),
-    }
-  })
-
   // ==========================================================================
-  // Form Validation (for General tab)
+  // Form Validation (for General tab) - using useSessionValidator
   // ==========================================================================
-
-  const userContext = useUserContextStore()
-
-  const initialFormValues = computed(() => {
-    if (session.isNewContract.value) {
-      // New contracts get the current location from user context
-      return getDefaultContractFormValues(userContext.currentLocationId ?? '')
-    }
-
-    const people = session.people
-    return {
-      locationId: session.locationId.value,
-      prePrintedContractNumber: '',
-      needType: session.needType.value,
-      dateSigned: session.contractDate.value,
-      isConditionalSale: false,
-      notes: '',
-      primaryBuyer: people.purchaser.value,
-      primaryBeneficiary: people.beneficiary.value,
-      coBuyers: people.coBuyers.value,
-      additionalBeneficiaries: [],
-      fundingDetails: [],
-    } as ContractFormValues
-  })
 
   const {
-    model,
     errors: formErrors,
     validate,
     getError,
     touch,
     validateIfTouched,
-    reset,
-  } = useFormModel(contractFormSchema, () => initialFormValues.value)
+  } = useSessionValidator(contractFormSchema, () => session.toValidationData())
 
   // Show errors snackbar only on failed save
   const showErrors = ref(false)
 
-  // Track if we've applied session data to form (must be before watches that use it)
-  const hasAppliedSessionData = ref(false)
-
   // Combined busy state
   const isBusy = computed(() => session.isLoading.value || session.isSaving.value)
-
-  // Reset everything when dialog opens
-  watch(
-    dialogModel,
-    (visible: boolean) => {
-      console.log('[ContractDialog] dialogModel watch fired, visible:', visible)
-      console.log('[ContractDialog] isNewContract:', session.isNewContract.value)
-      console.log('[ContractDialog] isLoading:', session.isLoading.value)
-      console.log('[ContractDialog] purchaser:', session.people.purchaser.value)
-      if (visible) {
-        // Tab is now driven by route (initialTab prop)
-        errorMessage.value = null
-        showErrors.value = false
-
-        if (session.isNewContract.value) {
-          console.log('[ContractDialog] NEW contract - resetting form')
-          // New contract: reset session and form
-          session.reset()
-          session.locationId.value = userContext.currentLocationId ?? ''
-          reset(getDefaultContractFormValues(userContext.currentLocationId ?? ''))
-          hasAppliedSessionData.value = true
-        } else if (!session.isLoading.value && hasPurchaserData(session.people.purchaser.value)) {
-          console.log('[ContractDialog] EXISTING contract with cached data - resetting form')
-          console.log('[ContractDialog] initialFormValues:', initialFormValues.value)
-          // Existing contract with data already cached (from prefetch) - reset form immediately
-          reset(initialFormValues.value)
-          hasAppliedSessionData.value = true
-        } else {
-          console.log('[ContractDialog] EXISTING contract but no data yet - waiting for watch')
-        }
-        // If still loading or no data yet, the other watches will handle form reset
-      }
-    },
-    { immediate: true },
-  )
-
-  // Reset form when session data finishes loading (handles async load case)
-  watch(
-    () => session.isLoading.value,
-    (isLoading, wasLoading) => {
-      console.log('[ContractDialog] isLoading watch:', {
-        isLoading,
-        wasLoading,
-        dialogOpen: dialogModel.value,
-      })
-      // When loading completes (transition from true → false), reset form with loaded data
-      if (wasLoading && !isLoading && dialogModel.value && !session.isNewContract.value) {
-        console.log(
-          '[ContractDialog] Loading complete - resetting form with:',
-          initialFormValues.value,
-        )
-        reset(initialFormValues.value)
-        hasAppliedSessionData.value = true
-      }
-    },
-  )
-
-  // Watch for people data changes (handles cached data case where isLoading never transitions)
-  watch(
-    [() => session.people.purchaser.value, () => session.people.beneficiary.value],
-    ([purchaser, beneficiary]) => {
-      console.log('[ContractDialog] people watch fired:', {
-        purchaser,
-        beneficiary,
-        hasApplied: hasAppliedSessionData.value,
-        dialogOpen: dialogModel.value,
-        isNew: session.isNewContract.value,
-        isLoading: session.isLoading.value,
-      })
-      // Only reset once when we first get data, and only if dialog is open
-      if (
-        !hasAppliedSessionData.value &&
-        dialogModel.value &&
-        !session.isNewContract.value &&
-        !session.isLoading.value &&
-        (hasPurchaserData(purchaser) || hasPurchaserData(beneficiary))
-      ) {
-        console.log(
-          '[ContractDialog] People data arrived - resetting form with:',
-          initialFormValues.value,
-        )
-        reset(initialFormValues.value)
-        hasAppliedSessionData.value = true
-      }
-    },
-    { deep: true },
-  )
-
-  // Reset tracking when dialog closes
-  watch(dialogModel, (visible) => {
-    if (!visible) {
-      console.log('[ContractDialog] Dialog closed - resetting hasAppliedSessionData')
-      hasAppliedSessionData.value = false
-    }
-  })
 
   // ==========================================================================
   // Computed
@@ -563,25 +392,18 @@
   // ==========================================================================
 
   /**
-   * Validate form and sync data to session
+   * Validate session data
    * @returns true if validation passed, false otherwise
    */
   function validateAndSync(): boolean {
+    console.log('🔍 ContractDialog.validateAndSync - Starting validation')
     const result = validate()
     if (!result.valid) {
+      console.log('❌ ContractDialog.validateAndSync - Validation failed:', result.errors)
       showErrors.value = true
       return false
     }
-
-    // Sync form model to session people handler
-    const formData = model.value as ContractFormValues
-    session.people.updatePurchaser(formData.primaryBuyer)
-    session.people.updateBeneficiary(formData.primaryBeneficiary)
-
-    // Update contract metadata
-    session.needType.value = formData.needType
-    session.contractDate.value = formData.dateSigned ?? ''
-
+    console.log('✅ ContractDialog.validateAndSync - Validation passed')
     return true
   }
 
@@ -590,8 +412,14 @@
    * Like legacy: doSave(false, false, false, false)
    */
   async function handleSave() {
-    if (!validateAndSync()) return
+    console.log('🔍 ContractDialog.handleSave - Starting save process')
+    if (!validateAndSync()) {
+      console.log('❌ ContractDialog.handleSave - Validation failed')
+      return
+    }
+    console.log('✅ ContractDialog.handleSave - Validation passed, saving...')
     await session.save()
+    console.log('💾 ContractDialog.handleSave - Save completed')
   }
 
   /**
@@ -646,6 +474,12 @@
       closeDialog()
     }
   }
+
+  /**
+   * Handle person name updates from ContractPeople - NO LONGER NEEDED with edit model
+   * The edit model is mutated directly by child components
+   */
+  // REMOVED: handlePersonNameUpdate
 
   /**
    * Execute the contract
@@ -727,7 +561,7 @@
   function handleAddItem(data: {
     sku: string
     description: string
-    itemType: 'service' | 'merchandise' | 'cash_advance' | 'property'
+    itemType: ItemType
     quantity: number
     unitPrice: number
   }) {
@@ -745,13 +579,13 @@
   }
 
   function handleAddPayment(data: ContractPaymentFormValues) {
-    session.payments.addPayment({
-      date: data.date,
-      method: data.method as PaymentMethod,
-      amount: data.amount,
-      reference: data.reference,
-      notes: data.notes,
-    })
+    const payment = session.payments.addPayment()
+    // Update the payment with provided data
+    payment.date = data.date
+    payment.method = data.method as PaymentMethod
+    payment.amount = data.amount
+    payment.reference = data.reference
+    payment.notes = data.notes
   }
 
   function handleRemovePayment(paymentId: string) {

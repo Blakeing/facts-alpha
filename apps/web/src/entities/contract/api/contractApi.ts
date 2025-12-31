@@ -18,7 +18,6 @@ import type {
   ContractListing,
   ContractPayment,
   ContractPerson,
-  ContractPersonRole,
   ContractResponse,
   ContractSessionSaveModel,
   NeedType,
@@ -35,14 +34,9 @@ import type {
 } from '../model/contractSchema'
 import { type ApiError, NotFoundError, toApiError } from '@facts/effect'
 import { Effect } from 'effect'
-import { apiUrls, getHttpClient } from '@/shared/api'
-import { SaleStatus, SaleType } from '../model/contract'
-import {
-  contractToListing,
-  formPersonToPerson,
-  generateContractNumber,
-  generateId,
-} from './transformations'
+import { apiUrls, getHttpClient, nextId } from '@/shared/api'
+import { ContractPersonRole, SaleStatus, SaleType } from '../model/contract'
+import { contractToListing, formPersonToPerson, generateContractNumber } from './transformations'
 
 // =============================================================================
 // CRUD Operations (with transformations)
@@ -124,8 +118,9 @@ export const ContractApi = {
       const now = new Date().toISOString()
 
       // Build contract payload
+      const contractId = yield* nextId()
       const contractPayload: Omit<Contract, 'people' | 'sales' | 'payments'> = {
-        id: generateId('contract'),
+        id: contractId,
         locationId: data.locationId,
         contractNumber: generateContractNumber(data.locationId),
         needType: data.needType,
@@ -144,7 +139,11 @@ export const ContractApi = {
 
       // 2. Create primary buyer if provided
       if (data.primaryBuyer) {
-        const person = formPersonToPerson(data.primaryBuyer, contract.id, 'primary_buyer')
+        const person = yield* formPersonToPerson(
+          data.primaryBuyer,
+          contract.id,
+          ContractPersonRole.PRIMARY_BUYER,
+        )
         yield* Effect.tryPromise({
           try: () =>
             client.post<ContractPerson>(apiUrls.contracts.people.create(contract.id), person),
@@ -154,10 +153,10 @@ export const ContractApi = {
 
       // 3. Create primary beneficiary if provided (for preneed)
       if (data.primaryBeneficiary) {
-        const person = formPersonToPerson(
+        const person = yield* formPersonToPerson(
           data.primaryBeneficiary,
           contract.id,
-          'primary_beneficiary',
+          ContractPersonRole.PRIMARY_BENEFICIARY,
         )
         yield* Effect.tryPromise({
           try: () =>
@@ -167,8 +166,9 @@ export const ContractApi = {
       }
 
       // 4. Create initial sale
+      const saleId = yield* nextId()
       const salePayload: Omit<Sale, 'items'> = {
-        id: generateId('sale'),
+        id: saleId,
         contractId: contract.id,
         saleType: SaleType.CONTRACT,
         saleStatus: SaleStatus.DRAFT,
@@ -503,7 +503,7 @@ export const ContractApi = {
   ): Effect.Effect<ContractPerson, ApiError> =>
     Effect.gen(function* () {
       const client = yield* Effect.promise(() => getHttpClient())
-      const person = formPersonToPerson(data, contractId, role)
+      const person = yield* formPersonToPerson(data, contractId, role)
       const response = yield* Effect.tryPromise({
         try: () => client.post<ContractPerson>(apiUrls.contracts.people.create(contractId), person),
         catch: (error: unknown) => toApiError(error, 'person'),

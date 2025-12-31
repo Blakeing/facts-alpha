@@ -1,9 +1,10 @@
+<!-- eslint-disable vue/no-mutating-props -- Model is a working copy from useFormModel, meant to be mutated -->
 <template>
   <div>
     <NamePartGroup label="Name">
       <template v-if="!hideCompany">
         <FTextField
-          v-model="companyName"
+          v-model="model.companyName"
           field="companyName"
           label="Company Name"
           maxlength="255"
@@ -18,7 +19,7 @@
       <v-row dense>
         <v-col cols="4">
           <FTextField
-            v-model="nickname"
+            v-model="model.nickname"
             field="nickname"
             label="Nickname"
             :readonly="namePartReadonly"
@@ -26,7 +27,7 @@
         </v-col>
         <v-col cols="4">
           <FTextField
-            v-model="maidenName"
+            v-model="model.maidenName"
             field="maidenName"
             label="Maiden"
             :readonly="namePartReadonly"
@@ -162,10 +163,11 @@
     </NamePartGroup>
   </div>
 </template>
+<!-- eslint-enable vue/no-mutating-props -->
 
 <script lang="ts" setup>
   import type { Name } from '../model/name'
-  import { computed, toRef } from 'vue'
+  import { computed } from 'vue'
   import { FTextField } from '@/shared/ui'
   import { PhoneType } from '../model/name'
   import { getFormattedName } from '../model/nameHelpers'
@@ -182,6 +184,15 @@
   import NamePartPhones from './NamePartPhones.vue'
   import NamePartRelationships from './NamePartRelationships.vue'
 
+  /**
+   * NamePanel - Main form for editing Name entity
+   *
+   * WORKING COPY PATTERN:
+   * This component receives a mutable Name object from NameEditorDialog.
+   * All child components (NamePart*) use direct v-model binding to mutate the model.
+   * No event chains or computed properties needed - just direct mutation.
+   */
+
   interface PersonRelation {
     id: string
     description: string
@@ -193,7 +204,7 @@
   }
 
   const props = defineProps<{
-    model: Name
+    model: Name // Mutable working copy
     hideCompany?: boolean
     hideSSN?: boolean
     hideEmail?: boolean
@@ -215,10 +226,6 @@
     'set-relation': [currentPersonId: string, relation: string, relatedNameId: string]
   }>()
 
-  const companyName = toRef(props.model, 'companyName')
-  const nickname = toRef(props.model, 'nickname')
-  const maidenName = toRef(props.model, 'maidenName')
-
   const relationCardTitle = computed(() => {
     const display = getFormattedName(props.model)
     const title = display === 'Not Specified' ? '' : display
@@ -227,14 +234,10 @@
 
   /**
    * Add a new phone number to the model
-   * Note: Direct prop mutation is intentional here. NamePanel is used inside NameEditorDialog
-   * which passes a deep-cloned mutable copy. The parent owns the model lifecycle.
+   * Direct mutation of the working copy
    */
   function addPhone() {
-    /* eslint-disable vue/no-mutating-props */
-    if (!props.model.phones) {
-      props.model.phones = []
-    }
+    /* eslint-disable-next-line vue/no-mutating-props */
     props.model.phones.push({
       id: '0',
       nameId: props.model.id || '0',
@@ -245,19 +248,14 @@
       dateCreated: new Date().toISOString(),
       dateLastModified: new Date().toISOString(),
     })
-    /* eslint-enable vue/no-mutating-props */
   }
 
   /**
    * Add a new email address to the model
-   * Note: Direct prop mutation is intentional here. NamePanel is used inside NameEditorDialog
-   * which passes a deep-cloned mutable copy. The parent owns the model lifecycle.
+   * Direct mutation of the working copy
    */
   function addEmail() {
-    /* eslint-disable vue/no-mutating-props */
-    if (!props.model.emailAddresses) {
-      props.model.emailAddresses = []
-    }
+    /* eslint-disable-next-line vue/no-mutating-props */
     props.model.emailAddresses.push({
       id: '0',
       nameId: props.model.id || '0',
@@ -267,7 +265,6 @@
       dateCreated: new Date().toISOString(),
       dateLastModified: new Date().toISOString(),
     })
-    /* eslint-enable vue/no-mutating-props */
   }
 
   function handleRelationSelected(

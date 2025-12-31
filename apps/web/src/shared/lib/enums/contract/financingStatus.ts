@@ -2,7 +2,7 @@ import { FinancingStatus } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
 
-class FinancingStatusController extends EnumController<FinancingStatus> {
+class FinancingStatusController extends EnumController<number> {
   choices = [
     { id: FinancingStatus.PENDING, name: 'Pending' },
     { id: FinancingStatus.CALCULATED, name: 'Calculated' },

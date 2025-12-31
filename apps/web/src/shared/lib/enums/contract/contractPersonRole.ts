@@ -6,10 +6,9 @@ import { enumRegistry } from '../EnumRegistry'
  * Contract Person Role Controller
  *
  * NOTE: This is a FLAGS enum (bitwise). Multiple roles can be combined.
- * Frontend uses string literals, but for display only.
- * Backend uses bitwise flags for storage.
+ * Uses numeric enum values matching backend: 0=Person, 1=PrimaryBuyer, 2=CoBuyer, 4=PrimaryBeneficiary, 8=AdditionalBeneficiary
  */
-class ContractPersonRoleController extends EnumController<ContractPersonRole> {
+class ContractPersonRoleController extends EnumController<number> {
   choices = [
     { id: ContractPersonRole.PERSON, name: 'Person' },
     { id: ContractPersonRole.PRIMARY_BUYER, name: 'Primary Buyer' },

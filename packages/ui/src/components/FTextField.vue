@@ -28,7 +28,7 @@
     /** Field path for auto error/blur via form context */
     field?: string
     /** Value for v-model binding */
-    modelValue?: string | number
+    modelValue?: string | number | null
     /** External error message (manual mode) */
     error?: string
   }
@@ -45,7 +45,7 @@
   })
 
   const emit = defineEmits<{
-    'update:modelValue': [value: string | number]
+    'update:modelValue': [value: string | number | null]
     blur: [event: FocusEvent]
   }>()
 
@@ -53,8 +53,8 @@
   const formContext = useFormContext()
 
   const fieldValue = computed({
-    get: () => props.modelValue,
-    set: (val) => emit('update:modelValue', val as string | number),
+    get: () => props.modelValue ?? '',
+    set: (val) => emit('update:modelValue', val),
   })
 
   // Error: form context (via field prop) > manual error prop

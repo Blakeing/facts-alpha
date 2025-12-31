@@ -23,7 +23,7 @@
           </div>
           <p class="text-body-2 text-medium-emphasis">
             {{ getLastFirstName(primaryBeneficiary?.name) || 'Unknown' }} ·
-            {{ getNeedTypeLabel(contract.needType) }}
+            {{ needTypeController.getDescription(contract.needType) }}
           </p>
         </div>
       </div>
@@ -303,7 +303,7 @@
                 />
               </template>
               <v-list-item-title>
-                {{ formatDate(payment.date) }} - {{ getPaymentMethodLabel(payment.method) }}
+                {{ formatDate(payment.date) }} - {{ paymentMethodController.getDescription(payment.method) }}
               </v-list-item-title>
               <v-list-item-subtitle v-if="payment.reference">
                 Ref: {{ payment.reference }}
@@ -349,7 +349,7 @@
               md="3"
             >
               <div class="text-body-2 text-medium-emphasis">Need Type</div>
-              <div class="text-body-1">{{ getNeedTypeLabel(contract.needType) }}</div>
+              <div class="text-body-1">{{ needTypeController.getDescription(contract.needType) }}</div>
             </v-col>
             <v-col
               cols="12"
@@ -420,16 +420,18 @@
   import { useRoute, useRouter } from 'vue-router'
   import {
     ContractStatusBadge,
-    getNeedTypeLabel,
-    getPaymentMethodLabel,
     getPrimaryBeneficiary,
     getPrimaryBuyer,
-    getSaleStatusLabel,
     type PaymentMethod,
     SaleStatus,
     SaleType,
     useContract,
   } from '@/entities/contract'
+  import {
+    needTypeController,
+    paymentMethodController,
+    saleStatusController,
+  } from '@/shared/lib/enums/contract'
   import {
     formatAddressSingleLine,
     getFullName,
@@ -481,7 +483,7 @@
 
   // Get primary sale status as string (for display)
   const primarySaleStatusString = computed(() => {
-    return getSaleStatusLabel(primarySaleStatus.value)
+    return saleStatusController.getDescription(primarySaleStatus.value)
   })
 
   // Get all items from all sales

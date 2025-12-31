@@ -7,12 +7,13 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { ItemType } from '@/entities/contract/model/contract'
 
 export interface CatalogItem {
   id: string
   sku: string
   description: string
-  category: 'service' | 'merchandise' | 'cash_advance'
+  category: ItemType
   categoryId: string
   price: number
   cost: number
@@ -137,7 +138,7 @@ function getMockCatalogItems(): CatalogItem[] {
       id: 'item-1',
       sku: 'SVC-001',
       description: 'Professional Services',
-      category: 'service',
+      category: ItemType.SERVICE,
       categoryId: 'cat-service',
       price: 2500,
       cost: 0,
@@ -147,7 +148,7 @@ function getMockCatalogItems(): CatalogItem[] {
       id: 'item-2',
       sku: 'SVC-002',
       description: 'Embalming',
-      category: 'service',
+      category: ItemType.SERVICE,
       categoryId: 'cat-service',
       price: 895,
       cost: 0,
@@ -157,7 +158,7 @@ function getMockCatalogItems(): CatalogItem[] {
       id: 'item-3',
       sku: 'MER-001',
       description: 'Standard Casket - Oak',
-      category: 'merchandise',
+      category: ItemType.MERCHANDISE,
       categoryId: 'cat-merchandise',
       price: 3500,
       cost: 1200,
@@ -167,7 +168,7 @@ function getMockCatalogItems(): CatalogItem[] {
       id: 'item-4',
       sku: 'MER-002',
       description: 'Premium Casket - Mahogany',
-      category: 'merchandise',
+      category: ItemType.MERCHANDISE,
       categoryId: 'cat-merchandise',
       price: 5500,
       cost: 2000,
@@ -177,7 +178,7 @@ function getMockCatalogItems(): CatalogItem[] {
       id: 'item-5',
       sku: 'CA-001',
       description: 'Death Certificates (each)',
-      category: 'cash_advance',
+      category: ItemType.CASH_ADVANCE,
       categoryId: 'cat-cash-advance',
       price: 25,
       cost: 25,
@@ -187,7 +188,7 @@ function getMockCatalogItems(): CatalogItem[] {
       id: 'item-6',
       sku: 'CA-002',
       description: 'Clergy Honorarium',
-      category: 'cash_advance',
+      category: ItemType.CASH_ADVANCE,
       categoryId: 'cat-cash-advance',
       price: 200,
       cost: 200,

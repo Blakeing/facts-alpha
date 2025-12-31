@@ -2,7 +2,7 @@ import { LateFeeType } from '@/entities/contract/model/contract'
 import { EnumController } from '../EnumController'
 import { enumRegistry } from '../EnumRegistry'
 
-class LateFeeTypeController extends EnumController<LateFeeType> {
+class LateFeeTypeController extends EnumController<number> {
   choices = [
     { id: LateFeeType.NONE, name: 'None' },
     { id: LateFeeType.FIXED_AMOUNT, name: 'Fixed Amount' },

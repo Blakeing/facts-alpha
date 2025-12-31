@@ -15,6 +15,7 @@
 import type { ContractSession } from './useContractSession'
 import { EntityState } from '@/shared/lib/entity'
 import {
+  type ContractPersonWithRoles,
   type ContractSaveModel,
   type ContractSessionSaveModel,
   type PaymentSaveModel,
@@ -40,56 +41,6 @@ export class ContractSaveModelBuilder {
     this.gatherRoles(result.contract)
 
     return result
-  }
-
-  /**
-   * Build the contract portion of the save model
-   */
-  private static buildContractModel(session: ContractSession): ContractSaveModel {
-    const people = session.people.getFormValues()
-
-    // Build people array (filter out empty entries)
-    const peopleArray = [people.purchaser, people.beneficiary, ...people.coBuyers].filter(
-      (p) => p.firstName && p.lastName,
-    )
-
-    // Build primary sale with items
-    const primarySale = {
-      id: session.items.items.value.length > 0 ? session.items.items.value[0]?.saleId : undefined,
-      saleType: SaleType.CONTRACT,
-      saleStatus: session.status.value,
-      items: session.items.getItems(),
-      dateCreated: new Date().toISOString(),
-      dateLastModified: new Date().toISOString(),
-    }
-
-    return {
-      id: session.contractId.value || undefined,
-      locationId: session.locationId.value,
-      needType: session.needType.value,
-      dateSigned: session.contractDate.value || undefined,
-      contractNumber: session.contractNumber.value || undefined,
-      people: peopleArray,
-      sales: [primarySale],
-      nameRoles: [],
-      // Include other fields that might exist on the session
-      prePrintedContractNumber: '',
-      isConditionalSale: false,
-      isCancelled: false,
-      notes: '',
-    }
-  }
-
-  /**
-   * Build payments array with EntityState tracking
-   * In the future, we could track actual state (New, Modified, Deleted)
-   * For now, mark all as Modified since BFF handles create vs update
-   */
-  private static buildPayments(session: ContractSession): PaymentSaveModel[] {
-    return session.payments.getPayments().map((payment) => ({
-      state: EntityState.Modified,
-      payment,
-    }))
   }
 
   /**
@@ -131,5 +82,73 @@ export class ContractSaveModelBuilder {
       // Filter nameRoles that belong to this person
       person.nameRoles = model.contract.nameRoles.filter((role) => role.nameId === person.nameId)
     }
+  }
+
+  /**
+   * Build the contract portion of the save model
+   */
+  private static buildContractModel(session: ContractSession): ContractSaveModel {
+    const people = session.people.getFormValues()
+
+    // Build people array (filter out empty entries)
+    const peopleArray: ContractPersonWithRoles[] = [
+      people.purchaser,
+      people.beneficiary,
+      ...people.coBuyers,
+    ]
+      .filter((p) => p.name?.first && p.name?.last)
+      .map((p) => p as ContractPersonWithRoles)
+
+    // Build primary sale with items
+    const subtotal = session.items.subtotal.value
+    const taxTotal = session.items.taxTotal.value
+    const discountTotal = session.items.discountTotal.value
+    const grandTotal = subtotal + taxTotal - discountTotal
+
+    const primarySale = {
+      id:
+        session.items.items.value.length > 0 && session.items.items.value[0]?.saleId
+          ? session.items.items.value[0].saleId
+          : '',
+      contractId: session.contractId.value || '',
+      saleNumber: '',
+      saleDate: session.saleDate.value || undefined,
+      saleType: SaleType.CONTRACT,
+      saleStatus: session.status.value,
+      subtotal,
+      taxTotal,
+      discountTotal,
+      grandTotal,
+      items: session.items.getItems(),
+      dateCreated: new Date().toISOString(),
+      dateLastModified: new Date().toISOString(),
+    }
+
+    return {
+      id: session.contractId.value || undefined,
+      locationId: session.locationId.value,
+      needType: session.needType.value,
+      dateSigned: session.contractDate.value || undefined,
+      contractNumber: session.contractNumber.value || undefined,
+      people: peopleArray,
+      sales: [primarySale],
+      nameRoles: [],
+      // Include other fields that might exist on the session
+      prePrintedContractNumber: '',
+      isConditionalSale: false,
+      isCancelled: false,
+    }
+  }
+
+  /**
+   * Build payments array with EntityState tracking
+   * In the future, we could track actual state (New, Modified, Deleted)
+   * For now, mark all as Modified since BFF handles create vs update
+   */
+  private static buildPayments(session: ContractSession): PaymentSaveModel[] {
+    return session.payments.getPayments().map((payment) => ({
+      state: EntityState.Modified,
+      payment,
+    }))
   }
 }
