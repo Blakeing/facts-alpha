@@ -200,7 +200,7 @@ export function getDateRangePresets() {
 // Date Comparisons
 // =============================================================================
 
-export { isBefore, isAfter, isSameDay, isValid, addDays, addMonths }
+export { isBefore, isAfter, isSameDay, isValid, addDays, addMonths, startOfDay }
 
 // =============================================================================
 // Currency Formatting

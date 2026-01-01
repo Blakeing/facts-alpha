@@ -12,11 +12,16 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "find . -type d -name 'node_modules' -prune -exec rm -rf '{}' + && find . -type f \\( -name 'pnpm-lock.yaml' -o -name 'package-lock.json' -o -name 'yarn.lock' \\) -delete",
-    "clean:install": "pnpm clean && pnpm install"
+    "clean:install": "pnpm clean && pnpm install",
+    "test": "turbo test",
+    "test:ui": "turbo test:ui --filter=@facts/web",
+    "test:e2e": "turbo e2e",
+    "test:e2e:ui": "turbo e2e:ui --filter=@facts/web-e2e",
+    "test:e2e:install": "turbo e2e:install --filter=@facts/web-e2e"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
-    "turbo": "^2.7.0"
+    "turbo": "^2.7.2"
   },
   "packageManager": "pnpm@10.20.0"
 }

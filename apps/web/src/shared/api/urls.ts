@@ -36,6 +36,7 @@ export const apiUrls = {
     update: (id: string) => `/contracts/${id}`,
     delete: (id: string) => `/contracts/${id}`,
     saveDraft: '/contracts/save/draft',
+    validateDraft: '/contracts/save/validate',
     saveAdjustment: '/contracts/save/adjustment',
 
     sales: {
@@ -105,10 +106,10 @@ export const apiUrls = {
 
   /**
    * Next ID generation endpoints
-   * Legacy endpoints: /nextid, /nextids/{count}
+   * Legacy endpoints: /nextid, /nextid/{count}
    */
   nextId: '/nextid',
-  nextIds: (count: number) => `/nextids/${count}`,
+  nextIds: (count: number) => `/nextid/${count}`,
 } as const
 
 export type ApiUrls = typeof apiUrls

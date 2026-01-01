@@ -11,7 +11,11 @@
     "type-check": "vue-tsc --build --force",
     "lint": "oxlint && eslint . --fix",
     "lint:ox": "oxlint",
-    "lint:es": "eslint ."
+    "lint:es": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@facts/effect": "workspace:*",
@@ -29,6 +33,7 @@
     "nprogress": "^0.2.0",
     "oidc-client-ts": "^3.4.1",
     "pinia": "^3.0.4",
+    "rfdc": "^1.4.1",
     "vue": "^3.5.21",
     "vue-router": "^4.5.1",
     "vuetify": "^3.11.4",
@@ -40,10 +45,14 @@
     "@types/node": "^22.9.0",
     "@types/nprogress": "^0.2.3",
     "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.8.1",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-config-vuetify": "^4.2.0",
+    "happy-dom": "^20.0.11",
     "npm-run-all2": "^8.0.4",
     "oxc": "^1.0.1",
     "oxlint": "^1.34.0",
@@ -55,6 +64,7 @@
     "vite": "^7.1.5",
     "vite-plugin-vue-layouts-next": "^1.0.0",
     "vite-plugin-vuetify": "^2.1.2",
+    "vitest": "^4.0.16",
     "vue-tsc": "^3.0.7"
   }
 }

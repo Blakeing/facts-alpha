@@ -42,7 +42,7 @@
           </v-list>
 
           <FButton
-            v-if="contractId && financials.balanceDue > 0 && isEditable"
+            v-if="financials.balanceDue > 0 && !isReadOnly"
             block
             class="mt-4"
             intent="primary"
@@ -62,7 +62,7 @@
         <FCard title="Payment History">
           <template #append>
             <FButton
-              v-if="contractId && isEditable"
+              v-if="!isReadOnly"
               intent="ghost"
               prepend-icon="mdi-plus"
               size="small"
@@ -79,7 +79,7 @@
           >
             <template #item.actions="{ item: rawItem }">
               <v-btn
-                v-if="isEditable"
+                v-if="!isReadOnly"
                 color="error"
                 icon="mdi-delete"
                 size="small"
@@ -100,7 +100,7 @@
             />
             <p class="text-body-1 text-medium-emphasis mt-2">No payments recorded</p>
             <FButton
-              v-if="contractId && isEditable"
+              v-if="!isReadOnly"
               class="mt-4"
               intent="primary"
               prepend-icon="mdi-plus"
@@ -109,13 +109,7 @@
               Record First Payment
             </FButton>
             <p
-              v-else-if="!contractId"
-              class="text-body-2 text-medium-emphasis mt-2"
-            >
-              Save the contract first to record payments
-            </p>
-            <p
-              v-else-if="!isEditable"
+              v-else
               class="text-body-2 text-medium-emphasis mt-2"
             >
               Contract is not editable
@@ -178,14 +172,17 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import {
     type ContractPayment,
     type ContractPaymentFormValues,
-    type PaymentMethod,
     PaymentMethod as PaymentMethodEnum,
+    type PaymentMethod,
+    SaleStatus,
   } from '@/entities/contract'
+  import { useContractEditorContext } from '@/features/contract-dialog'
   import { formatCurrency, formatDate } from '@/shared/lib'
+  import { paymentMethodController } from '@/shared/lib/enums/contract'
   import {
     FButton,
     FCard,
@@ -198,27 +195,48 @@
     FTextField,
   } from '@/shared/ui'
 
-  interface Props {
-    contractId?: string | null
-    payments: ContractPayment[]
-    financials: {
-      grandTotal: number
-      amountPaid: number
-      balanceDue: number
-    }
-    /** Whether the contract is editable (draft status) */
-    isEditable?: boolean
-  }
+  // Inject editor context
+  const editor = useContractEditorContext()
+  const draft = computed(() => editor.draft.value)
 
-  withDefaults(defineProps<Props>(), {
-    contractId: null,
-    isEditable: true,
+  // Payments from draft
+  const payments = computed(() => draft.value?.payments ?? [])
+
+  // Read-only if executed or voided
+  const isReadOnly = computed(() => {
+    const status = draft.value?.meta.status
+    return status === SaleStatus.EXECUTED || status === SaleStatus.VOID
   })
 
-  const emit = defineEmits<{
-    add: [data: ContractPaymentFormValues]
-    remove: [paymentId: string]
-  }>()
+  // Calculate financials from draft
+  const financials = computed(() => {
+    if (!draft.value) {
+      return {
+        grandTotal: 0,
+        amountPaid: 0,
+        balanceDue: 0,
+      }
+    }
+
+    // Calculate from items
+    const items = draft.value.sale.items
+    const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+
+    // TODO: Calculate tax and discounts properly
+    const taxTotal = 0
+    const discountTotal = 0
+    const grandTotal = subtotal + taxTotal - discountTotal
+
+    // Calculate from payments
+    const amountPaid = payments.value.reduce((sum, payment) => sum + payment.amount, 0)
+    const balanceDue = grandTotal - amountPaid
+
+    return {
+      grandTotal,
+      amountPaid,
+      balanceDue,
+    }
+  })
 
   const showAddDialog = ref(false)
   const isAdding = ref(false)
@@ -259,7 +277,22 @@
   async function handleAdd() {
     isAdding.value = true
     try {
-      emit('add', { ...newPayment.value })
+      // Create new payment
+      const payment: Partial<ContractPayment> = {
+        id: crypto.randomUUID(),
+        contractId: draft.value?.id ?? '',
+        date: newPayment.value.date,
+        method: newPayment.value.method,
+        amount: newPayment.value.amount,
+        reference: newPayment.value.reference ?? '',
+        checkNumber: newPayment.value.checkNumber ?? '',
+        notes: newPayment.value.notes ?? '',
+        dateCreated: new Date().toISOString(),
+        dateLastModified: new Date().toISOString(),
+      }
+
+      // Add to draft
+      editor.setField('payments', [...payments.value, payment as ContractPayment])
       resetForm()
     } finally {
       isAdding.value = false
@@ -267,7 +300,8 @@
   }
 
   function handleRemove(paymentId: string) {
-    emit('remove', paymentId)
+    const newPayments = payments.value.filter((payment) => payment.id !== paymentId)
+    editor.setField('payments', newPayments)
   }
 </script>
 
@@ -277,3 +311,4 @@
     margin: 0 auto;
   }
 </style>
+

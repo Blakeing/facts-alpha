@@ -10,47 +10,43 @@
           <v-row dense>
             <v-col cols="12">
               <FSelect
-                v-model="session.needType.value"
                 field="needType"
                 label="Need Type"
                 :options="needTypeController.selectItems"
-                :readonly="!session.isEditable.value"
+                :readonly="isReadOnly"
               />
             </v-col>
             <v-col cols="12">
               <FDatePicker
-                v-model="session.saleDate.value"
-                field="saleDate"
+                field="sale.saleDate"
                 :label="saleDateLabel"
-                :readonly="!session.hasDraftStatus.value"
+                :readonly="isReadOnly"
                 required
               />
             </v-col>
             <v-col cols="12">
               <FDatePicker
-                v-model="session.contractDate.value"
-                field="dateSigned"
+                field="meta.dateSigned"
                 label="Contract/Sign Date"
-                :readonly="!session.hasDraftStatus.value"
+                :readonly="isReadOnly"
                 required
               />
             </v-col>
             <v-col cols="12">
               <FTextField
-                v-model="session.prePrintedContractNumber.value"
                 field="prePrintedContractNumber"
                 label="Pre-Printed Contract #"
                 placeholder="Optional"
-                :readonly="!session.isEditable.value"
+                :readonly="isReadOnly"
               />
             </v-col>
           </v-row>
         </FCard>
       </v-col>
 
-      <!-- Financials (read-only summary) -->
+      <!-- Financials (calculated summary) -->
       <v-col
-        v-if="contract || session.financials.value"
+        v-if="draft"
         cols="12"
         md="6"
       >
@@ -116,39 +112,78 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
-  import { NeedType, useSession } from '@/entities/contract'
+  import { getValueByPath, NeedType, SaleStatus } from '@/entities/contract'
+  import { useContractEditorContext } from '@/features/contract-dialog'
   import { formatCurrency } from '@/shared/lib'
+  import { useFormSectionProvider } from '@/shared/lib/composables'
   import { needTypeController } from '@/shared/lib/enums/contract'
   import { FCard, FDatePicker, FSelect, FTextField } from '@/shared/ui'
 
-  /**
-   * Contract display data for financial summary
-   */
-  interface ContractDisplayData {
-    subtotal: number
-    taxTotal: number
-    discountTotal: number
-    grandTotal: number
-    amountPaid: number
-    balanceDue: number
-  }
+  // Inject editor context
+  const editor = useContractEditorContext()
+  const draft = computed(() => editor.draft.value)
 
-  const props = defineProps<{
-    /** Contract data for financial summary (read-only) */
-    contract?: ContractDisplayData | null
-  }>()
+  // Provide form context to child components (must be in setup, not onMounted)
+  useFormSectionProvider(
+    editor.errorsByPath,
+    (path: string) => {
+      if (!draft.value) return undefined
+      return getValueByPath(draft.value, path)
+    },
+    {
+      'set-field': (path: string, value: unknown) => editor.setField(path, value),
+      'touch-field': (path: string) => editor.touchField(path),
+      validate: () => editor.validateSection('general'),
+    },
+  )
 
-  // Inject session from provide/inject
-  const session = useSession()
-
-  // Sale date label changes based on need type (like legacy)
-  // Cemetery or Pre-Need = "Sale Date", Funeral At-Need = "Service Date"
-  const saleDateLabel = computed(() => {
-    return session.needType.value === NeedType.PRE_NEED ? 'Sale Date' : 'Service Date'
+  // Read-only if executed or voided
+  const isReadOnly = computed(() => {
+    const status = draft.value?.meta.status
+    return status === SaleStatus.EXECUTED || status === SaleStatus.VOID
   })
 
-  // Use session financials if contract prop not provided
-  const financials = computed(() => props.contract ?? session.financials.value)
+  // Sale date label changes based on need type
+  const saleDateLabel = computed(() => {
+    return draft.value?.needType === NeedType.PRE_NEED ? 'Sale Date' : 'Service Date'
+  })
+
+  // Calculate financials from draft items and payments
+  const financials = computed(() => {
+    if (!draft.value) {
+      return {
+        subtotal: 0,
+        taxTotal: 0,
+        discountTotal: 0,
+        grandTotal: 0,
+        amountPaid: 0,
+        balanceDue: 0,
+      }
+    }
+
+    // Calculate from items
+    const items = draft.value.sale.items
+    const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+
+    // TODO: Calculate tax and discounts properly from item.salesTax and item.discounts
+    const taxTotal = 0
+    const discountTotal = 0
+    const grandTotal = subtotal + taxTotal - discountTotal
+
+    // Calculate from payments
+    const payments = draft.value.payments
+    const amountPaid = payments.reduce((sum, payment) => sum + payment.amount, 0)
+    const balanceDue = grandTotal - amountPaid
+
+    return {
+      subtotal,
+      taxTotal,
+      discountTotal,
+      grandTotal,
+      amountPaid,
+      balanceDue,
+    }
+  })
 </script>
 
 <style scoped>

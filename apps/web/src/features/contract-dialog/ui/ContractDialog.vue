@@ -1,8 +1,15 @@
+<!--
+  features/contract-dialog/ui/ContractDialog.vue
+
+  Contract editor dialog - full-screen dialog for creating and editing contracts
+  Refactored to use XState + Context pattern
+  Uses inject to get editor context from ContractEditorProvider
+-->
+
 <template>
   <FFullScreenDialog
     v-model="dialogModel"
-    :busy="isBusy"
-    :error="errorMessage"
+    :busy="editor.isSaving.value"
     :title="dialogTitle"
     @after-leave="emit('after-leave')"
     @close="handleClose"
@@ -14,50 +21,34 @@
       @cancel="confirmDialog.handleCancel"
       @confirm="confirmDialog.handleConfirm"
     />
+
     <template #subtitle>
       <v-chip
-        v-if="!session.isNewContract.value"
+        v-if="!editor.isNewContract.value && draft"
         class="ml-3"
-        :color="getSaleStatusColor(session.status.value)"
+        :color="getStatusColor(draft.meta.status)"
         size="small"
         variant="elevated"
       >
-        {{ saleStatusController.getDescription(session.status.value) }}
+        {{ getStatusLabel(draft.meta.status) }}
       </v-chip>
     </template>
 
     <template #toolbar>
-      <!-- Save Button (hidden when executed/voided - like legacy canSaveDraftOrFinal) -->
+      <!-- Save Button -->
       <FButton
-        v-if="!session.isLoading.value && session.canSaveDraftOrFinal.value"
+        v-if="draft && !isReadOnly"
         class="mr-2"
-        :disabled="isBusy"
+        :disabled="editor.isSaving.value"
         prepend-icon="mdi-content-save"
         @click="handleSave"
       >
         Save
       </FButton>
-
-      <!-- Actions Menu (hidden for new contracts - only save is available) -->
-      <FActionsMenu
-        v-if="!session.isLoading.value && !session.isNewContract.value"
-        :disabled="isBusy"
-        :items="actionMenuItems"
-        tooltip="More Actions"
-      />
     </template>
 
-    <!-- Validation errors snackbar (shows on failed save) -->
-    <FFormErrorsSnackbar
-      v-model="showErrors"
-      :errors="formErrors"
-    />
-
     <!-- Contract content with vertical sidebar tabs -->
-    <div
-      v-if="!session.isLoading.value"
-      class="contract-dialog-content"
-    >
+    <div class="contract-dialog-content">
       <!-- Sidebar Navigation -->
       <aside class="contract-sidebar">
         <v-tabs
@@ -80,10 +71,10 @@
           >
             Items
             <v-badge
-              v-if="session.items.itemCount.value > 0"
+              v-if="draft && draft.sale.items.length > 0"
               class="ml-2"
               color="primary"
-              :content="session.items.itemCount.value"
+              :content="draft.sale.items.length"
               inline
             />
           </v-tab>
@@ -95,10 +86,10 @@
           >
             Payments
             <v-badge
-              v-if="session.payments.paymentCount.value > 0"
+              v-if="draft && draft.payments.length > 0"
               class="ml-2"
               color="success"
-              :content="session.payments.paymentCount.value"
+              :content="draft.payments.length"
               inline
             />
           </v-tab>
@@ -109,6 +100,13 @@
             value="people"
           >
             People
+            <v-badge
+              v-if="draft && draft.people.length > 0"
+              class="ml-2"
+              color="info"
+              :content="draft.people.length"
+              inline
+            />
           </v-tab>
         </v-tabs>
       </aside>
@@ -121,38 +119,19 @@
         >
           <v-window-item value="general">
             <div class="content-panel">
-              <FFormProvider
-                :get-error="getError"
-                :touch="touch"
-                :validate-if-touched="validateIfTouched"
-              >
-                <ContractGeneral />
-              </FFormProvider>
+              <ContractGeneral />
             </div>
           </v-window-item>
 
           <v-window-item value="items">
             <div class="content-panel">
-              <ContractItems
-                :contract-id="props.contractId"
-                :is-editable="session.isEditable.value"
-                :items="session.items.items.value as SaleItem[]"
-                @add="handleAddItem"
-                @remove="handleRemoveItem"
-              />
+              <ContractItems />
             </div>
           </v-window-item>
 
           <v-window-item value="payments">
             <div class="content-panel">
-              <ContractPayments
-                :contract-id="props.contractId"
-                :financials="session.financials.value"
-                :is-editable="session.isEditable.value"
-                :payments="session.payments.payments.value as ContractPayment[]"
-                @add="handleAddPayment"
-                @remove="handleRemovePayment"
-              />
+              <ContractPayments />
             </div>
           </v-window-item>
 
@@ -164,62 +143,16 @@
         </v-window>
       </main>
     </div>
-
-    <!-- Loading state -->
-    <div
-      v-else-if="session.isLoading.value"
-      class="d-flex flex-column align-center justify-center pa-12"
-    >
-      <v-progress-circular
-        indeterminate
-        size="48"
-      />
-      <p class="text-body-2 text-medium-emphasis mt-4">Loading contract...</p>
-    </div>
-
-    <!-- Not found / Error state -->
-    <div
-      v-else-if="session.isError.value"
-      class="d-flex flex-column align-center justify-center pa-12"
-    >
-      <v-icon
-        color="grey"
-        icon="mdi-file-document-alert-outline"
-        size="64"
-      />
-      <h3 class="text-h6 mt-4">Contract Not Found</h3>
-      <p class="text-body-2 text-medium-emphasis">
-        The contract you're looking for doesn't exist or has been removed.
-      </p>
-    </div>
   </FFullScreenDialog>
 </template>
 
 <script lang="ts" setup>
   import { useVModel } from '@vueuse/core'
-  import { computed, onErrorCaptured, ref, watch } from 'vue'
-  import {
-    contractFormSchema,
-    type ContractPayment,
-    type ContractPaymentFormValues,
-    getSaleStatusColor,
-    type ItemType,
-    type PaymentMethod,
-    type SaleItem,
-    useContractSession,
-  } from '@/entities/contract'
+  import { computed, watch } from 'vue'
+  import { getSaleStatusColor, SaleStatus } from '@/entities/contract'
+  import { useContractEditorContext } from '@/features/contract-dialog'
   import { saleStatusController } from '@/shared/lib/enums/contract'
-  import {
-    type ActionMenuItem,
-    FActionsMenu,
-    FButton,
-    FConfirmDialog,
-    FFormErrorsSnackbar,
-    FFormProvider,
-    FFullScreenDialog,
-    useConfirm,
-    useSessionValidator,
-  } from '@/shared/ui'
+  import { FButton, FConfirmDialog, FFullScreenDialog, useConfirm } from '@/shared/ui'
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'
   import ContractPayments from './ContractPayments.vue'
@@ -227,14 +160,12 @@
 
   interface Props {
     modelValue?: boolean
-    contractId?: string | null
-    /** Initial tab to display (supports route query param: ?tab=payments) */
+    /** Initial tab to display */
     initialTab?: 'general' | 'items' | 'payments' | 'people'
   }
 
   const props = withDefaults(defineProps<Props>(), {
     modelValue: false,
-    contractId: null,
     initialTab: 'general',
   })
 
@@ -246,368 +177,91 @@
     'after-leave': []
   }>()
 
+  // Inject editor context
+  const editor = useContractEditorContext()
+
+  // Dialog state
   const dialogModel = useVModel(props, 'modelValue', emit)
-  const errorMessage = ref<string | null>(null)
+  const confirmDialog = useConfirm()
 
-  // Global error handler for this component
-  function errorHandler(error: Error) {
-    console.error('[ContractDialog] Global error handler caught:', error)
-    console.error('[ContractDialog] Error stack:', error.stack)
-  }
+  // Draft shorthand
+  const draft = computed(() => editor.draft.value)
 
-  // Set up global error handler for this component
-  onErrorCaptured(errorHandler)
+  // Tab state - synced with editor context
+  const activeTab = computed({
+    get: () => editor.activeTab.value,
+    set: (value) => editor.setTab(value),
+  })
 
-  // Tab state - internal state, initialized from prop
-  const activeTab = ref<'general' | 'items' | 'payments' | 'people'>(
-    (props.initialTab as 'general' | 'items' | 'payments' | 'people') || 'general',
-  )
-
-  // Sync with prop when it changes (e.g., route update)
+  // Initialize from prop
   watch(
     () => props.initialTab,
     (newTab) => {
-      try {
-        activeTab.value = newTab
-      } catch (error) {
-        console.error('[ContractDialog] Error in initialTab watcher:', error)
-        throw error
+      if (newTab) {
+        editor.setTab(newTab)
       }
     },
+    { immediate: true },
   )
 
-  // Emit tab changes for parent to optionally update route
+  // Emit tab changes
   watch(activeTab, (tab) => {
-    try {
-      emit('tab-change', tab)
-    } catch (error) {
-      console.error('[ContractDialog] Error in activeTab watcher:', error)
-      throw error
-    }
+    emit('tab-change', tab)
   })
 
-  // Confirmation dialog for unsaved changes
-  const confirmDialog = useConfirm()
-
-  // ==========================================================================
-  // Contract Session - Main orchestration
-  // ==========================================================================
-
-  const session = useContractSession(
-    computed(() => props.contractId),
-    {
-      onSave: (contract) => {
-        emit('saved', contract.id)
-      },
-      onSaveError: (error) => {
-        errorMessage.value = error.message
-      },
-    },
-  )
-
-  // ==========================================================================
-  // Form Validation (for General tab) - using useSessionValidator
-  // ==========================================================================
-
-  const {
-    errors: formErrors,
-    validate,
-    getError,
-    touch,
-    validateIfTouched,
-  } = useSessionValidator(contractFormSchema, () => session.toValidationData())
-
-  // Show errors snackbar only on failed save
-  const showErrors = ref(false)
-
-  // Combined busy state
-  const isBusy = computed(() => session.isLoading.value || session.isSaving.value)
-
-  // ==========================================================================
-  // Computed
-  // ==========================================================================
-
+  // Dialog title
   const dialogTitle = computed(() => {
-    if (session.isNewContract.value) {
+    if (editor.isNewContract.value) {
       return 'New Contract'
     }
-    const contractNum = session.contractNumber.value
-    return contractNum ? `Contract ${contractNum}` : 'Contract'
+    return draft.value ? `Contract ${draft.value.contractNumber}` : 'Edit Contract'
   })
 
-  // Actions menu items (like legacy app's save menu)
-  const actionMenuItems = computed<ActionMenuItem[]>(() => [
-    {
-      key: 'save-close',
-      label: 'Save & Close',
-      handler: handleSaveAndClose,
-      visible: session.canSaveDraftOrFinal.value,
-    },
-    {
-      key: 'finalize',
-      label: 'Finalize',
-      handler: handleFinalize,
-      visible: session.canFinalize.value,
-      divider: true,
-    },
-    {
-      key: 'finalize-close',
-      label: 'Finalize & Close',
-      handler: handleFinalizeAndClose,
-      visible: session.canFinalize.value,
-    },
-    {
-      key: 'execute',
-      label: 'Execute',
-      handler: handleExecute,
-      visible: session.canExecute.value,
-      divider: true,
-    },
-    {
-      key: 'execute-close',
-      label: 'Execute & Close',
-      handler: handleExecuteAndClose,
-      visible: session.canExecute.value,
-    },
-    {
-      key: 'back-to-draft',
-      label: 'Back to Draft',
+  // Read-only check
+  const isReadOnly = computed(() => {
+    return (
+      draft.value?.meta.status === SaleStatus.EXECUTED ||
+      draft.value?.meta.status === SaleStatus.VOID
+    )
+  })
 
-      handler: handleBackToDraft,
-      visible: session.canBackToDraft.value,
-      divider: true,
-    },
-    {
-      key: 'void',
-      label: 'Void Contract',
-      color: 'error',
-      handler: handleVoid,
-      visible: session.canVoid.value && !session.isNewContract.value,
-      divider: true,
-    },
-  ])
-
-  // ==========================================================================
-  // Handlers
-  // ==========================================================================
-
-  /**
-   * Validate session data
-   * @returns true if validation passed, false otherwise
-   */
-  function validateAndSync(): boolean {
-    console.log('🔍 ContractDialog.validateAndSync - Starting validation')
-    const result = validate()
-    if (!result.valid) {
-      console.log('❌ ContractDialog.validateAndSync - Validation failed:', result.errors)
-      showErrors.value = true
-      return false
-    }
-    console.log('✅ ContractDialog.validateAndSync - Validation passed')
-    return true
+  // Status helpers
+  function getStatusColor(status: SaleStatus): string {
+    return getSaleStatusColor(status)
   }
 
-  /**
-   * Save the contract (validates first)
-   * Like legacy: doSave(false, false, false, false)
-   */
+  function getStatusLabel(status: SaleStatus): string {
+    return saleStatusController.getDescription(status)
+  }
+
+  // Save handler
   async function handleSave() {
-    console.log('🔍 ContractDialog.handleSave - Starting save process')
-    if (!validateAndSync()) {
-      console.log('❌ ContractDialog.handleSave - Validation failed')
-      return
-    }
-    console.log('✅ ContractDialog.handleSave - Validation passed, saving...')
-    await session.save()
-    console.log('💾 ContractDialog.handleSave - Save completed')
-  }
-
-  /**
-   * Save and close the dialog
-   * Like legacy: doSave(false, false, false, true)
-   */
-  async function handleSaveAndClose() {
-    if (!validateAndSync()) return
-    await session.save()
-    if (!session.saveError.value) {
-      closeDialog()
+    const savedContract = await editor.save()
+    if (savedContract) {
+      emit('saved', savedContract.id)
     }
   }
 
-  /**
-   * Finalize the contract (validates, confirms, changes status, saves)
-   */
-  async function handleFinalize() {
-    if (!validateAndSync()) return
-
-    const confirmed = await confirmDialog.confirm({
-      title: 'Finalize Contract',
-      message: 'Finalizing will lock the contract from further editing. Continue?',
-      confirmText: 'Finalize',
-      cancelText: 'Cancel',
-      confirmColor: 'warning',
-    })
-    if (!confirmed) return
-
-    session.finalize()
-    await session.save()
-  }
-
-  /**
-   * Finalize and close
-   */
-  async function handleFinalizeAndClose() {
-    if (!validateAndSync()) return
-
-    const confirmed = await confirmDialog.confirm({
-      title: 'Finalize Contract',
-      message: 'Finalizing will lock the contract from further editing. Continue?',
-      confirmText: 'Finalize',
-      cancelText: 'Cancel',
-      confirmColor: 'warning',
-    })
-    if (!confirmed) return
-
-    session.finalize()
-    await session.save()
-    if (!session.saveError.value) {
-      closeDialog()
+  // Close handler with dirty check
+  async function handleClose() {
+    if (editor.dirty.value) {
+      const confirmed = await confirmDialog.confirm({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Are you sure you want to close?',
+        confirmText: 'Discard Changes',
+        cancelText: 'Keep Editing',
+        confirmColor: 'error',
+      })
+      if (!confirmed) {
+        return
+      }
     }
-  }
 
-  /**
-   * Handle person name updates from ContractPeople - NO LONGER NEEDED with edit model
-   * The edit model is mutated directly by child components
-   */
-  // REMOVED: handlePersonNameUpdate
-
-  /**
-   * Execute the contract
-   */
-  async function handleExecute() {
-    if (!validateAndSync()) return
-
-    const confirmed = await confirmDialog.confirm({
-      title: 'Execute Contract',
-      message: 'Executing marks this contract as complete. This action is final. Continue?',
-      confirmText: 'Execute',
-      cancelText: 'Cancel',
-      confirmColor: 'success',
-    })
-    if (!confirmed) return
-
-    session.execute()
-    await session.save()
-  }
-
-  /**
-   * Execute and close
-   */
-  async function handleExecuteAndClose() {
-    if (!validateAndSync()) return
-
-    const confirmed = await confirmDialog.confirm({
-      title: 'Execute Contract',
-      message: 'Executing marks this contract as complete. This action is final. Continue?',
-      confirmText: 'Execute',
-      cancelText: 'Cancel',
-      confirmColor: 'success',
-    })
-    if (!confirmed) return
-
-    session.execute()
-    await session.save()
-    if (!session.saveError.value) {
-      closeDialog()
-    }
-  }
-
-  /**
-   * Move contract back to draft status (no confirmation needed - reversible)
-   */
-  async function handleBackToDraft() {
-    session.backToDraft()
-    await session.save()
-  }
-
-  /**
-   * Void the contract - this one DOES need confirmation since it's destructive
-   * Like legacy: Contract.vue void() method with confirmation
-   */
-  async function handleVoid() {
-    const confirmed = await confirmDialog.confirm({
-      title: 'Void Contract',
-      message: 'Are you sure you want to void this contract? This action cannot be undone.',
-      confirmText: 'Void Contract',
-      cancelText: 'Cancel',
-      confirmColor: 'error',
-    })
-
-    if (!confirmed) return
-
-    session.voidContract('Voided by user')
-    await session.save()
-    if (!session.saveError.value) {
-      closeDialog()
-    }
-  }
-
-  function closeDialog() {
-    session.reset()
     dialogModel.value = false
     emit('closed')
   }
-
-  function handleAddItem(data: {
-    sku: string
-    description: string
-    itemType: ItemType
-    quantity: number
-    unitPrice: number
-  }) {
-    session.items.addCustomItem({
-      sku: data.sku,
-      description: data.description,
-      itemType: data.itemType,
-      quantity: data.quantity,
-      unitPrice: data.unitPrice,
-    })
-  }
-
-  function handleRemoveItem(itemId: string) {
-    session.items.removeItem(itemId)
-  }
-
-  function handleAddPayment(data: ContractPaymentFormValues) {
-    const payment = session.payments.addPayment()
-    // Update the payment with provided data
-    payment.date = data.date
-    payment.method = data.method as PaymentMethod
-    payment.amount = data.amount
-    payment.reference = data.reference
-    payment.notes = data.notes
-  }
-
-  function handleRemovePayment(paymentId: string) {
-    session.payments.removePayment(paymentId)
-  }
-
-  async function handleClose() {
-    if (session.isDirty.value) {
-      const shouldClose = await confirmDialog.confirm({
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes. Are you sure you want to close?',
-        confirmText: 'Discard',
-        cancelText: 'Cancel',
-        confirmColor: 'error',
-      })
-
-      if (!shouldClose) return
-    }
-
-    closeDialog()
-  }
 </script>
+
 <style scoped>
   .contract-dialog-content {
     display: flex;
@@ -615,42 +269,46 @@
     overflow: hidden;
   }
 
-  /* Sidebar Navigation */
   .contract-sidebar {
-    min-width: 250px;
-    background: rgb(var(--v-theme-surface));
+    flex: 0 0 auto;
+    width: 200px;
     border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    background-color: rgb(var(--v-theme-surface));
     overflow-y: auto;
-    padding-top: 16px;
   }
 
-  .contract-sidebar :deep(.v-tabs) {
-    width: 100%;
+  .contract-sidebar-tab {
+    justify-content: flex-start;
+    text-transform: none;
+    font-weight: 500;
   }
 
-  /* Main Content Area */
   .contract-main-content {
-    flex: 1;
-    overflow-y: auto;
-    background: rgb(var(--v-theme-background));
+    flex: 1 1 auto;
+    overflow: hidden;
+    background-color: rgb(var(--v-theme-background));
   }
 
   .content-panel {
-    padding: 24px;
-    /* max-width: 1200px; */
-  }
-
-  /* Window should fill height */
-  .contract-main-content :deep(.v-window) {
-    height: 100%;
-  }
-
-  .contract-main-content :deep(.v-window__container) {
-    height: 100%;
-  }
-
-  .contract-main-content :deep(.v-window-item) {
     height: 100%;
     overflow-y: auto;
+    padding: 24px;
+  }
+
+  /* Scrollbar styling */
+  .contract-sidebar::-webkit-scrollbar,
+  .content-panel::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .contract-sidebar::-webkit-scrollbar-thumb,
+  .content-panel::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+
+  .contract-sidebar::-webkit-scrollbar-thumb:hover,
+  .content-panel::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.3);
   }
 </style>

@@ -294,16 +294,34 @@ export const ContractApi = {
     }),
 
   /**
-   * Save contract draft (BFF endpoint)
-   * POST /api/v1/contracts/save/draft
+   * Validate contract draft (BFF endpoint)
+   * POST /api/v1/contracts/save/validate
    * Accepts complete nested ContractSessionSaveModel payload
-   * Returns updated Contract with all related data
+   * Returns validation result with saveToken and errors
    */
-  saveDraft: (model: ContractSessionSaveModel): Effect.Effect<Contract, ApiError> =>
+  validateDraft: (
+    model: ContractSessionSaveModel,
+  ): Effect.Effect<{ saveToken: string; errors: string[] }, ApiError> =>
     Effect.gen(function* () {
       const client = yield* Effect.promise(() => getHttpClient())
       const response = yield* Effect.tryPromise({
-        try: () => client.post<Contract>(apiUrls.contracts.saveDraft, model),
+        try: () => client.post<{ saveToken: string; errors: string[] }>(apiUrls.contracts.validateDraft, model),
+        catch: (error: unknown) => toApiError(error, 'contract'),
+      })
+      return response.data
+    }),
+
+  /**
+   * Save contract draft (BFF endpoint)
+   * POST /api/v1/contracts/save/draft
+   * Accepts token from validateDraft response
+   * Returns updated Contract with all related data
+   */
+  saveDraft: (token: string): Effect.Effect<Contract, ApiError> =>
+    Effect.gen(function* () {
+      const client = yield* Effect.promise(() => getHttpClient())
+      const response = yield* Effect.tryPromise({
+        try: () => client.post<Contract>(apiUrls.contracts.saveDraft, { token }),
         catch: (error: unknown) => toApiError(error, 'contract'),
       })
       return response.data

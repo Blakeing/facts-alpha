@@ -13,6 +13,9 @@
     "@facts/utils#build": {
       "outputs": []
     },
+    "@facts/effect#build": {
+      "outputs": []
+    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -22,6 +25,26 @@
     },
     "type-check": {
       "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:ui": {
+      "cache": false,
+      "persistent": true
+    },
+    "e2e": {
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["PLAYWRIGHT_*"]
     }
   }
 }

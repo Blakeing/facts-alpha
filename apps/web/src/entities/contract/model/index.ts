@@ -10,6 +10,7 @@ export type {
   ContractListing,
   ContractPayment,
   ContractPerson,
+  ContractSessionSaveModel,
   Sale,
   SaleItem,
   SaleItemDiscount,
@@ -100,23 +101,30 @@ export type {
 } from './contractSchema'
 
 // =============================================================================
-// Session Context
+// Draft Model & Validation
 // =============================================================================
 
-export { CONTRACT_SESSION_KEY } from './useContractSession'
+export {
+  applyPatch,
+  createDraftFromServer,
+  createNewContractDraft,
+  draftToContract,
+  getValueByPath,
+  resetDraft,
+} from './contract.draft'
 
-// =============================================================================
-// Handlers
-// =============================================================================
+export type { ContractDraft } from './contract.draft'
 
-export { useItemsHandler } from './handlers/useItemsHandler'
-export type { ItemsHandler } from './handlers/useItemsHandler'
+export {
+  type ContractSection,
+  ValidationMode,
+  validateAllSections,
+  validateDraftPreConditions,
+  validateSection,
+  zodErrorsToPathMap,
+} from './contract.validation'
 
-export { usePaymentsHandler } from './handlers/usePaymentsHandler'
-export type { PaymentsHandler } from './handlers/usePaymentsHandler'
-
-export { usePeopleHandler } from './handlers/usePeopleHandler'
-export type { PeopleHandler } from './handlers/usePeopleHandler'
+export type { DraftPreConditionErrors } from './contract.validation'
 
 // =============================================================================
 // Composables
@@ -125,10 +133,12 @@ export type { PeopleHandler } from './handlers/usePeopleHandler'
 export { useContract } from './useContract'
 export { CONTRACTS_QUERY_KEY, type ContractStatusString, useContracts } from './useContracts'
 
-// Session Architecture
-export { useContractSession, useSession } from './useContractSession'
-export type { ContractSession, UseContractSessionOptions } from './useContractSession'
-
-// Financials
-export { useContractFinancials } from './useContractFinancials'
-export type { ContractFinancials } from './useContractFinancials'
+// =============================================================================
+// Legacy Exports (deprecated - only for .old.vue files)
+// =============================================================================
+// The following are kept for backward compatibility with legacy .old.vue files
+// but should not be used in new code. Use ContractEditorContext instead.
+//
+// @deprecated Use ContractEditorContext from @/features/contract-dialog
+// export { useContractSession, useSession } from './useContractSession'
+// export { useItemsHandler, usePaymentsHandler, usePeopleHandler } from './handlers'

@@ -54,10 +54,22 @@
 
   // Convert ISO string <-> Date for v-date-input
   const internalValue = computed({
-    get: () => (props.modelValue ? adapter.parseISO(props.modelValue) : null),
+    get: () => {
+      // If field prop is set and context provides getValue, use it
+      let dateValue = props.modelValue
+      if (props.field && formContext?.getValue) {
+        const contextValue = formContext.getValue(props.field)
+        dateValue = contextValue !== undefined ? (contextValue as string | null) : null
+      }
+      return dateValue ? adapter.parseISO(dateValue) : null
+    },
     set: (val: Date | null) => {
       const strVal = val ? adapter.toISO(val) : null
       emit('update:modelValue', strVal)
+      // Also update context if available
+      if (props.field && formContext?.onUpdate) {
+        formContext.onUpdate(props.field, strVal)
+      }
     },
   })
 

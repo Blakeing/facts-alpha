@@ -60,8 +60,25 @@
   const formContext = useFormContext()
 
   const fieldValue = computed({
-    get: () => props.modelValue,
-    set: (val) => emit('update:modelValue', val),
+    get: () => {
+      // If field prop is set and context provides getValue, use it
+      if (props.field && formContext?.getValue) {
+        const contextValue = formContext.getValue(props.field)
+        // getValue already converts undefined to null
+        // Convert boolean false to null (invalid for selects)
+        if (typeof contextValue === 'boolean') return null
+        // Preserve valid falsy values like 0 (valid enum value)
+        return contextValue as SelectValue
+      }
+      return props.modelValue
+    },
+    set: (val) => {
+      emit('update:modelValue', val)
+      // Also update context if available
+      if (props.field && formContext?.onUpdate) {
+        formContext.onUpdate(props.field, val)
+      }
+    },
   })
 
   const fieldError = computed(() => {

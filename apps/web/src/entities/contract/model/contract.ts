@@ -628,9 +628,22 @@ export interface ContractPersonWithRoles extends ContractPerson {
  * Comment Feed - For contract comments/notes
  */
 export interface CommentFeed {
+  id: string
   feedType: string
-  ownerId: number
-  // Additional fields as needed
+  ownerId: string
+  entries: CommentFeedEntry[]
+}
+
+/**
+ * Comment Feed Entry - Individual comment in a feed
+ */
+export interface CommentFeedEntry {
+  id: string
+  commentFeedId: string
+  userId: number
+  replyToCommentFeedEntryId?: string
+  timestamp: string
+  message: string
 }
 
 /**

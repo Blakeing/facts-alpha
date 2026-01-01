@@ -81,7 +81,17 @@ export function toApiError(error: unknown, resourceName?: string, id?: string): 
 
     // 400 Bad Request - Validation errors
     if (status === 400) {
-      const fields = extractValidationFields(data)
+      // Parse JSON string if needed (Axios might return string instead of object)
+      let parsedData = data
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data)
+        } catch {
+          // If parsing fails, use original data
+        }
+      }
+      
+      const fields = extractValidationFields(parsedData)
       return new ValidationError({ fields })
     }
 
@@ -135,10 +145,21 @@ export function toApiError(error: unknown, resourceName?: string, id?: string): 
  * }
  */
 function extractValidationFields(data: unknown): Record<string, string[]> {
-  if (typeof data === 'object' && data !== null) {
-    const obj = data as Record<string, unknown>
+  // Parse JSON string if needed (Axios might return string instead of object)
+  let parsedData = data
+  if (typeof data === 'string') {
+    try {
+      parsedData = JSON.parse(data)
+    } catch (e) {
+      // Not JSON, return empty
+      return {}
+    }
+  }
+  
+  if (typeof parsedData === 'object' && parsedData !== null) {
+    const obj = parsedData as Record<string, unknown>
 
-    // Check for nested errors object
+    // Check for nested errors object (standard format)
     if (obj.errors && typeof obj.errors === 'object') {
       const errors = obj.errors as Record<string, unknown>
       const fields: Record<string, string[]> = {}
@@ -152,6 +173,22 @@ function extractValidationFields(data: unknown): Record<string, string[]> {
       }
 
       return fields
+    }
+    
+    // Also check if the entire response is the errors object (some APIs do this)
+    // Skip if it looks like a generic RFC error response (has type, title, status)
+    if (!obj.type && !obj.title && Object.keys(obj).length > 0) {
+      const fields: Record<string, string[]> = {}
+      for (const [key, value] of Object.entries(obj)) {
+        if (Array.isArray(value)) {
+          fields[key] = value.map(String)
+        } else if (typeof value === 'string') {
+          fields[key] = [value]
+        }
+      }
+      if (Object.keys(fields).length > 0) {
+        return fields
+      }
     }
   }
 

@@ -53,8 +53,21 @@
   const formContext = useFormContext()
 
   const fieldValue = computed({
-    get: () => props.modelValue ?? '',
-    set: (val) => emit('update:modelValue', val),
+    get: () => {
+      // If field prop is set and context provides getValue, use it
+      if (props.field && formContext?.getValue) {
+        const contextValue = formContext.getValue(props.field)
+        return contextValue !== undefined ? String(contextValue) : ''
+      }
+      return props.modelValue ?? ''
+    },
+    set: (val) => {
+      emit('update:modelValue', val)
+      // Also update context if available
+      if (props.field && formContext?.onUpdate) {
+        formContext.onUpdate(props.field, val)
+      }
+    },
   })
 
   // Error: form context (via field prop) > manual error prop

@@ -3,7 +3,7 @@
     <FCard title="Contract Items">
       <template #append>
         <FButton
-          v-if="contractId && isEditable"
+          v-if="!isReadOnly"
           intent="primary"
           prepend-icon="mdi-plus"
           size="small"
@@ -28,13 +28,14 @@
           <span
             v-else
             class="text-medium-emphasis"
-            >—</span
           >
+            —
+          </span>
         </template>
 
         <template #item.actions="{ item: rawItem }">
           <v-btn
-            v-if="isEditable"
+            v-if="!isReadOnly"
             color="error"
             icon="mdi-delete"
             size="small"
@@ -55,7 +56,7 @@
         />
         <p class="text-body-1 text-medium-emphasis mt-2">No items added yet</p>
         <FButton
-          v-if="contractId && isEditable"
+          v-if="!isReadOnly"
           class="mt-4"
           intent="primary"
           prepend-icon="mdi-plus"
@@ -64,13 +65,7 @@
           Add First Item
         </FButton>
         <p
-          v-else-if="!contractId"
-          class="text-body-2 text-medium-emphasis mt-2"
-        >
-          Save the contract first to add items
-        </p>
-        <p
-          v-else-if="!isEditable"
+          v-else
           class="text-body-2 text-medium-emphasis mt-2"
         >
           Contract is not editable
@@ -146,10 +141,11 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
-  import { type SaleItem, ItemType } from '@/entities/contract'
-  import { itemTypeController } from '@/shared/lib/enums/contract'
+  import { computed, ref } from 'vue'
+  import { ItemType, type SaleItem, SaleStatus } from '@/entities/contract'
+  import { useContractEditorContext } from '@/features/contract-dialog'
   import { formatCurrency } from '@/shared/lib'
+  import { itemTypeController } from '@/shared/lib/enums/contract'
   import {
     FButton,
     FCard,
@@ -168,22 +164,18 @@
     unitPrice: number
   }
 
-  interface Props {
-    contractId?: string | null
-    items: SaleItem[]
-    /** Whether the contract is editable (draft status) */
-    isEditable?: boolean
-  }
+  // Inject editor context
+  const editor = useContractEditorContext()
+  const draft = computed(() => editor.draft.value)
 
-  withDefaults(defineProps<Props>(), {
-    contractId: null,
-    isEditable: true,
+  // Items from draft
+  const items = computed(() => draft.value?.sale.items ?? [])
+
+  // Read-only if executed or voided
+  const isReadOnly = computed(() => {
+    const status = draft.value?.meta.status
+    return status === SaleStatus.EXECUTED || status === SaleStatus.VOID
   })
-
-  const emit = defineEmits<{
-    add: [data: ItemFormData]
-    remove: [itemId: string]
-  }>()
 
   const showAddDialog = ref(false)
   const isAdding = ref(false)
@@ -224,10 +216,6 @@
 
   const newItem = ref<ItemFormData>({ ...defaultItem })
 
-  function getItemTypeLabel(itemType: number): string {
-    return itemTypeController.getDescription(itemType)
-  }
-
   function getItemDiscountTotal(item: SaleItem): number {
     return item.discounts?.reduce((sum, d) => sum + d.amount, 0) ?? 0
   }
@@ -240,7 +228,32 @@
   async function handleAdd() {
     isAdding.value = true
     try {
-      emit('add', { ...newItem.value })
+      // Create new item
+      const item: Partial<SaleItem> = {
+        id: crypto.randomUUID(),
+        saleId: draft.value?.sale.id ?? '',
+        itemId: '', // TODO: Link to catalog item if needed
+        sku: newItem.value.sku,
+        description: newItem.value.description,
+        itemType: newItem.value.itemType,
+        needType: draft.value?.needType,
+        quantity: newItem.value.quantity,
+        unitPrice: newItem.value.unitPrice,
+        bookPrice: newItem.value.unitPrice,
+        cost: 0,
+        bookCost: 0,
+        salesTaxEnabled: true,
+        isCancelled: false,
+        ordinal: items.value.length,
+        salesTax: [],
+        discounts: [],
+        trust: [],
+        dateCreated: new Date().toISOString(),
+        dateLastModified: new Date().toISOString(),
+      }
+
+      // Add to draft
+      editor.setField('sale.items', [...items.value, item as SaleItem])
       resetForm()
     } finally {
       isAdding.value = false
@@ -248,7 +261,8 @@
   }
 
   function handleRemove(itemId: string) {
-    emit('remove', itemId)
+    const newItems = items.value.filter((item) => item.id !== itemId)
+    editor.setField('sale.items', newItems)
   }
 </script>
 

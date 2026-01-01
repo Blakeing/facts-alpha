@@ -1,13 +1,14 @@
 <template>
-  <ContractDialog
-    v-model="isOpen"
-    :contract-id="null"
-    :initial-tab="currentTab"
-    @after-leave="handleAfterLeave"
-    @closed="handleClosed"
-    @saved="handleSaved"
-    @tab-change="handleTabChange"
-  />
+  <ContractEditorProvider contract-id="new">
+    <ContractDialog
+      v-model="isOpen"
+      :initial-tab="currentTab"
+      @after-leave="handleAfterLeave"
+      @closed="handleClosed"
+      @saved="handleSaved"
+      @tab-change="handleTabChange"
+    />
+  </ContractEditorProvider>
 </template>
 
 <script lang="ts" setup>
@@ -18,6 +19,7 @@
   import { ContractDialog, useContractDialogRoute } from '@/features/contract-dialog'
   import { editRequirement, SecurityOptionKeys } from '@/shared/lib/security'
   import { useToast } from '@/shared/ui'
+  import { ContractEditorProvider } from '@/widgets/contract-editor'
 
   // Route meta - creating contracts requires edit permission
   definePage({

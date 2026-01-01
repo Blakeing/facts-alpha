@@ -1,7 +1,7 @@
 import { inject, provide, type InjectionKey } from 'vue'
 
 /**
- * Form context for automatic field error/touch binding
+ * Form context for automatic field error/touch binding and value management
  */
 export interface FormContext {
   /** Get error message for a field path */
@@ -10,6 +10,10 @@ export interface FormContext {
   touch: (path: string) => void
   /** Validate if touched (for real-time error clearing on input) */
   validateIfTouched?: (path: string) => void
+  /** Get value for a field path (optional - for auto-binding) */
+  getValue?: (path: string) => unknown
+  /** Update value for a field path (optional - for auto-binding) */
+  onUpdate?: (path: string, value: unknown) => void
 }
 
 /**
@@ -19,6 +23,8 @@ export const FORM_CONTEXT_KEY: InjectionKey<FormContext> = Symbol('FormContext')
 
 /**
  * Provide form context to child components
+ * 
+ * NOTE: Must be called synchronously during component setup(), not in watchers or lifecycle hooks
  *
  * @example
  * ```ts
@@ -27,6 +33,7 @@ export const FORM_CONTEXT_KEY: InjectionKey<FormContext> = Symbol('FormContext')
  * ```
  */
 export function provideFormContext(context: FormContext): void {
+  // provide() must be called during setup - Vue will warn if called outside
   provide(FORM_CONTEXT_KEY, context)
 }
 

@@ -29,7 +29,7 @@ export const NextIdApi = {
 
   /**
    * Get multiple next IDs from the backend
-   * BFF endpoint: GET /api/v1/nextids/{count}
+   * BFF endpoint: GET /api/v1/nextid/{count}
    * Returns: string[] (array of next IDs)
    */
   nextIds: (count: number): Effect.Effect<string[], ApiError> =>

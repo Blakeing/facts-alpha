@@ -17,18 +17,18 @@
               </v-icon>
               <h2 class="text-h6 mb-0">People</h2>
               <v-chip
-                v-if="peopleList.length > 0"
+                v-if="people.length > 0"
                 class="ml-3"
                 color="primary"
                 size="small"
                 variant="tonal"
               >
-                {{ peopleList.length }}
+                {{ people.length }}
               </v-chip>
             </div>
             <div>
               <v-menu
-                v-if="isDraft"
+                v-if="!isReadOnly"
                 v-model="showAddMenu"
                 :close-on-content-click="false"
               >
@@ -42,34 +42,25 @@
                 </template>
                 <v-list density="compact">
                   <v-list-item
-                    v-if="isDraft"
                     prepend-icon="mdi-account-plus"
                     @click="handleAddCoBuyer"
                   >
                     <v-list-item-title>Add Co-Buyer</v-list-item-title>
                   </v-list-item>
                   <v-list-item
-                    v-if="canHaveAdditionalBeneficiaries"
                     prepend-icon="mdi-account-plus"
-                    @click="handleAddAdditionalBeneficiary"
+                    @click="handleAddBeneficiary"
                   >
                     <v-list-item-title>Add Additional Beneficiary</v-list-item-title>
                   </v-list-item>
                   <v-list-item
                     prepend-icon="mdi-account-plus"
-                    @click="handleAddGenericPerson"
+                    @click="handleAddPerson"
                   >
                     <v-list-item-title>Add Other Person</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
-              <FButton
-                v-else-if="!isVoided"
-                prepend-icon="mdi-plus"
-                @click="handleAddGenericPerson"
-              >
-                Add Person
-              </FButton>
             </div>
           </v-card-title>
         </v-card>
@@ -79,7 +70,7 @@
     <v-row>
       <!-- Person tabs sidebar -->
       <v-col
-        v-if="peopleList.length > 0"
+        v-if="people.length > 0"
         cols="12"
         md="3"
       >
@@ -95,17 +86,17 @@
             direction="vertical"
           >
             <v-tab
-              v-for="(person, index) in peopleList"
+              v-for="(person, index) in people"
               :key="`tab-${index}`"
               class="text-left justify-start"
               :value="index"
             >
               <div class="d-flex flex-column align-start w-100">
                 <div
-                  v-if="personTypeLabel(person)"
+                  v-if="getPersonTypeLabel(person)"
                   class="text-caption text-medium-emphasis mb-1"
                 >
-                  {{ personTypeLabel(person) }}
+                  {{ getPersonTypeLabel(person) }}
                 </div>
                 <div class="text-body-2 font-weight-medium">
                   {{ getDisplayName(person) || 'New Person' }}
@@ -127,11 +118,11 @@
 
       <!-- Person content -->
       <v-col
-        :cols="peopleList.length > 0 ? 12 : 12"
-        :md="peopleList.length > 0 ? 9 : 12"
+        :cols="people.length > 0 ? 12 : 12"
+        :md="people.length > 0 ? 9 : 12"
       >
         <v-alert
-          v-if="peopleList.length === 0"
+          v-if="people.length === 0"
           class="mt-4"
           type="info"
           variant="tonal"
@@ -151,20 +142,14 @@
                     <div class="text-h6 font-weight-medium">
                       {{ getDisplayName(currentPerson) || 'New Person' }}
                     </div>
-                    <div
-                      v-if="personDeceasedLabel(currentPerson)"
-                      class="text-caption text-error mt-1"
-                    >
-                      {{ personDeceasedLabel(currentPerson) }}
-                    </div>
                   </div>
                   <v-chip
-                    v-if="personTypeLabel(currentPerson)"
+                    v-if="getPersonTypeLabel(currentPerson)"
                     color="primary"
                     size="small"
                     variant="tonal"
                   >
-                    {{ personTypeLabel(currentPerson) }}
+                    {{ getPersonTypeLabel(currentPerson) }}
                   </v-chip>
                 </div>
                 <div class="d-flex gap-1">
@@ -183,32 +168,6 @@
                       </v-btn>
                     </template>
                   </v-tooltip>
-                  <v-menu v-if="canChangeRole(currentPerson)">
-                    <template #activator="{ props: menuProps }">
-                      <v-tooltip text="Change Person Type">
-                        <template #activator="{ props: tooltipProps }">
-                          <v-btn
-                            v-bind="{ ...menuProps, ...tooltipProps }"
-                            color="primary"
-                            icon
-                            size="small"
-                            variant="text"
-                          >
-                            <v-icon>mdi-swap-horizontal</v-icon>
-                          </v-btn>
-                        </template>
-                      </v-tooltip>
-                    </template>
-                    <v-list density="compact">
-                      <v-list-item
-                        v-for="option in getRoleOptions(currentPerson)"
-                        :key="option.role"
-                        @click="changeRole(currentPerson, option.role)"
-                      >
-                        <v-list-item-title>{{ option.label }}</v-list-item-title>
-                      </v-list-item>
-                    </v-list>
-                  </v-menu>
                   <v-tooltip text="Remove Person">
                     <template #activator="{ props: tooltipProps }">
                       <v-btn
@@ -228,34 +187,20 @@
               </div>
             </template>
 
-            <!-- No beneficiary message for executed contracts -->
-            <v-alert
-              v-if="isPrimaryBeneficiary(currentPerson) && isExecuted && !hasName(currentPerson)"
-              class="ma-4"
-              density="compact"
-              type="warning"
-              variant="tonal"
-            >
-              <template #prepend>
-                <v-icon>mdi-alert</v-icon>
-              </template>
-              <div class="text-body-2">
-                No primary {{ beneficiaryLabel }} has been provided. Please use the edit button to
-                update this information.
-              </div>
-            </v-alert>
-
             <!-- Name panel - editable for new/empty persons, readonly otherwise -->
-            <div v-else-if="currentPerson.name">
+            <div
+              v-if="currentPerson.name"
+              class="pa-4"
+            >
               <NamePanel
-                :hide-company="hideCompany(currentPerson)"
-                :hide-deceased-info="hideDeceasedInfo(currentPerson)"
-                :hide-s-s-n="hideSSN(currentPerson)"
-                :is-name-required="isNameRequiredForCurrentPerson"
+                :hide-company="false"
+                :hide-deceased-info="false"
+                :hide-s-s-n="false"
+                :is-name-required="isNameRequired(currentPerson)"
                 :model="currentPerson.name"
-                :name-part-readonly="!isCurrentPersonEditable"
+                :name-part-readonly="!isPersonEditable(currentPerson)"
                 :people-list="peopleNames"
-                :show-opt-out-marketing="showOptOutMarketing(currentPerson)"
+                :show-opt-out-marketing="false"
               />
             </div>
           </FCard>
@@ -265,69 +210,54 @@
 
     <!-- Name Editor Dialog -->
     <NameEditorDialog
-      v-model="editDialog.visible.value"
-      :hide-company="editDialog.hideCompany.value"
-      :hide-deceased-info="editDialog.hideDeceasedInfo.value"
-      :hide-s-s-n="editDialog.hideSSN.value"
-      :is-name-required="editDialog.isNameRequired.value"
-      :model="editDialog.model.value"
-      :name-part-editable="editDialog.canEditNameParts.value"
+      v-model="editDialog.visible"
+      :hide-company="false"
+      :hide-deceased-info="false"
+      :hide-s-s-n="false"
+      :is-name-required="true"
+      :model="editDialog.model"
+      :name-part-editable="true"
       :people-list="peopleNames"
-      :show-opt-out-marketing="editDialog.showOptOutMarketing.value"
-      :title="editDialog.title.value"
+      :show-opt-out-marketing="false"
+      :title="editDialog.title"
       @save="saveName"
     />
   </v-container>
 </template>
 
 <script lang="ts" setup>
-  import type { ContractPerson } from '@/entities/contract'
-  import type { Name } from '@/entities/name'
   import { computed, ref, watch } from 'vue'
-  import { ContractPersonRole, useSession } from '@/entities/contract'
-  import { getFormattedName } from '@/entities/name'
+  import { type ContractPerson, ContractPersonRole, SaleStatus } from '@/entities/contract'
+  import { contractPersonRoleController } from '@/entities/contract/model/ContractPersonRoleController'
+  import { createEmptyName, getFormattedName, type Name } from '@/entities/name'
   import { NameEditorDialog, NamePanel } from '@/entities/name/ui'
+  import { useContractEditorContext } from '@/features/contract-dialog'
   import { FButton, FCard } from '@/shared/ui'
-  import { usePersonEditDialog } from '../composables/usePersonEditDialog'
-  import {
-    getFieldVisibility,
-    hasName,
-    isNameRequired,
-  } from '../composables/usePersonFieldVisibility'
 
-  // ==========================================================================
-  // Session & Status
-  // ==========================================================================
+  // Inject editor context
+  const editor = useContractEditorContext()
+  const draft = computed(() => editor.draft.value)
 
-  const session = useSession()
+  // People from draft
+  const people = computed(() => draft.value?.people ?? [])
 
-  const isDraft = computed(() => session.hasDraftStatus.value)
-  const isVoided = computed(() => session.isVoided.value)
-  const isExecuted = computed(() => session.isExecuted.value)
-  const isFinalized = computed(() => session.isFinalized.value)
-  const needType = computed(() => session.needType.value)
+  // People names for validation
+  const peopleNames = computed(() => {
+    return people.value.filter((p) => p.name).map((p) => p.name!)
+  })
 
-  // ==========================================================================
+  // Read-only if executed or voided
+  const isReadOnly = computed(() => {
+    const status = draft.value?.meta.status
+    return status === SaleStatus.EXECUTED || status === SaleStatus.VOID
+  })
+
   // UI State
-  // ==========================================================================
-
   const activeTab = ref(0)
   const showAddMenu = ref(false)
 
-  // Edit dialog (extracted to composable)
-  const editDialog = usePersonEditDialog(
-    session.people,
-    () => isDraft.value,
-    () => needType.value,
-  )
-
-  // ==========================================================================
-  // People List & Current Selection
-  // ==========================================================================
-
-  const peopleList = computed(() => session.people.allPeople.value)
-
-  watch(peopleList, (newList) => {
+  // Watch people list and adjust active tab
+  watch(people, (newList) => {
     if (newList.length === 0) {
       activeTab.value = 0
     } else if (activeTab.value >= newList.length) {
@@ -335,226 +265,157 @@
     }
   })
 
+  // Current person
   const currentPerson = computed(() => {
-    if (peopleList.value.length === 0) return null
+    if (people.value.length === 0) return null
     const index = activeTab.value
-    if (index < 0 || index >= peopleList.value.length) return null
-    return peopleList.value[index]
+    if (index < 0 || index >= people.value.length) return null
+    return people.value[index]
   })
 
-  const peopleNames = computed(() => {
-    return peopleList.value.filter((p) => p.name).map((p) => p.name!)
-  })
-
-  // ==========================================================================
-  // Role Helpers (simplified using enum constants)
-  // ==========================================================================
-
+  // Role constants
   const { PRIMARY_BUYER, CO_BUYER, PRIMARY_BENEFICIARY, ADDITIONAL_BENEFICIARY, PERSON } =
     ContractPersonRole
 
-  function isPrimaryBuyer(p: ContractPerson) {
-    return session.people.hasRole(p, PRIMARY_BUYER)
-  }
-  function isCoBuyer(p: ContractPerson) {
-    return session.people.hasRole(p, CO_BUYER)
-  }
-  function isPrimaryBeneficiary(p: ContractPerson) {
-    return session.people.hasRole(p, PRIMARY_BENEFICIARY)
-  }
-  function isAdditionalBeneficiary(p: ContractPerson) {
-    return session.people.hasRole(p, ADDITIONAL_BENEFICIARY)
-  }
-  function isGenericPerson(p: ContractPerson) {
-    return p.roles === PERSON
+  // Role helpers
+  function hasRole(person: ContractPerson, role: ContractPersonRole): boolean {
+    return (person.roles & role) === role
   }
 
-  // ==========================================================================
-  // Configuration
-  // ==========================================================================
+  function isPrimaryBuyer(person: ContractPerson): boolean {
+    return hasRole(person, PRIMARY_BUYER)
+  }
 
-  // TODO: Determine based on location type (cemetery vs funeral)
-  const canHaveAdditionalBeneficiaries = computed(() => true)
+  function isPrimaryBeneficiary(person: ContractPerson): boolean {
+    return hasRole(person, PRIMARY_BENEFICIARY)
+  }
 
-  const beneficiaryLabel = computed(() => {
-    return needType.value === 1 ? 'deceased' : 'beneficiary' // 1 = At-Need
-  })
+  function isCoBuyer(person: ContractPerson): boolean {
+    return hasRole(person, CO_BUYER)
+  }
 
-  // ==========================================================================
-  // Display Helpers
-  // ==========================================================================
+  function isAdditionalBeneficiary(person: ContractPerson): boolean {
+    return hasRole(person, ADDITIONAL_BENEFICIARY)
+  }
 
+  // Display helpers
   function getDisplayName(person: ContractPerson): string {
     if (!person.name) return ''
     return getFormattedName(person.name) || ''
   }
 
-  function personTypeLabel(person: ContractPerson): string {
-    return session.people.getDisplayType(person)
+  function getPersonTypeLabel(person: ContractPerson): string {
+    return contractPersonRoleController.getDescription(person.roles)
   }
 
-  function personDeceasedLabel(person: ContractPerson): string {
-    if (person.name?.deathDate) {
-      const date = new Date(person.name.deathDate)
-      return ` - Deceased ${date.toLocaleDateString()}`
-    }
-    return ''
-  }
-
-  // ==========================================================================
-  // Permission Checks
-  // ==========================================================================
-
-  function isPersonEditableInline(person: ContractPerson): boolean {
-    if (!person) return false
-    if (isGenericPerson(person)) return true
-    if (isDraft.value) return true
-    if (!hasName(person)) return true
-    return false
+  // Permission checks
+  function isPersonEditable(person: ContractPerson): boolean {
+    if (isReadOnly.value) return false
+    if (!person.name?.first || !person.name?.last) return true // Empty name = editable
+    return false // Existing name requires dialog
   }
 
   function canEditPerson(person: ContractPerson): boolean {
-    return !!person.name && !isPersonEditableInline(person)
+    return !!person.name && !isPersonEditable(person)
   }
 
   function canRemovePerson(person: ContractPerson): boolean {
     if (isPrimaryBuyer(person) || isPrimaryBeneficiary(person)) return false
-    if (isCoBuyer(person) || isAdditionalBeneficiary(person)) return isDraft.value
+    if (isReadOnly.value && (isCoBuyer(person) || isAdditionalBeneficiary(person))) return false
     return true
   }
 
-  function canChangeRole(person: ContractPerson): boolean {
-    if (!isDraft.value) return false
-    if (isPrimaryBuyer(person) || isPrimaryBeneficiary(person)) return false
-    if (!hasName(person)) return false
-    return true
+  function isNameRequired(person: ContractPerson): boolean {
+    return isPrimaryBuyer(person) || isPrimaryBeneficiary(person)
   }
 
-  function getRoleOptions(person: ContractPerson) {
-    const options: { role: ContractPersonRole; label: string }[] = []
-    if (!isCoBuyer(person)) {
-      options.push({ role: CO_BUYER, label: 'Change to Co-Buyer' })
-    }
-    if (!isAdditionalBeneficiary(person) && canHaveAdditionalBeneficiaries.value) {
-      options.push({ role: ADDITIONAL_BENEFICIARY, label: 'Change to Additional Beneficiary' })
-    }
-    if (!isGenericPerson(person)) {
-      options.push({ role: PERSON, label: 'Remove Person Type' })
-    }
-    return options
-  }
-
-  // ==========================================================================
-  // Field Visibility (using helper)
-  // ==========================================================================
-
-  function getVisibility(person: ContractPerson) {
-    return getFieldVisibility(person, session.people, needType.value)
-  }
-
-  // Inline panel visibility
-  const hideCompany = (p: ContractPerson) => getVisibility(p).hideCompany
-  const hideSSN = (p: ContractPerson) => getVisibility(p).hideSSN
-  const hideDeceasedInfo = (p: ContractPerson) => getVisibility(p).hideDeceasedInfo
-  const showOptOutMarketing = (p: ContractPerson) => getVisibility(p).showOptOutMarketing
-
-  // Current person computed
-  const isCurrentPersonEditable = computed(() =>
-    currentPerson.value ? isPersonEditableInline(currentPerson.value) : false,
-  )
-  const isNameRequiredForCurrentPerson = computed(() =>
-    currentPerson.value ? isNameRequired(currentPerson.value, session.people) : false,
-  )
-
-  // ==========================================================================
-  // Tab Position Calculator (DRY helper)
-  // ==========================================================================
-
-  function calculateNewTabPosition(addedRole: ContractPersonRole) {
-    const counts = {
-      purchaser: peopleList.value.some((p) => isPrimaryBuyer(p)) ? 1 : 0,
-      coBuyers: peopleList.value.filter((p) => isCoBuyer(p)).length,
-      beneficiary: peopleList.value.some((p) => isPrimaryBeneficiary(p)) ? 1 : 0,
-      additionalBeneficiaries: peopleList.value.filter((p) => isAdditionalBeneficiary(p)).length,
-      genericPeople: peopleList.value.filter((p) => isGenericPerson(p)).length,
-    }
-
-    switch (addedRole) {
-      case CO_BUYER: {
-        return counts.purchaser + counts.coBuyers
-      }
-      case ADDITIONAL_BENEFICIARY: {
-        return (
-          counts.purchaser + counts.coBuyers + counts.beneficiary + counts.additionalBeneficiaries
-        )
-      }
-      case PERSON: {
-        return (
-          counts.purchaser +
-          counts.coBuyers +
-          counts.beneficiary +
-          counts.additionalBeneficiaries +
-          counts.genericPeople
-        )
-      }
-      default: {
-        return 0
-      }
+  // Factory for creating new person
+  function createEmptyPerson(role: ContractPersonRole): ContractPerson {
+    return {
+      id: crypto.randomUUID(),
+      contractId: draft.value?.id ?? '',
+      nameId: crypto.randomUUID(),
+      roles: role,
+      addedAfterContractExecution: false,
+      conversion: null,
+      conversionId: null,
+      conversionSource: null,
+      name: createEmptyName(),
+      dateCreated: new Date().toISOString(),
+      dateLastModified: new Date().toISOString(),
     }
   }
 
-  // ==========================================================================
-  // Action Handlers
-  // ==========================================================================
-
+  // Action handlers
   function handleAddCoBuyer() {
     showAddMenu.value = false
-    if (isFinalized.value || isVoided.value) return
-    activeTab.value = calculateNewTabPosition(CO_BUYER)
-    session.people.addCoBuyer()
+    const newPerson = createEmptyPerson(CO_BUYER)
+    editor.setField('people', [...people.value, newPerson])
+    activeTab.value = people.value.length - 1
   }
 
-  function handleAddAdditionalBeneficiary() {
+  function handleAddBeneficiary() {
     showAddMenu.value = false
-    if (isVoided.value || !canHaveAdditionalBeneficiaries.value) return
-    activeTab.value = calculateNewTabPosition(ADDITIONAL_BENEFICIARY)
-    const model = session.people.addAdditionalBeneficiary()
-    if (isExecuted.value) {
-      model.addedAfterContractExecution = true
-    }
+    const newPerson = createEmptyPerson(ADDITIONAL_BENEFICIARY)
+    editor.setField('people', [...people.value, newPerson])
+    activeTab.value = people.value.length - 1
   }
 
-  function handleAddGenericPerson() {
+  function handleAddPerson() {
     showAddMenu.value = false
-    if (isVoided.value) return
-    activeTab.value = calculateNewTabPosition(PERSON)
-    session.people.addGenericPerson()
-  }
-
-  function editPerson(person: ContractPerson) {
-    editDialog.open(person, beneficiaryLabel.value)
-  }
-
-  function changeRole(person: ContractPerson, newRole: ContractPersonRole) {
-    session.people.changePersonRole(person, newRole)
+    const newPerson = createEmptyPerson(PERSON)
+    editor.setField('people', [...people.value, newPerson])
+    activeTab.value = people.value.length - 1
   }
 
   function removePerson(person: ContractPerson) {
-    if (!person?.name) return
     const confirmed = confirm(
       `Are you sure you want to remove "${getDisplayName(person)}" from this contract?`,
     )
     if (!confirmed) return
 
-    if (isCoBuyer(person)) session.people.removeCoBuyer(person.id)
-    else if (isAdditionalBeneficiary(person)) session.people.removeAdditionalBeneficiary(person.id)
-    else if (isGenericPerson(person)) session.people.removeGenericPerson(person.id)
+    const filtered = people.value.filter((p) => p.id !== person.id)
+    editor.setField('people', filtered)
   }
 
-  function saveName(model: Name) {
-    editDialog.save(model, (person) => {
-      const index = peopleList.value.findIndex((p) => p.id === person.id || p.nameId === model.id)
-      if (index !== -1) activeTab.value = index
-    })
+  // Edit dialog state
+  const editDialog = ref({
+    visible: false,
+    model: null as Name | null,
+    title: '',
+    personId: '',
+  })
+
+  function editPerson(person: ContractPerson) {
+    if (!person.name) return
+    editDialog.value = {
+      visible: true,
+      model: { ...person.name }, // Clone for editing
+      title: `Edit ${getDisplayName(person)}`,
+      personId: person.id,
+    }
+  }
+
+  function saveName(updatedName: Name) {
+    const personIndex = people.value.findIndex((p) => p.id === editDialog.value.personId)
+    if (personIndex === -1) return
+
+    const person = people.value[personIndex]
+    if (!person) return
+
+    // Update person with new name
+    const updatedPerson: ContractPerson = {
+      ...person,
+      name: { ...updatedName, dateLastModified: new Date().toISOString() },
+      dateLastModified: new Date().toISOString(),
+    }
+
+    // Update the person in the array
+    const updatedPeople = [...people.value]
+    updatedPeople[personIndex] = updatedPerson
+    editor.setField('people', updatedPeople)
+
+    // Close dialog
+    editDialog.value.visible = false
   }
 </script>
