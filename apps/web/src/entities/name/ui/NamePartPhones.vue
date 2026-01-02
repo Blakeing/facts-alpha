@@ -1,101 +1,61 @@
 <template>
   <div>
-    <v-list
-      v-if="phones.length > 0"
-      class="pa-0"
-      density="compact"
-    >
-      <v-list-item
-        v-for="(phone, index) in phones"
-        :key="index"
-        class="px-0"
-      >
-        <template #prepend>
-          <v-icon
-            class="mr-3"
-            color="primary"
-          >
-            mdi-phone
-          </v-icon>
-        </template>
-        <v-row
-          class="align-center"
-          dense
+    <v-table v-if="phones.length > 0">
+      <thead>
+        <tr>
+          <th>Number</th>
+          <th class="col-type">Type</th>
+          <th class="col-preferred">Preferred</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="(phone, index) in phones"
+          :key="index"
         >
-          <v-col
-            cols="12"
-            sm="4"
-          >
+          <td>
             <FTextField
               v-model="phone.number"
               v-maska="'(###) ###-####'"
-              density="compact"
               :field="`phones.${index}.number`"
               hide-details
               placeholder="(###) ###-####"
               :readonly="readonly"
             />
-          </v-col>
-          <v-col
-            cols="12"
-            sm="3"
-          >
+          </td>
+          <td class="col-type">
             <FSelect
               v-model="phone.type"
-              density="compact"
               :field="`phones.${index}.type`"
               hide-details
               :options="phoneTypeOptions"
               :readonly="readonly"
             />
-          </v-col>
-          <v-col
-            class="d-flex align-center"
-            cols="12"
-            sm="3"
-          >
+          </td>
+          <td class="col-preferred">
             <v-checkbox
               v-model="phone.preferred"
-              density="compact"
               :disabled="readonly"
               hide-details
-              label="Preferred"
             />
-          </v-col>
-          <v-col
-            class="d-flex justify-end"
-            cols="12"
-            sm="2"
-          >
-            <v-tooltip text="Remove phone number">
-              <template #activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  color="error"
-                  :disabled="readonly"
-                  icon
-                  size="small"
-                  variant="text"
-                  @click="removePhone(phone)"
-                >
-                  <v-icon>mdi-delete-outline</v-icon>
-                </v-btn>
-              </template>
-            </v-tooltip>
-          </v-col>
-        </v-row>
-        <template #append>
-          <v-divider
-            v-if="index < phones.length - 1"
-            class="mt-2"
-          />
-        </template>
-      </v-list-item>
-    </v-list>
+          </td>
+          <td class="col-actions">
+            <v-btn
+              color="error"
+              :disabled="readonly"
+              icon
+              variant="text"
+              @click="removePhone(phone)"
+            >
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </td>
+        </tr>
+      </tbody>
+    </v-table>
     <v-alert
       v-else
-      class="mt-2"
-      density="compact"
       type="info"
       variant="tonal"
     >
@@ -129,3 +89,17 @@
     }
   }
 </script>
+
+<style scoped>
+  .col-type {
+    width: 150px;
+  }
+
+  .col-preferred {
+    width: 100px;
+  }
+
+  .col-actions {
+    width: 60px;
+  }
+</style>

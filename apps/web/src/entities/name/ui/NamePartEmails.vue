@@ -1,88 +1,51 @@
 <template>
   <div>
-    <v-list
-      v-if="emails.length > 0"
-      class="pa-0"
-      density="compact"
-    >
-      <v-list-item
-        v-for="(email, index) in emails"
-        :key="index"
-        class="px-0"
-      >
-        <template #prepend>
-          <v-icon
-            class="mr-3"
-            color="primary"
-          >
-            mdi-email
-          </v-icon>
-        </template>
-        <v-row
-          class="align-center"
-          dense
+    <v-table v-if="emails.length > 0">
+      <thead>
+        <tr>
+          <th>Address</th>
+          <th class="col-preferred">Preferred</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="(email, index) in emails"
+          :key="index"
         >
-          <v-col
-            cols="12"
-            sm="7"
-          >
+          <td>
             <FTextField
               v-model="email.address"
-              density="compact"
               :field="`emailAddresses.${index}.address`"
               hide-details
               placeholder="email@example.com"
               :readonly="readonly"
               type="email"
             />
-          </v-col>
-          <v-col
-            class="d-flex align-center"
-            cols="12"
-            sm="3"
-          >
+          </td>
+          <td class="col-preferred">
             <v-checkbox
               v-model="email.preferred"
-              density="compact"
               :disabled="readonly"
               hide-details
-              label="Preferred"
             />
-          </v-col>
-          <v-col
-            class="d-flex justify-end"
-            cols="12"
-            sm="2"
-          >
-            <v-tooltip text="Remove email address">
-              <template #activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  color="error"
-                  :disabled="readonly"
-                  icon
-                  size="small"
-                  variant="text"
-                  @click="removeEmail(email)"
-                >
-                  <v-icon>mdi-delete-outline</v-icon>
-                </v-btn>
-              </template>
-            </v-tooltip>
-          </v-col>
-        </v-row>
-        <template #append>
-          <v-divider
-            v-if="index < emails.length - 1"
-            class="mt-2"
-          />
-        </template>
-      </v-list-item>
-    </v-list>
+          </td>
+          <td class="col-actions">
+            <v-btn
+              color="error"
+              :disabled="readonly"
+              icon
+              variant="text"
+              @click="removeEmail(email)"
+            >
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </td>
+        </tr>
+      </tbody>
+    </v-table>
     <v-alert
       v-else
-      class="mt-2"
-      density="compact"
       type="info"
       variant="tonal"
     >
@@ -92,6 +55,7 @@
 </template>
 
 <script lang="ts" setup>
+  /* eslint-disable vue/no-mutating-props -- Working copy pattern: model is mutable */
   import type { Name, NameEmail } from '../model/name'
   import { computed } from 'vue'
   import { FTextField } from '@/shared/ui'
@@ -104,12 +68,6 @@
   // Email addresses array (guaranteed to exist by schema)
   const emails = computed(() => props.model.emailAddresses)
 
-  const headers = [
-    { title: 'Email Address', key: 'address', align: 'start' },
-    { title: 'Preferred', key: 'preferred', align: 'center' },
-    { title: '', key: 'actions', width: '58px', sortable: false },
-  ]
-
   function removeEmail(email: NameEmail) {
     if (!props.model?.emailAddresses) return
     const emailIndex = props.model.emailAddresses.indexOf(email)
@@ -118,3 +76,13 @@
     }
   }
 </script>
+
+<style scoped>
+  .col-preferred {
+    width: 100px;
+  }
+
+  .col-actions {
+    width: 60px;
+  }
+</style>

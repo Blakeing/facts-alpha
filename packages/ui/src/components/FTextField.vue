@@ -4,7 +4,18 @@
     :error-messages="fieldError"
     v-bind="$attrs"
     @blur="handleBlur"
-  />
+  >
+    <template
+      v-for="(_, name) in $slots"
+      :key="name"
+      #[name]="slotData"
+    >
+      <slot
+        :name="name"
+        v-bind="slotData || {}"
+      />
+    </template>
+  </v-text-field>
 </template>
 
 <script lang="ts">
@@ -37,6 +48,11 @@
 <script lang="ts" setup>
   import { computed, watch } from 'vue'
   import { useFormContext } from '../composables/useFormContext'
+
+  // Ensure directives pass through to the underlying input
+  defineOptions({
+    inheritAttrs: true,
+  })
 
   const props = withDefaults(defineProps<FTextFieldProps>(), {
     field: undefined,
