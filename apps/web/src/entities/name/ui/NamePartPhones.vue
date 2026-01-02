@@ -28,10 +28,11 @@
           >
             <FTextField
               v-model="phone.number"
+              v-maska="'(###) ###-####'"
               density="compact"
               :field="`phones.${index}.number`"
               hide-details
-              placeholder="###-###-####"
+              placeholder="(###) ###-####"
               :readonly="readonly"
             />
           </v-col>
@@ -104,10 +105,11 @@
 </template>
 
 <script lang="ts" setup>
+  /* eslint-disable vue/no-mutating-props -- Working copy pattern: model is mutable */
   import type { Name, NamePhone } from '../model/name'
   import { computed } from 'vue'
   import { FSelect, FTextField } from '@/shared/ui'
-  import { PhoneType } from '../model/name'
+  import { phoneTypeController } from '../lib/controllers/phoneType.controller'
 
   const props = defineProps<{
     model: Name
@@ -117,19 +119,7 @@
   // Phones array (guaranteed to exist by schema)
   const phones = computed(() => props.model.phones)
 
-  const phoneTypeOptions = [
-    { value: PhoneType.HOME, label: 'Home' },
-    { value: PhoneType.WORK, label: 'Work' },
-    { value: PhoneType.MOBILE, label: 'Mobile' },
-    { value: PhoneType.FAX, label: 'Fax' },
-  ]
-
-  const headers = [
-    { title: 'Number', key: 'number', align: 'start' },
-    { title: 'Type', key: 'type', align: 'start' },
-    { title: 'Preferred', key: 'preferred', align: 'center' },
-    { title: '', key: 'actions', width: '58px', sortable: false },
-  ]
+  const phoneTypeOptions = phoneTypeController.selectItems
 
   function removePhone(phone: NamePhone) {
     if (!props.model?.phones) return

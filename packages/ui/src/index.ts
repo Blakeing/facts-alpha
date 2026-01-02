@@ -139,6 +139,9 @@ export { default as FLoader } from './components/FLoader.vue'
 export { default as FDataTable } from './components/FDataTable.vue'
 export type { FDataTableProps, FColumn } from './components/FDataTable.vue'
 
+// Directives
+// (masking handled by maska library)
+
 // Composite Components
 export { default as EmptyState } from './components/EmptyState.vue'
 export type { EmptyStateProps } from './components/EmptyState.vue'

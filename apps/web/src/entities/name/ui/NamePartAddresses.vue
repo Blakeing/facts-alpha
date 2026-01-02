@@ -14,20 +14,23 @@
       >
         No physical address
       </div>
+      <v-row
+        class="mt-4"
+        dense
+      >
+        <v-col cols="12">
+          <v-switch
+            v-model="model.mailingAddressSameAsPhysical"
+            color="primary"
+            density="compact"
+            :disabled="readonly"
+            hide-details
+            label="Mailing address same as physical"
+            @update:model-value="handleMailingToggle"
+          />
+        </v-col>
+      </v-row>
     </NamePartGroup>
-    <v-row dense>
-      <v-col cols="12">
-        <v-switch
-          v-model="model.mailingAddressSameAsPhysical"
-          color="primary"
-          density="compact"
-          :disabled="readonly"
-          hide-details
-          label="Mailing address same as physical"
-          @update:model-value="handleMailingToggle"
-        />
-      </v-col>
-    </v-row>
     <template v-if="!model.mailingAddressSameAsPhysical">
       <NamePartGroup label="Mailing Address">
         <NamePartAddress
@@ -46,9 +49,9 @@
     </template>
   </div>
 </template>
-<!-- eslint-enable vue/no-mutating-props -->
 
 <script lang="ts" setup>
+  /* eslint-disable vue/no-mutating-props -- Working copy pattern: model is mutable */
   import type { Name, NameAddress } from '../model/name'
   import { computed, onMounted } from 'vue'
   import { AddressType } from '../model/name'
@@ -81,12 +84,12 @@
   // Field prefixes for validation (addresses are indexed in the array)
   const physicalAddressFieldPrefix = computed(() => {
     const idx = props.model.addresses.findIndex((a) => a.addressType === AddressType.PHYSICAL)
-    return idx !== -1 ? `addresses.${idx}` : undefined
+    return idx === -1 ? undefined : `addresses.${idx}`
   })
 
   const mailingAddressFieldPrefix = computed(() => {
     const idx = props.model.addresses.findIndex((a) => a.addressType === AddressType.MAILING)
-    return idx !== -1 ? `addresses.${idx}` : undefined
+    return idx === -1 ? undefined : `addresses.${idx}`
   })
 
   // Initialize addresses on mount (one-time, simple, no watchers!)
@@ -95,7 +98,6 @@
 
     // Ensure physical address exists
     if (!props.model.addresses.some((a) => a.addressType === AddressType.PHYSICAL)) {
-      // eslint-disable-next-line vue/no-mutating-props
       props.model.addresses.push(createAddress(AddressType.PHYSICAL))
     }
 
@@ -104,7 +106,6 @@
       !props.model.mailingAddressSameAsPhysical &&
       !props.model.addresses.some((a) => a.addressType === AddressType.MAILING)
     ) {
-      // eslint-disable-next-line vue/no-mutating-props
       props.model.addresses.push(createAddress(AddressType.MAILING))
     }
   })
@@ -113,12 +114,10 @@
     if (sameAsPhysical) {
       // Remove mailing address
       const idx = props.model.addresses.findIndex((a) => a.addressType === AddressType.MAILING)
-      // eslint-disable-next-line vue/no-mutating-props
       if (idx !== -1) props.model.addresses.splice(idx, 1)
     } else {
       // Add mailing address if needed
       if (!props.model.addresses.some((a) => a.addressType === AddressType.MAILING)) {
-        // eslint-disable-next-line vue/no-mutating-props
         props.model.addresses.push(createAddress(AddressType.MAILING))
       }
     }

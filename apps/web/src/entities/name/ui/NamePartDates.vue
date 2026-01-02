@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-row dense>
-      <v-col cols="5">
+      <v-col cols="6">
         <FDatePicker
           v-model="birthDate"
           field="birthDate"
@@ -10,16 +10,7 @@
           :readonly="readonly"
         />
       </v-col>
-      <v-col cols="5">
-        <FDatePicker
-          v-model="deathDate"
-          field="deathDate"
-          label="Date of Death"
-          :max="maxDate"
-          :readonly="readonly"
-        />
-      </v-col>
-      <v-col cols="2">
+      <v-col cols="6">
         <FTextField
           v-model="age"
           field="age"
@@ -30,25 +21,12 @@
       </v-col>
     </v-row>
     <v-row dense>
-      <v-col cols="5">
-        <FTextField
-          v-model="timeOfDeath"
-          field="timeOfDeath"
-          label="Time of Death"
-          placeholder="HH:MM"
-          :readonly="readonly"
-        />
-      </v-col>
-      <v-col
-        class="d-flex align-center"
-        cols="3"
-      >
-        <v-checkbox
+      <v-col>
+        <FSwitch
           v-model="deceased"
           color="primary"
-          density="compact"
           :disabled="readonly"
-          hide-details
+          field="deceased"
           label="Deceased"
         />
       </v-col>
@@ -57,9 +35,10 @@
 </template>
 
 <script lang="ts" setup>
+  /* eslint-disable vue/no-mutating-props -- Working copy pattern: model is mutable */
   import type { Name } from '../model/name'
   import { computed } from 'vue'
-  import { FDatePicker, FTextField } from '@/shared/ui'
+  import { FDatePicker, FSwitch, FTextField } from '@/shared/ui'
 
   const props = defineProps<{
     model: Name
@@ -78,7 +57,7 @@
         const birth = new Date(value)
         const death = new Date(props.model.deathDate)
 
-        if (!isNaN(birth.getTime()) && !isNaN(death.getTime())) {
+        if (!Number.isNaN(birth.getTime()) && !Number.isNaN(death.getTime())) {
           let calculatedAge = death.getFullYear() - birth.getFullYear()
           const monthDiff = death.getMonth() - birth.getMonth()
 
@@ -88,29 +67,16 @@
 
           props.model.age = calculatedAge
         }
-      }
-    },
-  })
-
-  const deathDate = computed({
-    get: () => props.model.deathDate,
-    set: (value: string | null) => {
-      props.model.deathDate = value
-      props.model.deceased = !!value
-
-      // Calculate age if both dates are present
-      if (value && props.model.birthDate) {
-        const birth = new Date(props.model.birthDate)
-        const death = new Date(value)
-
-        if (!isNaN(birth.getTime()) && !isNaN(death.getTime())) {
-          let calculatedAge = death.getFullYear() - birth.getFullYear()
-          const monthDiff = death.getMonth() - birth.getMonth()
-
-          if (monthDiff < 0 || (monthDiff === 0 && death.getDate() < birth.getDate())) {
+      } else if (value && !props.model.deathDate) {
+        // Recalculate age based on current date if no death date
+        const birth = new Date(value)
+        const now = new Date()
+        if (!Number.isNaN(birth.getTime())) {
+          let calculatedAge = now.getFullYear() - birth.getFullYear()
+          const monthDiff = now.getMonth() - birth.getMonth()
+          if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
             calculatedAge--
           }
-
           props.model.age = calculatedAge
         }
       }
@@ -124,17 +90,28 @@
     },
   })
 
-  const timeOfDeath = computed({
-    get: () => props.model.timeOfDeath,
-    set: (value: string) => {
-      props.model.timeOfDeath = value
-    },
-  })
-
   const deceased = computed({
     get: () => props.model.deceased,
     set: (value: boolean) => {
       props.model.deceased = value
+      // If deceased is unchecked, clear death date and time of death
+      if (!value) {
+        props.model.deathDate = null
+        props.model.timeOfDeath = null
+        // Recalculate age if birth date exists (now that death date is cleared)
+        if (props.model.birthDate) {
+          const birth = new Date(props.model.birthDate)
+          const now = new Date()
+          if (!Number.isNaN(birth.getTime())) {
+            let calculatedAge = now.getFullYear() - birth.getFullYear()
+            const monthDiff = now.getMonth() - birth.getMonth()
+            if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+              calculatedAge--
+            }
+            props.model.age = calculatedAge
+          }
+        }
+      }
     },
   })
 

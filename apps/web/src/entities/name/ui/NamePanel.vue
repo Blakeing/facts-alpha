@@ -50,16 +50,6 @@
     </NamePartGroup>
 
     <NamePartGroup
-      v-if="(model.deceased || model.deathDate) && !hideDeceasedInfo"
-      label="Deceased"
-    >
-      <NamePartDeceased
-        :model="model"
-        :readonly="namePartReadonly"
-      />
-    </NamePartGroup>
-
-    <NamePartGroup
       v-if="!hideDates"
       label="Dates"
     >
@@ -69,6 +59,16 @@
       />
       <NamePartMarketing
         v-if="showOptOutMarketing"
+        :model="model"
+        :readonly="namePartReadonly"
+      />
+    </NamePartGroup>
+
+    <NamePartGroup
+      v-if="(model.deceased || model.deathDate) && !hideDeceasedInfo"
+      label="Deceased"
+    >
+      <NamePartDeceased
         :model="model"
         :readonly="namePartReadonly"
       />

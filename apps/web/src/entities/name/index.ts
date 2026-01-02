@@ -38,5 +38,6 @@ export {
 } from './model/useNameModel'
 
 export { branchOfServiceController } from './lib/controllers/branchOfService.controller'
+export { phoneTypeController } from './lib/controllers/phoneType.controller'
 
 export * from './ui'

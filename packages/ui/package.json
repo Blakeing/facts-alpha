@@ -23,6 +23,7 @@
   "dependencies": {
     "@facts/utils": "workspace:*",
     "@vueuse/core": "^12.8.2",
+    "maska": "^3.2.0",
     "zod": "^3.25.76"
   },
   "peerDependencies": {

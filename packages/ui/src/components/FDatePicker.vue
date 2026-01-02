@@ -11,7 +11,8 @@
   /**
    * FDatePicker - Date input with calendar popup and validation support
    *
-   * Uses ISO date strings (YYYY-MM-DD) externally, handles Date conversion internally.
+   * Accepts ISO date strings (YYYY-MM-DD) or full ISO datetime strings (e.g., "2024-01-15T00:00:00Z").
+   * Automatically normalizes to YYYY-MM-DD format internally. Handles Date conversion internally.
    *
    * @example
    * // With form context (recommended)
@@ -26,7 +27,7 @@
   export interface FDatePickerProps {
     /** Field path for auto error/blur via form context */
     field?: string
-    /** Date value as ISO string (YYYY-MM-DD) or null */
+    /** Date value as ISO string (YYYY-MM-DD or full ISO datetime) or null */
     modelValue?: string | null
     /** External error message (manual mode) */
     error?: string
@@ -34,6 +35,7 @@
 </script>
 
 <script lang="ts" setup>
+  import { formatDate } from '@facts/utils'
   import { computed, watch } from 'vue'
   import { useDate } from 'vuetify'
   import { useFormContext } from '../composables/useFormContext'
@@ -52,6 +54,16 @@
   const formContext = useFormContext()
   const adapter = useDate()
 
+  /**
+   * Normalize date string to YYYY-MM-DD format
+   * Handles both full ISO strings (e.g., "2024-01-15T00:00:00Z") and date-only strings
+   */
+  function normalizeDateString(date: string | null | undefined): string | null {
+    if (!date) return null
+    // Use formatDate to normalize - it handles parsing and formatting
+    return formatDate(date, 'iso') || null
+  }
+
   // Convert ISO string <-> Date for v-date-input
   const internalValue = computed({
     get: () => {
@@ -61,7 +73,9 @@
         const contextValue = formContext.getValue(props.field)
         dateValue = contextValue !== undefined ? (contextValue as string | null) : null
       }
-      return dateValue ? adapter.parseISO(dateValue) : null
+      // Normalize the date string to YYYY-MM-DD format before parsing
+      const normalized = normalizeDateString(dateValue)
+      return normalized ? adapter.parseISO(normalized) : null
     },
     set: (val: Date | null) => {
       const strVal = val ? adapter.toISO(val) : null
