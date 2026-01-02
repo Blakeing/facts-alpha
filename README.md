@@ -32,26 +32,30 @@ The app runs at `http://localhost:3000` by default.
 
 ## Documentation
 
-Detailed documentation is organized in the [`docs/`](./docs/) folder:
+📖 **Start here:** [Documentation Guide](./docs/README.md)
 
-### Application
+Documentation is organized as a **technical book** with clear naming conventions:
 
-- **[Architecture](./docs/architecture.md)** - Feature-Sliced Design, project structure, domain composables
-- **[Design System](./docs/design-system.md)** - MD3, wrapper components, Vuetify configuration
-- **[Forms](./docs/forms.md)** - Form patterns, composables, state architecture, full-screen dialogs
-- **[Location Context](./docs/location-context.md)** - Location-scoped data filtering and context management
-- **[Permissions](./docs/permissions.md)** - Route guards, UI-level permission checks, security keys
-- **[Conventions](./docs/conventions.md)** - FSD import rules, naming conventions, state management patterns
-- **[Development](./docs/development.md)** - Setup, commands, key files reference
-- **[Status](./docs/status.md)** - Implementation status
-- **[Roadmap](./docs/roadmap.md)** - Future development plans and phases
+### Main Guides (Read in Order)
 
-### Backend Integration
+1. **[Getting Started](./docs/00-getting-started.md)** - Setup, commands, project structure
+2. **[Architecture](./docs/01-architecture.md)** - FSD layers, domain composables, location context
+3. **[Conventions](./docs/02-conventions.md)** - Naming, file organization, FSD import rules
+4. **[Common Patterns](./docs/03-common-patterns.md)** - Forms, API integration, dialogs
+5. **[Design System](./docs/04-design-system.md)** - MD3, wrapper components, Vuetify
+6. **[Security](./docs/05-security.md)** - Authentication, permissions, OIDC
+7. **[Appendices](./docs/06-appendices.md)** - Reference documentation index
 
-- **[Data Models](./docs/data-models.md)** - Backend/frontend field mapping, type alignment
-- **[API Integration](./docs/api-integration.md)** - BFF endpoint patterns, response handling
-- **[Effect TS](./docs/effect-ts.md)** - Typed error handling strategy (future)
-- **[Legacy Patterns](./docs/legacy-patterns.md)** - Reusable patterns from legacy facts-app
+### File Naming Conventions
+
+- **`00-` to `06-`** - Main documentation guides (read in order)
+- **`ref/{topic}/`** - Reference documentation organized by topic:
+  - `ref/api/` - API integration patterns
+  - `ref/architecture/` - Architecture patterns, refactors, and error handling
+  - `ref/data/` - Data models and type mappings
+- **`README.md`** - Documentation index
+
+See [docs/README.md](./docs/README.md) for the complete guide and all reference documentation.
 
 ## Project Structure
 
@@ -97,3 +101,15 @@ pnpm type-check
 ## Browser Support
 
 Modern browsers only (ES2022+). No IE11 support.
+
+## Contributing
+
+When contributing, please follow the documentation:
+
+1. **[Conventions](./docs/02-conventions.md)** - Naming, file organization, FSD rules
+2. **[Architecture](./docs/01-architecture.md)** - FSD layer structure and patterns
+3. **[Common Patterns](./docs/03-common-patterns.md)** - Form patterns and composables
+
+## License
+
+[Add your license here]

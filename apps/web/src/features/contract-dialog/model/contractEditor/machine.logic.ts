@@ -6,7 +6,13 @@
  */
 
 import type { ContractEditorContext } from './machine.types'
-import type { Contract, ContractDraft, ContractSection } from '@/entities/contract'
+import type {
+  Contract,
+  ContractDraft,
+  ContractPermissions,
+  ContractSection,
+  ContractSession,
+} from '@/entities/contract'
 import rfdc from 'rfdc'
 import {
   applyPatch,
@@ -22,15 +28,36 @@ import { draftsEqual, getSectionFromPath } from './machine.helpers'
 const clone = rfdc()
 
 /**
- * Process LOAD_SUCCESS event - create draft from server contract
+ * Extract permissions from ContractSession
  */
-export function processLoadSuccess(context: ContractEditorContext, contract: Contract) {
-  const newDraft = createDraftFromServer(contract)
+function extractPermissions(session: ContractSession): ContractPermissions {
+  return {
+    canExecute: session.executeContract ?? false,
+    canFinalize: session.finalizeContract ?? false,
+    canVoid: session.voidContract ?? false,
+  }
+}
+
+/**
+ * Default permissions for new contracts
+ */
+const defaultPermissions: ContractPermissions = {
+  canExecute: true,
+  canFinalize: true,
+  canVoid: false,
+}
+
+/**
+ * Process LOAD_SUCCESS event - create draft from server session
+ */
+export function processLoadSuccess(context: ContractEditorContext, session: ContractSession) {
+  const newDraft = createDraftFromServer(session.contract)
   const newInitialDraft = clone(newDraft)
   return {
-    server: contract,
+    server: session.contract,
     draft: newDraft,
     initialDraft: newInitialDraft,
+    permissions: extractPermissions(session),
     dirty: false,
     errorsByPath: {} as Record<string, string>,
     lastError: undefined as string | undefined,
@@ -47,6 +74,7 @@ export function processCreateNew(locationId?: string) {
     draft: newDraft,
     initialDraft: clone(newDraft),
     server: null as Contract | null,
+    permissions: defaultPermissions,
     dirty: false,
     errorsByPath: {} as Record<string, string>,
     lastError: undefined as string | undefined,

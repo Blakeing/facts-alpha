@@ -438,6 +438,58 @@ if (
 
 **Facts Alpha Status:** ✅ We have `usePermissions()` composable.
 
+## ID Generation Pattern
+
+### Upfront ID Generation
+
+The legacy app generates IDs **upfront** using `nextIdApi.nextId()` before creating entities:
+
+```typescript
+// Legacy: services/contracts/PeopleService.ts
+static async createPersonModel(
+  role: ContractPersonRole,
+  contractId: string,
+  existingName?: Name
+): Promise<ContractPersonModel> {
+  const person = new ContractPersonModel();
+  
+  person.id = await nextIdApi.nextId();  // Get real ID from server
+  person.name = existingName ? existingName : await generateName();
+  person.nameId = person.name.id;
+  // ...
+}
+```
+
+**Key Points:**
+- IDs are fetched from server **before** creating the entity
+- No temporary IDs or client-side UUIDs
+- Backend generates numeric IDs, BFF converts to strings
+- Clean, simple pattern - no cleanup needed before save
+
+**Facts Alpha Implementation:**
+```typescript
+// apps/web/src/features/contract-dialog/ui/ContractPeople.vue
+async function createEmptyPerson(role: ContractPersonRole): Promise<ContractPerson> {
+  // Get 2 IDs: one for person, one for name (matches legacy pattern)
+  const ids = await runEffect(nextIds(2))
+  const personId = ids[0] || ''
+  const nameId = ids[1] || ''
+
+  return {
+    id: personId,  // Real ID from server
+    nameId: nameId,
+    name: { ...emptyName, id: nameId },
+    // ...
+  }
+}
+```
+
+**Benefits:**
+- No temp ID cleanup logic needed
+- IDs are valid immediately for client-side tracking
+- Matches legacy app exactly
+- Simple and elegant
+
 ## Summary: Patterns to Adopt
 
 | Legacy Pattern       | Facts Alpha Equivalent   | Status                 |
@@ -446,6 +498,7 @@ if (
 | Listing/Entity split | LocationListing/Location | ✅ Done                |
 | Controller state     | Composables              | ✅ Done                |
 | Permission checks    | usePermissions           | ✅ Done                |
+| ID generation        | `nextIds()` upfront      | ✅ Done                |
 | SignalR real-time    | TBD                      | 🔜 Future              |
 | Error resolution     | TBD                      | 🔜 Add utility         |
 | ContractSession      | Composable composition   | 🔜 For complex forms   |

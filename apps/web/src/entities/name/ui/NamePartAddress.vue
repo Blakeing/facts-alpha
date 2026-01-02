@@ -4,7 +4,7 @@
       <v-col cols="12">
         <FTextField
           v-model="address1"
-          field="address1"
+          :field="fieldPrefix ? `${fieldPrefix}.address1` : 'address1'"
           label="Address"
           maxlength="255"
           :readonly="readonly"
@@ -15,7 +15,7 @@
       <v-col cols="6">
         <FTextField
           v-model="city"
-          field="city"
+          :field="fieldPrefix ? `${fieldPrefix}.city` : 'city'"
           label="City"
           maxlength="255"
           :readonly="readonly"
@@ -24,7 +24,7 @@
       <v-col cols="3">
         <FSelect
           v-model="state"
-          field="state"
+          :field="fieldPrefix ? `${fieldPrefix}.state` : 'state'"
           label="State"
           :options="stateOptions"
           :readonly="readonly"
@@ -33,7 +33,7 @@
       <v-col cols="3">
         <FTextField
           v-model="postalCode"
-          field="postalCode"
+          :field="fieldPrefix ? `${fieldPrefix}.postalCode` : 'postalCode'"
           label="Postal Code"
           maxlength="10"
           :readonly="readonly"
@@ -44,7 +44,7 @@
       <v-col cols="12">
         <FSelect
           v-model="country"
-          field="country"
+          :field="fieldPrefix ? `${fieldPrefix}.country` : 'country'"
           label="Country"
           :options="countryOptions"
           :readonly="readonly"
@@ -56,13 +56,17 @@
 
 <script lang="ts" setup>
   import type { NameAddress } from '../model/name'
-  import { toRef } from 'vue'
+  import { computed, toRef } from 'vue'
   import { FSelect, FTextField } from '@/shared/ui'
 
   const props = defineProps<{
     model: NameAddress
     readonly?: boolean
+    /** Field prefix for validation (e.g., "addresses.0") */
+    fieldPrefix?: string
   }>()
+
+  const fieldPrefix = computed(() => props.fieldPrefix)
 
   // Use toRef for direct reactive mutation
   // This works because edit contexts pass cloned models that can be mutated
@@ -74,60 +78,60 @@
 
   // Simple US states list - can be enhanced later
   const stateOptions = [
-    { value: 'AL', label: 'Alabama' },
-    { value: 'AK', label: 'Alaska' },
-    { value: 'AZ', label: 'Arizona' },
-    { value: 'AR', label: 'Arkansas' },
-    { value: 'CA', label: 'California' },
-    { value: 'CO', label: 'Colorado' },
-    { value: 'CT', label: 'Connecticut' },
-    { value: 'DE', label: 'Delaware' },
-    { value: 'FL', label: 'Florida' },
-    { value: 'GA', label: 'Georgia' },
-    { value: 'HI', label: 'Hawaii' },
-    { value: 'ID', label: 'Idaho' },
-    { value: 'IL', label: 'Illinois' },
-    { value: 'IN', label: 'Indiana' },
-    { value: 'IA', label: 'Iowa' },
-    { value: 'KS', label: 'Kansas' },
-    { value: 'KY', label: 'Kentucky' },
-    { value: 'LA', label: 'Louisiana' },
-    { value: 'ME', label: 'Maine' },
-    { value: 'MD', label: 'Maryland' },
-    { value: 'MA', label: 'Massachusetts' },
-    { value: 'MI', label: 'Michigan' },
-    { value: 'MN', label: 'Minnesota' },
-    { value: 'MS', label: 'Mississippi' },
-    { value: 'MO', label: 'Missouri' },
-    { value: 'MT', label: 'Montana' },
-    { value: 'NE', label: 'Nebraska' },
-    { value: 'NV', label: 'Nevada' },
-    { value: 'NH', label: 'New Hampshire' },
-    { value: 'NJ', label: 'New Jersey' },
-    { value: 'NM', label: 'New Mexico' },
-    { value: 'NY', label: 'New York' },
-    { value: 'NC', label: 'North Carolina' },
-    { value: 'ND', label: 'North Dakota' },
-    { value: 'OH', label: 'Ohio' },
-    { value: 'OK', label: 'Oklahoma' },
-    { value: 'OR', label: 'Oregon' },
-    { value: 'PA', label: 'Pennsylvania' },
-    { value: 'RI', label: 'Rhode Island' },
-    { value: 'SC', label: 'South Carolina' },
-    { value: 'SD', label: 'South Dakota' },
-    { value: 'TN', label: 'Tennessee' },
-    { value: 'TX', label: 'Texas' },
-    { value: 'UT', label: 'Utah' },
-    { value: 'VT', label: 'Vermont' },
-    { value: 'VA', label: 'Virginia' },
-    { value: 'WA', label: 'Washington' },
-    { value: 'WV', label: 'West Virginia' },
-    { value: 'WI', label: 'Wisconsin' },
-    { value: 'WY', label: 'Wyoming' },
+    { value: 'AL', title: 'Alabama' },
+    { value: 'AK', title: 'Alaska' },
+    { value: 'AZ', title: 'Arizona' },
+    { value: 'AR', title: 'Arkansas' },
+    { value: 'CA', title: 'California' },
+    { value: 'CO', title: 'Colorado' },
+    { value: 'CT', title: 'Connecticut' },
+    { value: 'DE', title: 'Delaware' },
+    { value: 'FL', title: 'Florida' },
+    { value: 'GA', title: 'Georgia' },
+    { value: 'HI', title: 'Hawaii' },
+    { value: 'ID', title: 'Idaho' },
+    { value: 'IL', title: 'Illinois' },
+    { value: 'IN', title: 'Indiana' },
+    { value: 'IA', title: 'Iowa' },
+    { value: 'KS', title: 'Kansas' },
+    { value: 'KY', title: 'Kentucky' },
+    { value: 'LA', title: 'Louisiana' },
+    { value: 'ME', title: 'Maine' },
+    { value: 'MD', title: 'Maryland' },
+    { value: 'MA', title: 'Massachusetts' },
+    { value: 'MI', title: 'Michigan' },
+    { value: 'MN', title: 'Minnesota' },
+    { value: 'MS', title: 'Mississippi' },
+    { value: 'MO', title: 'Missouri' },
+    { value: 'MT', title: 'Montana' },
+    { value: 'NE', title: 'Nebraska' },
+    { value: 'NV', title: 'Nevada' },
+    { value: 'NH', title: 'New Hampshire' },
+    { value: 'NJ', title: 'New Jersey' },
+    { value: 'NM', title: 'New Mexico' },
+    { value: 'NY', title: 'New York' },
+    { value: 'NC', title: 'North Carolina' },
+    { value: 'ND', title: 'North Dakota' },
+    { value: 'OH', title: 'Ohio' },
+    { value: 'OK', title: 'Oklahoma' },
+    { value: 'OR', title: 'Oregon' },
+    { value: 'PA', title: 'Pennsylvania' },
+    { value: 'RI', title: 'Rhode Island' },
+    { value: 'SC', title: 'South Carolina' },
+    { value: 'SD', title: 'South Dakota' },
+    { value: 'TN', title: 'Tennessee' },
+    { value: 'TX', title: 'Texas' },
+    { value: 'UT', title: 'Utah' },
+    { value: 'VT', title: 'Vermont' },
+    { value: 'VA', title: 'Virginia' },
+    { value: 'WA', title: 'Washington' },
+    { value: 'WV', title: 'West Virginia' },
+    { value: 'WI', title: 'Wisconsin' },
+    { value: 'WY', title: 'Wyoming' },
   ]
 
   const countryOptions = [
-    { value: 'USA', label: 'United States' },
-    { value: 'Canada', label: 'Canada' },
+    { value: 'USA', title: 'United States' },
+    { value: 'Canada', title: 'Canada' },
   ]
 </script>

@@ -814,7 +814,7 @@ packages/effect/src/
 
 entities/contract/
   api/
-    contractApi.ts        # Promise-based mock API (internal)
+    contractApi.ts        # Effect-based API client
     contractEffects.ts    # ContractApi object with Effect operations
     index.ts              # Exports ContractApi
   model/

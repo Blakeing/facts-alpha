@@ -5,7 +5,7 @@
  */
 
 import type { ContractEditorEvent } from './contractEditor'
-import type { Contract, ContractDraft } from '@/entities/contract'
+import type { ContractDraft } from '@/entities/contract'
 import { runEffect } from '@facts/effect'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { ContractApi } from '@/entities/contract'
@@ -37,11 +37,12 @@ export function useContractEditorMutation(send: (event: ContractEditorEvent) => 
       // Step 2: Save with the token
       return await runEffect(ContractApi.saveDraft(validation.saveToken))
     },
-    onSuccess: (savedContract) => {
-      queryClient.setQueryData(['contract', savedContract.id], savedContract)
+    onSuccess: (savedSession) => {
+      // Cache the full session (query expects ContractSession)
+      queryClient.setQueryData(['contract', savedSession.contract.id], savedSession)
       queryClient.invalidateQueries({ queryKey: ['contracts'] })
-      send({ type: 'SAVE_SUCCESS', contract: savedContract })
-      return savedContract
+      send({ type: 'SAVE_SUCCESS', session: savedSession })
+      return savedSession
     },
     onError: (error: Error) => {
       // Use error message directly - backend validation errors are already in message

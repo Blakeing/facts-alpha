@@ -224,3 +224,49 @@ export function formatPhone(phone: string): string {
   }
   return phone
 }
+
+// =============================================================================
+// SSN Formatting
+// =============================================================================
+
+/**
+ * Format SSN by masking all but last 4 digits
+ *
+ * @example
+ * formatSSN("123456789") // "***-**-6789"
+ * formatSSN("123-45-6789") // "***-**-6789"
+ */
+export function formatSSN(ssn: string): string {
+  if (!ssn) return ''
+  const cleaned = ssn.replace(/\D/g, '')
+  if (cleaned.length !== 9) return ssn // Return as-is if not 9 digits
+  return `***-**-${cleaned.slice(-4)}`
+}
+
+// =============================================================================
+// Address Formatting
+// =============================================================================
+
+/**
+ * Format an address as a single line string
+ *
+ * @example
+ * formatAddress({ address1: "123 Main St", city: "Springfield", state: "IL", postalCode: "62701" })
+ * // "123 Main St, Springfield, IL, 62701"
+ */
+export function formatAddress(address: {
+  address1?: string
+  address2?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  county?: string
+  country?: string
+}): string {
+  const parts: string[] = []
+  if (address.address1) parts.push(address.address1)
+  if (address.city) parts.push(address.city)
+  if (address.state) parts.push(address.state)
+  if (address.postalCode) parts.push(address.postalCode)
+  return parts.join(', ') || 'Not specified'
+}

@@ -1,10 +1,10 @@
 # Data Models
 
-This document maps backend C# models to frontend TypeScript types to ensure mock data aligns with production APIs.
+This document maps backend C# models to frontend TypeScript types to ensure type alignment with production APIs.
 
 ## Design Principles
 
-1. **Mock Data = Production Shape**: Mock data should have the same structure as backend responses
+1. **Type Alignment**: Frontend types match backend C# models exactly
 2. **BFF Handles Conversion**: The BFF automatically converts:
    - `long` IDs → `string` (via `LongToStringConverter`)
    - `PascalCase` → `camelCase` (via `CamelCaseNamingStrategy`)
@@ -769,8 +769,8 @@ interface ApiResponse<T> {
 
 When connecting to real APIs:
 
-1. **Keep mock data layer**: Can be used for development/testing
-2. **Add API adapter**: Transform backend responses to frontend types
+1. **BFF Format**: Frontend types match BFF response format exactly
+2. **No Transformation**: BFF handles all conversions (IDs, field names, enums)
 3. **Handle enum conversion**: Backend numeric → frontend string
 4. **Handle date conversion**: Backend DateTime → frontend ISO string
 5. **Handle ID conversion**: Backend long → frontend string

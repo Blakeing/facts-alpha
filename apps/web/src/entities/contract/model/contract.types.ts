@@ -334,15 +334,42 @@ export interface Contract {
 // =============================================================================
 
 /**
- * BFF response wrapper for GET /contracts/{id}
- * The BFF returns a wrapper object, not the contract directly
+ * BFF response wrapper for GET /contracts/{id} and POST /contracts/save/draft
+ * Contains the contract plus permission/action flags that control what the user can do
+ * Aligns with legacy ContractSessionSaveModel
  */
-export interface ContractResponse {
+export interface ContractSession {
   contract: Contract
+  /** Whether the user can execute this contract */
   executeContract: boolean
+  /** Whether the user can finalize this contract */
   finalizeContract: boolean
+  /** Whether the user can void this contract */
   voidContract: boolean
-  data?: unknown
+  /** Additional form data (attributes, non-mapped values, etc.) */
+  data?: ContractSessionData
+}
+
+/**
+ * Additional session data from BFF
+ * Contains form attributes, calculation logs, etc.
+ */
+export interface ContractSessionData {
+  attributeValues?: Record<string, unknown>
+  nonMappedFormValues?: Record<string, unknown>
+  commissionLog?: Record<string, unknown>
+  trustLog?: Record<string, unknown>
+  forms?: unknown[]
+}
+
+/**
+ * Permission flags extracted from ContractSession
+ * Used by UI to enable/disable actions
+ */
+export interface ContractPermissions {
+  canExecute: boolean
+  canFinalize: boolean
+  canVoid: boolean
 }
 
 /**
@@ -357,12 +384,6 @@ export interface ContractListing {
   needType: NeedType
   /** Contract status as string - use this for display (e.g., "Draft", "Executed", "Void") */
   status?: string
-  /**
-   * Contract status as numeric enum - BUG: BFF always returns 0 (Draft) regardless of actual status.
-   * Use `status` string field instead for display/filtering.
-   * @deprecated Use `status` string field instead
-   */
-  contractStatus: SaleStatus
   isCancelled: boolean
   dateExecuted?: string
   dateSigned?: string

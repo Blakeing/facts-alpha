@@ -37,4 +37,6 @@ export {
   createEmptyPhone,
 } from './model/useNameModel'
 
+export { branchOfServiceController } from './lib/controllers/branchOfService.controller'
+
 export * from './ui'

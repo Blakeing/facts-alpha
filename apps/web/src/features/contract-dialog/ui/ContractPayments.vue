@@ -173,6 +173,7 @@
 
 <script lang="ts" setup>
   import { computed, ref } from 'vue'
+  import { runEffect } from '@facts/effect'
   import {
     type ContractPayment,
     type ContractPaymentFormValues,
@@ -181,6 +182,7 @@
     SaleStatus,
   } from '@/entities/contract'
   import { useContractEditorContext } from '@/features/contract-dialog'
+  import { nextId } from '@/shared/api'
   import { formatCurrency, formatDate } from '@/shared/lib'
   import { paymentMethodController } from '@/entities/contract'
   import {
@@ -277,9 +279,12 @@
   async function handleAdd() {
     isAdding.value = true
     try {
+      // Get real ID from server (like legacy)
+      const paymentId = await runEffect(nextId())
+
       // Create new payment
       const payment: Partial<ContractPayment> = {
-        id: crypto.randomUUID(),
+        id: paymentId,
         contractId: draft.value?.id ?? '',
         date: newPayment.value.date,
         method: newPayment.value.method,

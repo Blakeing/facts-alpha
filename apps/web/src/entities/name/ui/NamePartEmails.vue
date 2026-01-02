@@ -29,7 +29,7 @@
             <FTextField
               v-model="email.address"
               density="compact"
-              field="address"
+              :field="`emailAddresses.${index}.address`"
               hide-details
               placeholder="email@example.com"
               :readonly="readonly"

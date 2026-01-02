@@ -30,7 +30,7 @@ export function createEmptyName(): Name {
     driversLicense: '',
     driversLicenseState: '',
     gender: null,
-    maritalStatus: 0,
+    maritalStatus: 0, // MaritalStatus.UNKNOWN
     ethnicity: null,
     race: null,
     isVeteran: false,

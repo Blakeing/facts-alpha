@@ -29,7 +29,7 @@
             <FTextField
               v-model="phone.number"
               density="compact"
-              field="number"
+              :field="`phones.${index}.number`"
               hide-details
               placeholder="###-###-####"
               :readonly="readonly"
@@ -42,7 +42,7 @@
             <FSelect
               v-model="phone.type"
               density="compact"
-              field="type"
+              :field="`phones.${index}.type`"
               hide-details
               :options="phoneTypeOptions"
               :readonly="readonly"

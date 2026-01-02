@@ -52,21 +52,27 @@
   // Inject form context (if provided by parent)
   const formContext = useFormContext()
 
+  // Check if we're using form context for data binding
+  const useFormContextBinding = computed(
+    () => props.field && formContext?.getValue && formContext?.onUpdate,
+  )
+
   const fieldValue = computed({
     get: () => {
       // If field prop is set and context provides getValue, use it
-      if (props.field && formContext?.getValue) {
+      if (useFormContextBinding.value && formContext?.getValue && props.field) {
         const contextValue = formContext.getValue(props.field)
-        // Treat null and undefined as empty string (don't convert null to "null")
         return contextValue != null ? String(contextValue) : ''
       }
       return props.modelValue ?? ''
     },
     set: (val) => {
-      emit('update:modelValue', val)
-      // Also update context if available
-      if (props.field && formContext?.onUpdate) {
+      // When using form context, ONLY update via context (not v-model)
+      // This prevents conflicts between v-model mutations and form context cloning
+      if (useFormContextBinding.value && formContext?.onUpdate && props.field) {
         formContext.onUpdate(props.field, val)
+      } else {
+        emit('update:modelValue', val)
       }
     },
   })

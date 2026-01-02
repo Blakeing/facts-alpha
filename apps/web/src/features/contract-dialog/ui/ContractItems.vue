@@ -141,11 +141,13 @@
 </template>
 
 <script lang="ts" setup>
+  import { runEffect } from '@facts/effect'
   import { computed, ref } from 'vue'
   import { ItemType, type SaleItem, SaleStatus } from '@/entities/contract'
-  import { useContractEditorContext } from '@/features/contract-dialog'
-  import { formatCurrency } from '@/shared/lib'
   import { itemTypeController } from '@/entities/contract'
+  import { useContractEditorContext } from '@/features/contract-dialog'
+  import { nextId } from '@/shared/api'
+  import { formatCurrency } from '@/shared/lib'
   import {
     FButton,
     FCard,
@@ -228,9 +230,12 @@
   async function handleAdd() {
     isAdding.value = true
     try {
+      // Get real ID from server (like legacy)
+      const itemId = await runEffect(nextId())
+
       // Create new item
       const item: Partial<SaleItem> = {
-        id: crypto.randomUUID(),
+        id: itemId,
         saleId: draft.value?.sale.id ?? '',
         itemId: '', // TODO: Link to catalog item if needed
         sku: newItem.value.sku,

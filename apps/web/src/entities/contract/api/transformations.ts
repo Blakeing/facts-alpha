@@ -10,7 +10,7 @@ import type { Contract, ContractListing, ContractPerson, Sale } from '../model/c
 import type { ContractPersonFormValues } from '../model/contract.schema'
 import { Effect } from 'effect'
 import { nextId } from '@/shared/api'
-import { ContractPersonRole, NeedType, SaleStatus, SaleType } from '../model/contract'
+import { ContractPersonRole, NeedType, SaleType } from '../model/contract'
 
 // =============================================================================
 // Contract Number Generation
@@ -127,7 +127,6 @@ export function contractToListing(
     prePrintedContractNumber: contract.prePrintedContractNumber,
     locationId: contract.locationId,
     needType: contract.needType,
-    contractStatus: primarySale?.saleStatus ?? SaleStatus.DRAFT,
     isCancelled: contract.isCancelled,
     dateExecuted: contract.dateExecuted,
     dateSigned: contract.dateSigned,

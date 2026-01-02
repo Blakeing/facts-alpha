@@ -13,7 +13,7 @@ import type {
   ContractEditorEvent,
   ContractEditorInput,
 } from './machine.types'
-import type { ContractSection } from '@/entities/contract'
+import type { ContractPermissions, ContractSection } from '@/entities/contract'
 import { assign, setup } from 'xstate'
 import {
   processCreateNew,
@@ -36,7 +36,7 @@ export const contractEditorMachine = setup({
     // Load/Save actions
     assignDraftFromServer: assign(({ event, context }) => {
       if (event.type === 'LOAD_SUCCESS' || event.type === 'SAVE_SUCCESS') {
-        return processLoadSuccess(context, event.contract)
+        return processLoadSuccess(context, event.session)
       }
       return {}
     }),
@@ -126,6 +126,11 @@ export const contractEditorMachine = setup({
     server: null,
     draft: null,
     initialDraft: null,
+    permissions: {
+      canExecute: true,
+      canFinalize: true,
+      canVoid: false,
+    } as ContractPermissions,
     activeTab: 'general' as ContractSection,
     dirty: false,
     validity: {

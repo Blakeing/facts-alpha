@@ -4,13 +4,20 @@
  * Type definitions for the contract editor state machine
  */
 
-import type { Contract, ContractDraft, ContractSection } from '@/entities/contract'
+import type {
+  Contract,
+  ContractDraft,
+  ContractPermissions,
+  ContractSection,
+  ContractSession,
+} from '@/entities/contract'
 
 export interface ContractEditorContext {
   contractId: string
   server: Contract | null // Loaded server contract
   draft: ContractDraft | null // Working draft
   initialDraft: ContractDraft | null // Snapshot of initial state for dirty tracking
+  permissions: ContractPermissions // Permission flags from server
   activeTab: ContractSection
   dirty: boolean
   validity: Record<ContractSection, boolean>
@@ -20,7 +27,7 @@ export interface ContractEditorContext {
 }
 
 export type ContractEditorEvent =
-  | { type: 'LOAD_SUCCESS'; contract: Contract }
+  | { type: 'LOAD_SUCCESS'; session: ContractSession }
   | { type: 'LOAD_ERROR'; message: string }
   | { type: 'CREATE_NEW'; locationId?: string }
   | { type: 'SET_TAB'; tab: ContractSection }
@@ -29,7 +36,7 @@ export type ContractEditorEvent =
   | { type: 'VALIDATE_SECTION'; section: ContractSection }
   | { type: 'VALIDATE_ALL' }
   | { type: 'SAVE' }
-  | { type: 'SAVE_SUCCESS'; contract: Contract }
+  | { type: 'SAVE_SUCCESS'; session: ContractSession }
   | { type: 'SAVE_ERROR'; message: string }
   | { type: 'RESET_DRAFT' }
 

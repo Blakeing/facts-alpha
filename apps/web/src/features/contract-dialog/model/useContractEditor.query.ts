@@ -65,13 +65,13 @@ export function useContractEditorQuery(contractId: string, locationId?: string) 
   // Watch query result and send to machine (immediate: true to handle cached data)
   watch(
     serverContract,
-    (contract) => {
-      if (contract) {
+    (session) => {
+      if (session) {
         // Only send LOAD_SUCCESS if machine is in loading state
         // OR if the contract ID doesn't match (contract changed)
         const currentContractId = snapshot.value?.context.contractId
         if (snapshot.value.matches('loading') || currentContractId !== contractId) {
-          send({ type: 'LOAD_SUCCESS', contract })
+          send({ type: 'LOAD_SUCCESS', session })
         }
       }
     },
@@ -108,9 +108,9 @@ export function useContractEditorQuery(contractId: string, locationId?: string) 
         // Query finished but machine is still in ready state from old contract
         // This shouldn't happen, but if it does, check if we have the right contract
         const currentContractId = snapshot.value?.context.contractId
-        if (currentContractId !== newId && serverContract.value?.id === newId) {
+        if (currentContractId !== newId && serverContract.value?.contract.id === newId) {
           // We have the right contract data, but machine is out of sync
-          send({ type: 'LOAD_SUCCESS', contract: serverContract.value })
+          send({ type: 'LOAD_SUCCESS', session: serverContract.value })
         }
       }
     },

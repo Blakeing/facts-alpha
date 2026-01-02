@@ -1,13 +1,16 @@
+import rfdc from 'rfdc'
 import { isProxy, isReactive, isRef, toRaw, unref } from 'vue'
+
+// Create rfdc instance for fast deep cloning
+const clone = rfdc()
 
 /**
  * Deep copy function for TypeScript with Vue 3 reactive proxy support.
+ * Uses rfdc (really fast deep clone) with Vue's toRaw to unwrap proxies.
  * Automatically unwraps Vue proxies (reactive, readonly, ref) to create plain mutable copies.
  *
  * @param T Generic type of target/copied value.
  * @param source Target value to be copied.
- * @see Source project, ts-deepcopy https://github.com/ykdr2017/ts-deepcopy
- * @see Code pen https://codepen.io/erikvullings/pen/ejyBYg
  */
 export function deepCopy<T>(source: T): T {
   // Handle null and undefined
@@ -20,39 +23,38 @@ export function deepCopy<T>(source: T): T {
     return deepCopy(unref(source)) as T
   }
 
-  // Unwrap Vue reactive proxies (reactive, readonly, etc.)
+  // Unwrap Vue reactive proxies (reactive, readonly, etc.) before cloning
+  let rawSource = source
   if (isProxy(source) || isReactive(source)) {
-    source = toRaw(source)
+    rawSource = toRaw(source) as T
   }
 
-  // Handle Date objects
-  if (source instanceof Date) {
-    return new Date(source) as T
+  // Use rfdc for fast deep cloning
+  return clone(rawSource) as T
+}
+
+/**
+ * JSON-based deep copy (slower but handles circular references via JSON.stringify/parse)
+ * Use this only when you need to handle circular references.
+ */
+export function jsonCopy<T>(source: T): T {
+  if (source == null) {
+    return source
   }
 
-  // Handle RegExp
-  if (source instanceof RegExp) {
-    return new RegExp(source.source, source.flags) as T
+  // Unwrap Vue refs
+  if (isRef(source)) {
+    return jsonCopy(unref(source)) as T
   }
 
-  // Handle Arrays
-  if (Array.isArray(source)) {
-    return source.map((item) => deepCopy(item)) as T
+  // Unwrap Vue reactive proxies
+  let rawSource = source
+  if (isProxy(source) || isReactive(source)) {
+    rawSource = toRaw(source) as T
   }
 
-  // Handle plain objects
-  if (typeof source === 'object') {
-    const copy = {} as Record<string, unknown>
-    for (const key in source) {
-      if (Object.prototype.hasOwnProperty.call(source, key)) {
-        copy[key] = deepCopy(source[key])
-      }
-    }
-    return copy as T
-  }
-
-  // Handle primitives (string, number, boolean, symbol, bigint)
-  return source
+  // Use JSON for cloning (handles circular refs but loses functions, dates, etc.)
+  return JSON.parse(JSON.stringify(rawSource)) as T
 }
 
 /**

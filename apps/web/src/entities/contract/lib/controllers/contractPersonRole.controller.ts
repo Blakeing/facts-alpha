@@ -22,6 +22,33 @@ export class ContractPersonRoleController extends EnumController<number> {
   ]
 
   /**
+   * Priority order for roles (lower number = higher priority)
+   * PrimaryBuyer > CoBuyer > PrimaryBeneficiary > AdditionalBeneficiary > Person
+   */
+  private readonly priorityFlags = [
+    ContractPersonRole.PRIMARY_BUYER,
+    ContractPersonRole.CO_BUYER,
+    ContractPersonRole.PRIMARY_BENEFICIARY,
+    ContractPersonRole.ADDITIONAL_BENEFICIARY,
+    ContractPersonRole.PERSON,
+  ] as const
+
+  /**
+   * Get the priority number for a role (lower = higher priority)
+   * Used for sorting people by role
+   * @param roles - Numeric flags value (can have multiple flags combined)
+   * @returns Priority number (1-5, where 1 is highest priority)
+   */
+  getRolePriority(roles: number): number {
+    for (let i = 0; i < this.priorityFlags.length; i++) {
+      if ((roles & this.priorityFlags[i]) === this.priorityFlags[i]) {
+        return i + 1 // 1-based priority
+      }
+    }
+    return this.priorityFlags.length + 1 // Default to lowest priority
+  }
+
+  /**
    * Get the primary role description for a person with multiple roles
    * Checks roles in priority order: PrimaryBuyer > CoBuyer > PrimaryBeneficiary > AdditionalBeneficiary > Person
    * @param roles - Numeric flags value (can have multiple flags combined)
@@ -29,14 +56,7 @@ export class ContractPersonRoleController extends EnumController<number> {
    */
   getPrimaryRoleDescription(roles: number): string {
     // Check in priority order (most specific first)
-    const priorityFlags = [
-      ContractPersonRole.PRIMARY_BUYER,
-      ContractPersonRole.CO_BUYER,
-      ContractPersonRole.PRIMARY_BENEFICIARY,
-      ContractPersonRole.ADDITIONAL_BENEFICIARY,
-      ContractPersonRole.PERSON,
-    ] as const
-    for (const flag of priorityFlags) {
+    for (const flag of this.priorityFlags) {
       if ((roles & flag) === flag) {
         return this.getDescription(flag)
       }

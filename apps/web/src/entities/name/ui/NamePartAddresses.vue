@@ -4,6 +4,7 @@
     <NamePartGroup label="Physical Address">
       <NamePartAddress
         v-if="physicalAddress"
+        :field-prefix="physicalAddressFieldPrefix"
         :model="physicalAddress"
         :readonly="readonly"
       />
@@ -31,6 +32,7 @@
       <NamePartGroup label="Mailing Address">
         <NamePartAddress
           v-if="mailingAddress"
+          :field-prefix="mailingAddressFieldPrefix"
           :model="mailingAddress"
           :readonly="readonly"
         />
@@ -75,6 +77,17 @@
   const mailingAddress = computed(() =>
     props.model.addresses.find((a) => a.addressType === AddressType.MAILING),
   )
+
+  // Field prefixes for validation (addresses are indexed in the array)
+  const physicalAddressFieldPrefix = computed(() => {
+    const idx = props.model.addresses.findIndex((a) => a.addressType === AddressType.PHYSICAL)
+    return idx !== -1 ? `addresses.${idx}` : undefined
+  })
+
+  const mailingAddressFieldPrefix = computed(() => {
+    const idx = props.model.addresses.findIndex((a) => a.addressType === AddressType.MAILING)
+    return idx !== -1 ? `addresses.${idx}` : undefined
+  })
 
   // Initialize addresses on mount (one-time, simple, no watchers!)
   onMounted(() => {

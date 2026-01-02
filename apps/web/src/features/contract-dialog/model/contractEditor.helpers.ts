@@ -11,8 +11,18 @@ import { nextIds } from '@/shared/api'
 import { EntityState } from '@/shared/lib'
 
 /**
+ * Check if an entity is new (no ID or empty ID)
+ */
+function isNewEntity(id: string | undefined | null): boolean {
+  return !id || id === '0' || id === ''
+}
+
+/**
  * Build a ContractSessionSaveModel from a ContractDraft
  * This matches the structure expected by the backend validate/save endpoints
+ *
+ * Note: IDs are generated upfront when creating entities (via nextIds API),
+ * matching the legacy app pattern. No temp IDs needed.
  */
 export async function buildSaveModel(draft: ContractDraft): Promise<ContractSessionSaveModel> {
   const contractData = draftToContract(draft)
@@ -59,7 +69,7 @@ export async function buildSaveModel(draft: ContractDraft): Promise<ContractSess
       commentFeedOwnerId,
     },
     payments: (contractData.payments || []).map((payment) => ({
-      state: payment.id ? EntityState.Modified : EntityState.New,
+      state: isNewEntity(payment.id) ? EntityState.New : EntityState.Modified,
       payment,
     })),
     // Required by backend - comment feed for contract notes

@@ -49,6 +49,14 @@
         </v-col>
       </v-row>
     </v-container>
+
+    <!-- Unsaved Changes Confirmation Dialog -->
+    <FConfirmDialog
+      v-model="unsavedConfirm.isOpen.value"
+      v-bind="unsavedConfirm.options.value"
+      @cancel="unsavedConfirm.handleCancel"
+      @confirm="unsavedConfirm.handleConfirm"
+    />
   </FFullScreenDialog>
 </template>
 
@@ -57,8 +65,10 @@
   import { computed, ref, watch } from 'vue'
   import {
     FButton,
+    FConfirmDialog,
     FFormProvider,
     FFullScreenDialog,
+    useConfirm,
     useDirtyForm,
     useFormModel,
   } from '@/shared/ui'
@@ -121,6 +131,9 @@
   // Dirty tracking for unsaved changes
   const { takeSnapshot, canClose } = useDirtyForm(() => model.value)
 
+  // Unsaved changes confirmation dialog
+  const unsavedConfirm = useConfirm()
+
   // Reset form when dialog opens
   watch(dialogValue, (visible) => {
     if (visible) {
@@ -143,7 +156,13 @@
 
   async function close() {
     const confirmed = await canClose(() =>
-      Promise.resolve(confirm('You have unsaved changes. Discard them?')),
+      unsavedConfirm.confirm({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Discard them?',
+        confirmText: 'Discard',
+        confirmColor: 'error',
+        cancelText: 'Cancel',
+      }),
     )
     if (confirmed) {
       emit('update:modelValue', false)

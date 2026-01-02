@@ -40,6 +40,14 @@ export function useContractEditor(contractId: string, locationId?: string) {
         review: true,
       },
   )
+  const permissions = computed(
+    () =>
+      snapshot.value?.context.permissions ?? {
+        canExecute: true,
+        canFinalize: true,
+        canVoid: false,
+      },
+  )
   const errorsByPath = computed(() => snapshot.value?.context.errorsByPath ?? {})
   const lastError = computed(() => snapshot.value?.context.lastError)
   const isSaving = computed(() => snapshot.value?.matches({ ready: 'saving' }) ?? false)
@@ -159,8 +167,9 @@ export function useContractEditor(contractId: string, locationId?: string) {
     send({ type: 'SAVE' })
     return new Promise<Contract | undefined>((resolve) => {
       saveMutation.mutate(draft.value!, {
-        onSuccess: (savedContract) => {
-          resolve(savedContract)
+        onSuccess: (savedSession) => {
+          // Return just the contract for callers that need it
+          resolve(savedSession.contract)
         },
         onError: (error: Error) => {
           toast.error(error.message || 'Failed to save contract')
@@ -186,6 +195,7 @@ export function useContractEditor(contractId: string, locationId?: string) {
     activeTab,
     dirty,
     validity,
+    permissions,
     errorsByPath,
     lastError,
     isSaving,

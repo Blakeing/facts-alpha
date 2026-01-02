@@ -2,7 +2,7 @@
  * useContract - Single contract composable with Effect-based error handling
  */
 
-import type { Contract } from './contract'
+import type { Contract, ContractPermissions, ContractSession } from './contract'
 import { errorMessage, handleError, runEffectQuery } from '@facts/effect'
 
 import { useQuery } from '@tanstack/vue-query'
@@ -13,7 +13,7 @@ import { ContractApi } from '../api'
 export function useContract(contractId: MaybeRefOrGetter<string | null | undefined>) {
   const queryKey = computed(() => ['contract', toValue(contractId)] as const)
 
-  const query = useQuery<Contract, Error>({
+  const query = useQuery<ContractSession, Error>({
     queryKey,
     queryFn: async () => {
       const id = toValue(contractId)
@@ -28,7 +28,15 @@ export function useContract(contractId: MaybeRefOrGetter<string | null | undefin
     }),
   })
 
-  const contract = computed<Contract | null>(() => query.data.value ?? null)
+  // Extract contract from session
+  const contract = computed<Contract | null>(() => query.data.value?.contract ?? null)
+
+  // Extract permissions from session
+  const permissions = computed<ContractPermissions>(() => ({
+    canExecute: query.data.value?.executeContract ?? false,
+    canFinalize: query.data.value?.finalizeContract ?? false,
+    canVoid: query.data.value?.voidContract ?? false,
+  }))
 
   // Typed error handling
   const errorMsg = computed(() => {
@@ -43,6 +51,7 @@ export function useContract(contractId: MaybeRefOrGetter<string | null | undefin
 
   return {
     contract,
+    permissions,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

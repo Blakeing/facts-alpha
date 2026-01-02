@@ -18,7 +18,7 @@ import type {
   ContractListing,
   ContractPayment,
   ContractPerson,
-  ContractResponse,
+  ContractSession,
   ContractSessionSaveModel,
   NeedType,
   Sale,
@@ -36,7 +36,26 @@ import { type ApiError, NotFoundError, toApiError } from '@facts/effect'
 import { Effect } from 'effect'
 import { apiUrls, getHttpClient, nextId } from '@/shared/api'
 import { ContractPersonRole, SaleStatus, SaleType } from '../model/contract'
-import { contractToListing, formPersonToPerson, generateContractNumber } from './transformations'
+import { formPersonToPerson, generateContractNumber } from './transformations'
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/**
+ * Validate and return a ContractSession from BFF response
+ * The BFF always returns { contract: {...}, executeContract: bool, ... }
+ * This helper validates the response and returns the full session
+ */
+function validateContractSession(
+  response: ContractSession,
+  contractId?: string,
+): Effect.Effect<ContractSession, ApiError> {
+  if (!response?.contract) {
+    return Effect.fail(new NotFoundError({ resource: 'contract', id: contractId || 'unknown' }))
+  }
+  return Effect.succeed(response)
+}
 
 // =============================================================================
 // CRUD Operations (with transformations)
@@ -78,10 +97,10 @@ export const ContractApi = {
   /**
    * Get a single contract with all related data
    * BFF endpoint: GET /api/v1/contracts/{id}
-   * Returns wrapper object with contract inside .contract property
+   * Returns full ContractSession with contract, permissions, and session data
    * NOTE: Contract.people[].name is nested Name object from BFF (no transformation needed!)
    */
-  get: (id: string): Effect.Effect<Contract, ApiError | NotFoundError> =>
+  get: (id: string): Effect.Effect<ContractSession, ApiError | NotFoundError> =>
     Effect.gen(function* () {
       // Validate ID to prevent "undefined" being passed to URL
       if (!id || id === 'undefined') {
@@ -92,21 +111,12 @@ export const ContractApi = {
 
       // BFF returns wrapper: { contract: {...}, executeContract: bool, ... }
       const response = yield* Effect.tryPromise({
-        try: () => client.get<ContractResponse>(apiUrls.contracts.detail(id)),
+        try: () => client.get<ContractSession>(apiUrls.contracts.detail(id)),
         catch: (error: unknown) => toApiError(error, 'contract', id),
       })
 
-      if (!response.data?.contract) {
-        return yield* Effect.fail(new NotFoundError({ resource: 'contract', id }))
-      }
-
-      console.log('[ContractApi.get] Raw response:', response.data)
-      console.log('[ContractApi.get] Contract:', response.data.contract)
-      console.log('[ContractApi.get] Contract people:', response.data.contract.people)
-
-      // Return contract as-is - BFF data structure matches our types exactly!
-      // No transformation needed: person.name is already the nested Name object
-      return response.data.contract
+      // Validate and return full session
+      return yield* validateContractSession(response.data, id)
     }),
 
   /**
@@ -194,12 +204,14 @@ export const ContractApi = {
       const now = new Date().toISOString()
 
       // Get existing contract to merge (JSON Server PUT replaces entire resource)
+      // BFF returns wrapper: { contract: {...}, executeContract: bool, ... }
       const existingRes = yield* Effect.tryPromise({
-        try: () => client.get<Contract>(apiUrls.contracts.detail(id)),
+        try: () => client.get<ContractSession>(apiUrls.contracts.detail(id)),
         catch: (error: unknown) => toApiError(error, 'contract', id),
       })
 
-      const existing = existingRes.data
+      const session = yield* validateContractSession(existingRes.data, id)
+      const existing = session.contract
 
       // Build update payload (merge with existing)
       const contractPayload: Contract = {
@@ -319,16 +331,19 @@ export const ContractApi = {
    * Save contract draft (BFF endpoint)
    * POST /api/v1/contracts/save/draft
    * Accepts token from validateDraft response
-   * Returns updated Contract with all related data
+   * Returns full ContractSession with updated contract and permissions
    */
-  saveDraft: (token: string): Effect.Effect<Contract, ApiError> =>
+  saveDraft: (token: string): Effect.Effect<ContractSession, ApiError> =>
     Effect.gen(function* () {
       const client = yield* Effect.promise(() => getHttpClient())
+      // BFF returns wrapper: { contract: {...}, executeContract: bool, ... }
       const response = yield* Effect.tryPromise({
-        try: () => client.post<Contract>(apiUrls.contracts.saveDraft, { token }),
+        try: () => client.post<ContractSession>(apiUrls.contracts.saveDraft, { token }),
         catch: (error: unknown) => toApiError(error, 'contract'),
       })
-      return response.data
+
+      // Validate and return full session
+      return yield* validateContractSession(response.data)
     }),
 
   // =============================================================================

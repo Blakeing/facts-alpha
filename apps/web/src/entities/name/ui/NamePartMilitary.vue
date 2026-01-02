@@ -30,6 +30,7 @@
 
 <script lang="ts" setup>
   import type { Name } from '../model/name'
+  import { branchOfServiceController } from '../lib/controllers/branchOfService.controller'
   import { computed } from 'vue'
   import { FSelect } from '@/shared/ui'
   import { BranchOfService } from '../model/name'
@@ -54,13 +55,5 @@
     },
   })
 
-  const branchOfServiceOptions = [
-    { value: BranchOfService.NONE, label: 'None' },
-    { value: BranchOfService.ARMY, label: 'Army' },
-    { value: BranchOfService.NAVY, label: 'Navy' },
-    { value: BranchOfService.AIR_FORCE, label: 'Air Force' },
-    { value: BranchOfService.MARINES, label: 'Marines' },
-    { value: BranchOfService.COAST_GUARD, label: 'Coast Guard' },
-    { value: BranchOfService.SPACE_FORCE, label: 'Space Force' },
-  ]
+  const branchOfServiceOptions = branchOfServiceController.selectItems
 </script>

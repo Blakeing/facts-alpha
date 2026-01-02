@@ -42,21 +42,24 @@
                 </template>
                 <v-list density="compact">
                   <v-list-item
-                    prepend-icon="mdi-account-plus"
-                    @click="handleAddCoBuyer"
+                    v-if="!hasPrimaryBuyer"
+                    @click="handleAddPrimaryBuyer"
                   >
+                    <v-list-item-title>Add Primary Buyer</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="handleAddCoBuyer">
                     <v-list-item-title>Add Co-Buyer</v-list-item-title>
                   </v-list-item>
                   <v-list-item
-                    prepend-icon="mdi-account-plus"
-                    @click="handleAddBeneficiary"
+                    v-if="!hasPrimaryBeneficiary"
+                    @click="handleAddPrimaryBeneficiary"
                   >
+                    <v-list-item-title>Add Primary Beneficiary</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="handleAddBeneficiary">
                     <v-list-item-title>Add Additional Beneficiary</v-list-item-title>
                   </v-list-item>
-                  <v-list-item
-                    prepend-icon="mdi-account-plus"
-                    @click="handleAddPerson"
-                  >
+                  <v-list-item @click="handleAddPerson">
                     <v-list-item-title>Add Other Person</v-list-item-title>
                   </v-list-item>
                 </v-list>
@@ -101,15 +104,6 @@
                 <div class="text-body-2 font-weight-medium">
                   {{ getDisplayName(person) || 'New Person' }}
                 </div>
-                <v-chip
-                  v-if="person.name?.deceased || person.name?.deathDate"
-                  class="mt-1"
-                  color="error"
-                  size="x-small"
-                  variant="tonal"
-                >
-                  Deceased
-                </v-chip>
               </div>
             </v-tab>
           </v-tabs>
@@ -134,76 +128,16 @@
         </v-alert>
 
         <template v-else-if="currentPerson">
-          <FCard>
-            <template #title>
-              <div class="d-flex align-center justify-space-between">
-                <div class="d-flex align-center flex-wrap gap-2">
-                  <div>
-                    <div class="text-h6 font-weight-medium">
-                      {{ getDisplayName(currentPerson) || 'New Person' }}
-                    </div>
-                  </div>
-                  <v-chip
-                    v-if="getPersonTypeLabel(currentPerson)"
-                    color="primary"
-                    size="small"
-                    variant="tonal"
-                  >
-                    {{ getPersonTypeLabel(currentPerson) }}
-                  </v-chip>
-                </div>
-                <div class="d-flex gap-1">
-                  <v-tooltip text="Edit Person">
-                    <template #activator="{ props: tooltipProps }">
-                      <v-btn
-                        v-if="canEditPerson(currentPerson)"
-                        v-bind="tooltipProps"
-                        color="primary"
-                        icon
-                        size="small"
-                        variant="text"
-                        @click="editPerson(currentPerson)"
-                      >
-                        <v-icon>mdi-pencil-outline</v-icon>
-                      </v-btn>
-                    </template>
-                  </v-tooltip>
-                  <v-tooltip text="Remove Person">
-                    <template #activator="{ props: tooltipProps }">
-                      <v-btn
-                        v-if="canRemovePerson(currentPerson)"
-                        v-bind="tooltipProps"
-                        color="error"
-                        icon
-                        size="small"
-                        variant="text"
-                        @click="removePerson(currentPerson)"
-                      >
-                        <v-icon>mdi-delete-outline</v-icon>
-                      </v-btn>
-                    </template>
-                  </v-tooltip>
-                </div>
-              </div>
-            </template>
-
-            <!-- Name panel - editable for new/empty persons, readonly otherwise -->
-            <div
-              v-if="currentPerson.name"
-              class="pa-4"
-            >
-              <NamePanel
-                :hide-company="false"
-                :hide-deceased-info="false"
-                :hide-s-s-n="false"
-                :is-name-required="isNameRequired(currentPerson)"
-                :model="currentPerson.name"
-                :name-part-readonly="!isPersonEditable(currentPerson)"
-                :people-list="peopleNames"
-                :show-opt-out-marketing="false"
-              />
-            </div>
-          </FCard>
+          <ContractPersonSummary
+            :can-remove="canRemovePerson(currentPerson)"
+            :display-name="getDisplayName(currentPerson)"
+            :is-deceased="isPersonDeceased(currentPerson)"
+            :is-read-only="isReadOnly"
+            :name="currentPerson.name"
+            :person-type-label="getPersonTypeLabel(currentPerson)"
+            @edit="editPerson(currentPerson)"
+            @remove="removePerson(currentPerson)"
+          />
         </template>
       </v-col>
     </v-row>
@@ -222,24 +156,55 @@
       :title="editDialog.title"
       @save="saveName"
     />
+
+    <!-- Remove Person Confirmation Dialog -->
+    <FConfirmDialog
+      v-model="removeConfirm.isOpen.value"
+      v-bind="removeConfirm.options.value"
+      @cancel="removeConfirm.handleCancel"
+      @confirm="removeConfirm.handleConfirm"
+    />
   </v-container>
 </template>
 
 <script lang="ts" setup>
+  import { runEffect } from '@facts/effect'
   import { computed, ref, watch } from 'vue'
   import { type ContractPerson, ContractPersonRole, SaleStatus } from '@/entities/contract'
   import { contractPersonRoleController } from '@/entities/contract'
   import { createEmptyName, getFormattedName, type Name } from '@/entities/name'
-  import { NameEditorDialog, NamePanel } from '@/entities/name/ui'
+  import { NameEditorDialog } from '@/entities/name/ui'
   import { useContractEditorContext } from '@/features/contract-dialog'
-  import { FButton, FCard } from '@/shared/ui'
+  import { nextIds } from '@/shared/api'
+  import { FButton, FConfirmDialog, useConfirm } from '@/shared/ui'
+  import ContractPersonSummary from './ContractPersonSummary.vue'
 
   // Inject editor context
   const editor = useContractEditorContext()
   const draft = computed(() => editor.draft.value)
 
-  // People from draft
-  const people = computed(() => draft.value?.people ?? [])
+  // People from draft (unsorted - original order)
+  const peopleUnsorted = computed(() => draft.value?.people ?? [])
+
+  // People from draft, sorted by role priority:
+  // Primary Buyer > Co-Buyer > Primary Beneficiary > Additional Beneficiary > Person
+  const people = computed(() => {
+    const peopleList = draft.value?.people ?? []
+    if (peopleList.length === 0) return []
+
+    // Sort by role priority, then by name for same priority
+    return peopleList.toSorted((a, b) => {
+      const priorityA = contractPersonRoleController.getRolePriority(a.roles)
+      const priorityB = contractPersonRoleController.getRolePriority(b.roles)
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB
+      }
+      // Same priority - sort by name
+      const nameA = getFormattedName(a.name) || ''
+      const nameB = getFormattedName(b.name) || ''
+      return nameA.localeCompare(nameB)
+    })
+  })
 
   // People names for validation
   const peopleNames = computed(() => {
@@ -256,12 +221,28 @@
   const activeTab = ref(0)
   const showAddMenu = ref(false)
 
+  // Track person ID we're waiting to appear (for setting active tab after add)
+  const pendingPersonId = ref<string | null>(null)
+
+  // Remove person confirmation dialog
+  const removeConfirm = useConfirm()
+  const personToRemove = ref<ContractPerson | null>(null)
+
   // Watch people list and adjust active tab
   watch(people, (newList) => {
     if (newList.length === 0) {
       activeTab.value = 0
     } else if (activeTab.value >= newList.length) {
       activeTab.value = 0
+    }
+
+    // If we're waiting for a person to appear, find them and set active tab
+    if (pendingPersonId.value) {
+      const personIndex = newList.findIndex((p) => p.id === pendingPersonId.value)
+      if (personIndex !== -1) {
+        activeTab.value = personIndex
+        pendingPersonId.value = null // Clear the pending ID
+      }
     }
   })
 
@@ -273,30 +254,26 @@
     return people.value[index]
   })
 
-  // Role constants
-  const { PRIMARY_BUYER, CO_BUYER, PRIMARY_BENEFICIARY, ADDITIONAL_BENEFICIARY, PERSON } =
-    ContractPersonRole
-
   // Role helpers
   function hasRole(person: ContractPerson, role: ContractPersonRole): boolean {
     return (person.roles & role) === role
   }
 
-  function isPrimaryBuyer(person: ContractPerson): boolean {
-    return hasRole(person, PRIMARY_BUYER)
+  function isPrimaryRole(person: ContractPerson): boolean {
+    return (
+      hasRole(person, ContractPersonRole.PRIMARY_BUYER) ||
+      hasRole(person, ContractPersonRole.PRIMARY_BENEFICIARY)
+    )
   }
 
-  function isPrimaryBeneficiary(person: ContractPerson): boolean {
-    return hasRole(person, PRIMARY_BENEFICIARY)
-  }
+  // Check if primary roles already exist
+  const hasPrimaryBuyer = computed(() => {
+    return people.value.some((p) => hasRole(p, ContractPersonRole.PRIMARY_BUYER))
+  })
 
-  function isCoBuyer(person: ContractPerson): boolean {
-    return hasRole(person, CO_BUYER)
-  }
-
-  function isAdditionalBeneficiary(person: ContractPerson): boolean {
-    return hasRole(person, ADDITIONAL_BENEFICIARY)
-  }
+  const hasPrimaryBeneficiary = computed(() => {
+    return people.value.some((p) => hasRole(p, ContractPersonRole.PRIMARY_BENEFICIARY))
+  })
 
   // Display helpers
   function getDisplayName(person: ContractPerson): string {
@@ -304,78 +281,96 @@
     return getFormattedName(person.name) || ''
   }
 
+  function isPersonDeceased(person: ContractPerson): boolean {
+    return !!(person.name?.deceased || person.name?.deathDate)
+  }
+
   function getPersonTypeLabel(person: ContractPerson): string {
     return contractPersonRoleController.getDescription(person.roles)
   }
 
-  // Permission checks
-  function isPersonEditable(person: ContractPerson): boolean {
-    if (isReadOnly.value) return false
-    if (!person.name?.first || !person.name?.last) return true // Empty name = editable
-    return false // Existing name requires dialog
-  }
-
-  function canEditPerson(person: ContractPerson): boolean {
-    return !!person.name && !isPersonEditable(person)
-  }
-
   function canRemovePerson(person: ContractPerson): boolean {
-    if (isPrimaryBuyer(person) || isPrimaryBeneficiary(person)) return false
-    if (isReadOnly.value && (isCoBuyer(person) || isAdditionalBeneficiary(person))) return false
+    if (isPrimaryRole(person)) return false
+    const isSecondary =
+      hasRole(person, ContractPersonRole.CO_BUYER) ||
+      hasRole(person, ContractPersonRole.ADDITIONAL_BENEFICIARY)
+    if (isReadOnly.value && isSecondary) return false
     return true
   }
 
-  function isNameRequired(person: ContractPerson): boolean {
-    return isPrimaryBuyer(person) || isPrimaryBeneficiary(person)
-  }
+  // Factory for creating new person - fetches real IDs from server (like legacy)
+  async function createEmptyPerson(role: ContractPersonRole): Promise<ContractPerson> {
+    // Get 2 IDs: one for person, one for name (matches legacy pattern)
+    const ids = await runEffect(nextIds(2))
+    const personId = ids[0] || ''
+    const nameId = ids[1] || ''
 
-  // Factory for creating new person
-  function createEmptyPerson(role: ContractPersonRole): ContractPerson {
+    const emptyName = createEmptyName()
     return {
-      id: crypto.randomUUID(),
+      id: personId,
       contractId: draft.value?.id ?? '',
-      nameId: crypto.randomUUID(),
+      nameId: nameId,
       roles: role,
       addedAfterContractExecution: false,
       conversion: null,
       conversionId: null,
       conversionSource: null,
-      name: createEmptyName(),
+      name: {
+        ...emptyName,
+        id: nameId,
+      },
       dateCreated: new Date().toISOString(),
       dateLastModified: new Date().toISOString(),
     }
   }
 
-  // Action handlers
+  // Open dialog to add a new person (person only added when they save)
+  async function openAddPersonDialog(role: ContractPersonRole, title: string) {
+    showAddMenu.value = false
+    const newPerson = await createEmptyPerson(role)
+    editDialog.value = {
+      visible: true,
+      model: newPerson.name,
+      title,
+      personId: newPerson.id,
+      newPerson,
+    }
+  }
+
+  function handleAddPrimaryBuyer() {
+    openAddPersonDialog(ContractPersonRole.PRIMARY_BUYER, 'Add Primary Buyer')
+  }
+  function handleAddPrimaryBeneficiary() {
+    openAddPersonDialog(ContractPersonRole.PRIMARY_BENEFICIARY, 'Add Primary Beneficiary')
+  }
   function handleAddCoBuyer() {
-    showAddMenu.value = false
-    const newPerson = createEmptyPerson(CO_BUYER)
-    editor.setField('people', [...people.value, newPerson])
-    activeTab.value = people.value.length - 1
+    openAddPersonDialog(ContractPersonRole.CO_BUYER, 'Add Co-Buyer')
   }
-
   function handleAddBeneficiary() {
-    showAddMenu.value = false
-    const newPerson = createEmptyPerson(ADDITIONAL_BENEFICIARY)
-    editor.setField('people', [...people.value, newPerson])
-    activeTab.value = people.value.length - 1
+    openAddPersonDialog(ContractPersonRole.ADDITIONAL_BENEFICIARY, 'Add Additional Beneficiary')
   }
-
   function handleAddPerson() {
-    showAddMenu.value = false
-    const newPerson = createEmptyPerson(PERSON)
-    editor.setField('people', [...people.value, newPerson])
-    activeTab.value = people.value.length - 1
+    openAddPersonDialog(ContractPersonRole.PERSON, 'Add Person')
   }
 
-  function removePerson(person: ContractPerson) {
-    const confirmed = confirm(
-      `Are you sure you want to remove "${getDisplayName(person)}" from this contract?`,
-    )
-    if (!confirmed) return
+  async function removePerson(person: ContractPerson) {
+    personToRemove.value = person
+    const confirmed = await removeConfirm.confirm({
+      title: 'Remove Person',
+      message: `Are you sure you want to remove "${getDisplayName(person)}" from this contract?`,
+      confirmText: 'Remove',
+      confirmColor: 'error',
+      cancelText: 'Cancel',
+    })
 
-    const filtered = people.value.filter((p) => p.id !== person.id)
-    editor.setField('people', filtered)
+    if (confirmed && personToRemove.value) {
+      // Remove from unsorted array to preserve order
+      const filtered = peopleUnsorted.value.filter((p) => p.id !== personToRemove.value!.id)
+      editor.setField('people', filtered)
+      personToRemove.value = null
+    } else {
+      personToRemove.value = null
+    }
   }
 
   // Edit dialog state
@@ -384,23 +379,47 @@
     model: null as Name | null,
     title: '',
     personId: '',
+    newPerson: null as ContractPerson | null, // Store new person until they save
   })
 
   function editPerson(person: ContractPerson) {
-    if (!person.name) return
     editDialog.value = {
       visible: true,
-      model: { ...person.name }, // Clone for editing
-      title: `Edit ${getDisplayName(person)}`,
+      model: person.name ? { ...person.name } : createEmptyName(),
+      title: `Edit ${getDisplayName(person) || 'Person'}`,
       personId: person.id,
+      newPerson: null, // Not a new person, editing existing
     }
   }
 
   function saveName(updatedName: Name) {
-    const personIndex = people.value.findIndex((p) => p.id === editDialog.value.personId)
+    // If this is a new person, add them to the list
+    if (editDialog.value.newPerson) {
+      const newPerson: ContractPerson = {
+        ...editDialog.value.newPerson,
+        name: { ...updatedName, dateLastModified: new Date().toISOString() },
+        dateLastModified: new Date().toISOString(),
+      }
+      const personId = newPerson.id
+      // Add to unsorted array - sorting will happen in computed
+      const updatedPeople = [...peopleUnsorted.value, newPerson]
+
+      // Set pending person ID - the watch will detect when they appear and set active tab
+      pendingPersonId.value = personId
+
+      editor.setField('people', updatedPeople)
+
+      editDialog.value.newPerson = null
+      editDialog.value.visible = false
+      return
+    }
+
+    // Otherwise, update existing person
+    // Find in unsorted array to preserve original order
+    const personIndex = peopleUnsorted.value.findIndex((p) => p.id === editDialog.value.personId)
     if (personIndex === -1) return
 
-    const person = people.value[personIndex]
+    const person = peopleUnsorted.value[personIndex]
     if (!person) return
 
     // Update person with new name
@@ -410,8 +429,8 @@
       dateLastModified: new Date().toISOString(),
     }
 
-    // Update the person in the array
-    const updatedPeople = [...people.value]
+    // Update the person in the array (preserve original order)
+    const updatedPeople = [...peopleUnsorted.value]
     updatedPeople[personIndex] = updatedPerson
     editor.setField('people', updatedPeople)
 

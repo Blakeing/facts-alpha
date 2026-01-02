@@ -71,7 +71,7 @@ Facts Alpha has been refactored to **exactly match** the BFF (Backend for Fronte
 - All entity interfaces
 - All handler functions (`useItemsHandler`, `usePeopleHandler`, `usePaymentsHandler`)
 - All API client methods
-- All mock data (`db.json`)
+- All entity types
 
 ### 5. Simplified EnumController ✅
 
@@ -124,13 +124,13 @@ needType: z.enum([NeedType.AT_NEED, NeedType.PRE_NEED])
 needType: z.nativeEnum(NeedType)
 ```
 
-### 7. Updated Mock Data ✅
+### 7. Entity Type Alignment ✅
 
-**Changed:** `/packages/mock-api/db.json`
+**Changed:** All entity types now match BFF format
 
-- All enum values: `"funeral"` → `0`, `"cemetery"` → `1`, etc.
-- All field names: `"createdAt"` → `"dateCreated"`, `"updatedAt"` → `"dateLastModified"`
-- All license types: `"establishment"` → `1`, `"trust"` → `2`, etc.
+- All enum values: Numeric enums matching C# backend
+- All field names: `dateCreated`/`dateLastModified` (BFF format)
+- All ID types: String IDs (BFF converts from numeric)
 
 ## Architecture Impact
 
@@ -196,22 +196,30 @@ interface Name {
 - Helper functions in `nameHelpers.ts` provide utilities for working with nested structure
 - Form schemas updated to validate nested structure
 
-### 9. ContractResponse Wrapper ✅
+### 9. ContractSession Wrapper ✅
 
 **Changed:** `contractApi.ts` now handles BFF response wrapper
 
 **BFF Response Format:**
 
 ```typescript
-interface ContractResponse {
+interface ContractSession {
   contract: Contract
+  permissions: ContractPermissions
+  data: ContractSessionData
   executeContract: boolean
   finalizeContract: boolean
   voidContract: boolean
 }
+
+interface ContractPermissions {
+  canExecute: boolean
+  canFinalize: boolean
+  canVoid: boolean
+}
 ```
 
-**Impact:** API layer unwraps `response.data.contract` and returns it directly - no transformation needed.
+**Impact:** API layer returns the full `ContractSession` object, preserving all BFF data including permissions. The state machine stores the full session and exposes both `contract` and `permissions` to consumers.
 
 ## Benefits
 
@@ -227,7 +235,7 @@ interface ContractResponse {
 
 - ✅ All entities use BFF field names directly
 - ✅ All enums match C# backend numeric values
-- ✅ Mock data matches production format
+- ✅ Entity types match BFF format exactly
 - ✅ Form validation uses native enums
 - ✅ UI components work with numeric enum values
 
@@ -264,7 +272,7 @@ Simply point the API client to the production BFF URL - everything will work.
 - All handler files (`useItemsHandler.ts`, `usePeopleHandler.ts`, etc.)
 - All API client files (`contractApi.ts`, etc.)
 - All page components using enums
-- Mock data (`db.json`)
+- Entity types and schemas
 
 ## Testing Checklist
 
@@ -273,9 +281,9 @@ Simply point the API client to the production BFF URL - everything will work.
 - [x] All field names match BFF format
 - [x] Form validation works with numeric enums
 - [x] UI components display enum labels correctly
-- [x] Mock data matches production format
+- [x] Entity types match BFF format exactly
 - [x] ContractPerson uses nested Name structure (matching BFF)
-- [x] ContractResponse wrapper handled correctly
+- [x] ContractSession wrapper handled correctly (includes permissions)
 - [x] No transformation logic in API layer
 - [x] Components access nested name data correctly
 

@@ -39,7 +39,6 @@
    * Provides convenient title/subtitle props and action slot.
    * All other v-card props pass through via $attrs.
    */
-  import { computed } from 'vue'
 
   export type CardVariant = 'elevated' | 'filled' | 'outlined'
 
@@ -57,19 +56,5 @@
     subtitle: undefined,
     variant: 'outlined',
     rounded: 'lg',
-  })
-
-  // Map our variant names to Vuetify's
-  const computedVariant = computed(() => {
-    switch (props.variant) {
-      case 'elevated':
-        return 'elevated'
-      case 'filled':
-        return 'flat'
-      case 'outlined':
-        return 'outlined'
-      default:
-        return 'outlined'
-    }
   })
 </script>
