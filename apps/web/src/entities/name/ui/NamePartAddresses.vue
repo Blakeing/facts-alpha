@@ -19,7 +19,7 @@
         dense
       >
         <v-col cols="12">
-          <v-switch
+          <v-checkbox
             v-model="model.mailingAddressSameAsPhysical"
             color="primary"
             density="compact"

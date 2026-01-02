@@ -4,9 +4,10 @@
       <v-col v-if="!hideSSN">
         <FTextField
           v-model="nationalIdentifier"
+          v-maska="nationalIdMask"
           field="nationalIdentifier"
           :label="nationalIdLabel"
-          placeholder="###-##-####"
+          :placeholder="nationalIdPlaceholder"
           :readonly="readonly"
         />
       </v-col>
@@ -33,7 +34,7 @@
 
 <script lang="ts" setup>
   import type { Name } from '../model/name'
-  import { toRef } from 'vue'
+  import { computed, toRef } from 'vue'
   import { FSelect, FTextField } from '@/shared/ui'
 
   const props = defineProps<{
@@ -109,7 +110,6 @@
 
   const nationalIdLabel = computed(() => {
     switch (country.value) {
-      case 'US':
       case 'USA': {
         return 'SSN'
       }
@@ -122,9 +122,36 @@
     }
   })
 
+  const nationalIdMask = computed(() => {
+    switch (country.value) {
+      case 'USA': {
+        return '###-##-####'
+      }
+      case 'Canada': {
+        return '###-###-###'
+      }
+      default: {
+        return '#########'
+      }
+    }
+  })
+
+  const nationalIdPlaceholder = computed(() => {
+    switch (country.value) {
+      case 'USA': {
+        return '###-##-####'
+      }
+      case 'Canada': {
+        return '###-###-###'
+      }
+      default: {
+        return '#########'
+      }
+    }
+  })
+
   const stateIdLabel = computed(() => {
     switch (country.value) {
-      case 'US':
       case 'USA': {
         return 'State ID Number'
       }

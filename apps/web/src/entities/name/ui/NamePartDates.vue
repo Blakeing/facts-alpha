@@ -22,11 +22,12 @@
     </v-row>
     <v-row dense>
       <v-col>
-        <FSwitch
+        <v-checkbox
           v-model="deceased"
           color="primary"
+          density="compact"
           :disabled="readonly"
-          field="deceased"
+          hide-details
           label="Deceased"
         />
       </v-col>
@@ -38,7 +39,7 @@
   /* eslint-disable vue/no-mutating-props -- Working copy pattern: model is mutable */
   import type { Name } from '../model/name'
   import { computed } from 'vue'
-  import { FDatePicker, FSwitch, FTextField } from '@/shared/ui'
+  import { FDatePicker, FTextField } from '@/shared/ui'
 
   const props = defineProps<{
     model: Name
