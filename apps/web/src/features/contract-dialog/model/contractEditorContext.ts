@@ -30,5 +30,5 @@ export interface ContractEditorContext {
   errorsFor: (path: string) => string[]
 }
 
-export const CONTRACT_EDITOR_KEY: InjectionKey<ContractEditorContext> = Symbol('contractEditorContext')
-
+export const CONTRACT_EDITOR_KEY: InjectionKey<ContractEditorContext> =
+  Symbol('contractEditorContext')

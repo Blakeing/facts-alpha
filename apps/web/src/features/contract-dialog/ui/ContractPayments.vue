@@ -182,7 +182,7 @@
   } from '@/entities/contract'
   import { useContractEditorContext } from '@/features/contract-dialog'
   import { formatCurrency, formatDate } from '@/shared/lib'
-  import { paymentMethodController } from '@/shared/lib/enums/contract'
+  import { paymentMethodController } from '@/entities/contract'
   import {
     FButton,
     FCard,
@@ -311,4 +311,3 @@
     margin: 0 auto;
   }
 </style>
-

@@ -15,9 +15,9 @@
   import { runEffectQuery } from '@facts/effect'
   import { useQueryClient } from '@tanstack/vue-query'
   import { ref } from 'vue'
-  import { ContractApi } from '@/entities/contract/api'
+  import { ContractApi } from '@/entities/contract'
   import { ContractDialog, useContractDialogRoute } from '@/features/contract-dialog'
-  import { editRequirement, SecurityOptionKeys } from '@/shared/lib/security'
+  import { editRequirement, SecurityOptionKeys } from '@/shared/lib'
   import { useToast } from '@/shared/ui'
   import { ContractEditorProvider } from '@/widgets/contract-editor'
 

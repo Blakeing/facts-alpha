@@ -57,7 +57,8 @@
       // If field prop is set and context provides getValue, use it
       if (props.field && formContext?.getValue) {
         const contextValue = formContext.getValue(props.field)
-        return contextValue !== undefined ? String(contextValue) : ''
+        // Treat null and undefined as empty string (don't convert null to "null")
+        return contextValue != null ? String(contextValue) : ''
       }
       return props.modelValue ?? ''
     },

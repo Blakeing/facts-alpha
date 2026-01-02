@@ -31,7 +31,7 @@ import type {
   ContractPersonFormValues,
   SaleFormValues,
   SaleItemFormValues,
-} from '../model/contractSchema'
+} from '../model/contract.schema'
 import { type ApiError, NotFoundError, toApiError } from '@facts/effect'
 import { Effect } from 'effect'
 import { apiUrls, getHttpClient, nextId } from '@/shared/api'
@@ -305,7 +305,11 @@ export const ContractApi = {
     Effect.gen(function* () {
       const client = yield* Effect.promise(() => getHttpClient())
       const response = yield* Effect.tryPromise({
-        try: () => client.post<{ saveToken: string; errors: string[] }>(apiUrls.contracts.validateDraft, model),
+        try: () =>
+          client.post<{ saveToken: string; errors: string[] }>(
+            apiUrls.contracts.validateDraft,
+            model,
+          ),
         catch: (error: unknown) => toApiError(error, 'contract'),
       })
       return response.data

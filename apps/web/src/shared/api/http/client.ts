@@ -1,7 +1,6 @@
 import type { HttpClientConfig } from './config'
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
-import { AuthService } from '@/shared/lib/auth'
-import { useUserContextStore } from '@/stores/userContext'
+import { AuthService, useUserContextStore } from '@/shared/lib'
 import { getApiConfig } from './config'
 
 /**

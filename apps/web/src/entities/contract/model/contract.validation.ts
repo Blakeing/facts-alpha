@@ -2,7 +2,7 @@
  * entities/contract/model/contract.validation.ts
  *
  * Section-based validation schemas for contract editor
- * Extends the existing contractSchema.ts with section-specific validations
+ * Extends the existing contract.schema.ts with section-specific validations
  *
  * Validation rules match legacy ContractSaveHandler.preValidate():
  * - For DRAFT saves: Only location and sale date (for Cemetery/Pre-Need) are required
@@ -14,7 +14,7 @@ import { isAfter, isBefore, parseDate, startOfDay } from '@facts/utils'
 import { z } from 'zod'
 import { LocationType } from '@/entities/location'
 import { ContractPersonRole, getPrimaryBeneficiary, NeedType } from './contract'
-import { contractPaymentSchema, contractPersonSchema, saleItemSchema } from './contractSchema'
+import { contractPaymentSchema, contractPersonSchema, saleItemSchema } from './contract.schema'
 
 // =============================================================================
 // Section Schemas (for step-by-step validation)
@@ -87,7 +87,7 @@ export const PaymentsSectionSchema = z.object({
 export const GeneralSectionSchema = z.object({
   locationId: z.string().min(1, 'Location is required'),
   needType: z.number(),
-  prePrintedContractNumber: z.string().optional(),
+  prePrintedContractNumber: z.string().nullable().optional(),
   sale: z.object({
     saleDate: z.string().optional(),
   }),

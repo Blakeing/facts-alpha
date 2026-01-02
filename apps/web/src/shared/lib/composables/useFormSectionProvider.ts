@@ -72,7 +72,6 @@ export function useFormSectionProvider(
     },
     onUpdate: onSetField,
   }
-  
+
   provideFormContext(context)
 }
-

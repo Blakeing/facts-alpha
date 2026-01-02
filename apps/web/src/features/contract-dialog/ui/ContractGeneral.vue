@@ -115,8 +115,8 @@
   import { getValueByPath, NeedType, SaleStatus } from '@/entities/contract'
   import { useContractEditorContext } from '@/features/contract-dialog'
   import { formatCurrency } from '@/shared/lib'
-  import { useFormSectionProvider } from '@/shared/lib/composables'
-  import { needTypeController } from '@/shared/lib/enums/contract'
+  import { useFormSectionProvider } from '@/shared/lib'
+  import { needTypeController } from '@/entities/contract'
   import { FCard, FDatePicker, FSelect, FTextField } from '@/shared/ui'
 
   // Inject editor context

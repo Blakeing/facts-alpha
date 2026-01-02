@@ -54,7 +54,7 @@
   import type { Name } from '../model/name'
   import { computed, ref, watch } from 'vue'
   import { FSelect, FTextField } from '@/shared/ui'
-  import { getFormattedName } from '../model/nameHelpers'
+  import { getFormattedName } from '../model/name.helpers'
 
   interface PersonRelation {
     id: string

@@ -55,5 +55,4 @@ export abstract class EnumController<TEnum extends number = number> {
   getDescription(id: TEnum, missing = 'Unknown'): string {
     return this.choices.find((c) => c.id === id)?.name ?? missing
   }
-
 }

@@ -8,11 +8,11 @@
 
 import type { MaybeRefOrGetter } from 'vue'
 import type { Location } from './location'
-import type { LocationFormValues } from './locationSchema'
+import type { LocationFormValues } from './location.schema'
 import { runEffect } from '@facts/effect'
 import { useEntityForm } from '@facts/ui'
-import { LocationApi } from '../api/locationApi'
-import { getDefaultLocationFormValues } from './locationSchema'
+import { LocationApi } from '../api'
+import { getDefaultLocationFormValues } from './location.schema'
 import { LOCATIONS_QUERY_KEY } from './useLocations'
 
 interface UseLocationFormOptions {

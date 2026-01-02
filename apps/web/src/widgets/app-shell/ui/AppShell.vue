@@ -137,7 +137,7 @@
 <script lang="ts" setup>
   import { onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
-  import { useUserContextStore } from '@/stores'
+  import { useUserContextStore } from '@/shared/lib'
   import { navigation, secondaryNavigation } from '../model/navigation'
   import LocationSelector from './LocationSelector.vue'
 

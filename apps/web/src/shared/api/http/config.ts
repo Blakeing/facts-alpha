@@ -1,6 +1,6 @@
-import { EndpointsProvider } from '@/shared/config/endpoints'
-import { AuthService } from '@/shared/lib/auth'
-import { useUserContextStore } from '@/stores/userContext'
+import { EndpointsProvider } from '@/shared/config'
+import { AuthService } from '@/shared/lib'
+import { useUserContextStore } from '@/shared/lib'
 
 export interface HttpClientConfig {
   baseUrl: string

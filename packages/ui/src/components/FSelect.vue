@@ -3,6 +3,7 @@
     v-model="fieldValue"
     :error-messages="fieldError"
     :items="options"
+    :multiple="multiple"
     v-bind="$attrs"
     @blur="handleBlur"
   />
@@ -12,17 +13,21 @@
   /**
    * FSelect - Dropdown select with validation support
    *
-   * @example
-   * // With form context (recommended)
-   * <FFormProvider :get-error="getError" :touch="touch">
-   *   <FSelect v-model="model.status" field="status" :options="statusOptions" />
-   * </FFormProvider>
+   * Supports both single and multi-select modes via the `multiple` prop.
+   * When `multiple` is true, modelValue should be an array.
+   * When `multiple` is false (default), modelValue should be a single value.
    *
    * @example
-   * // Standalone
-   * <FSelect v-model="status" :options="statusOptions" label="Status" />
+   * // Single select (default)
+   * <FSelect v-model="status" :options="statusOptions" field="status" />
+   *
+   * @example
+   * // Multi-select
+   * <FSelect v-model="selectedItems" :options="options" multiple />
+   *
+   * @see https://vuetifyjs.com/en/components/selects/
    */
-  type SelectValue = string | number | null | (string | number)[]
+  export type SelectValue = string | number | null | (string | number)[]
 
   export type SelectOption = {
     title: string
@@ -33,10 +38,12 @@
   export interface FSelectProps {
     /** Field path for auto error/blur via form context */
     field?: string
-    /** Selected value */
+    /** Selected value(s) - single value when multiple is false, array when multiple is true */
     modelValue?: SelectValue
     /** Select options */
     options: SelectOption[]
+    /** Enable multi-select mode (default: false) */
+    multiple?: boolean
     /** External error message (manual mode) */
     error?: string
   }
@@ -49,6 +56,7 @@
   const props = withDefaults(defineProps<FSelectProps>(), {
     field: undefined,
     modelValue: null,
+    multiple: false,
     error: undefined,
   })
 

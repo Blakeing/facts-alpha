@@ -5,4 +5,4 @@
  */
 
 export * from './constants'
-export * from './endpoints'
+export { EndpointsProvider, type EndpointSettings } from './endpoints'

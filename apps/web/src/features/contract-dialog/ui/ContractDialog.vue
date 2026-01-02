@@ -149,9 +149,8 @@
 <script lang="ts" setup>
   import { useVModel } from '@vueuse/core'
   import { computed, watch } from 'vue'
-  import { getSaleStatusColor, SaleStatus } from '@/entities/contract'
+  import { getSaleStatusColor, SaleStatus, saleStatusController } from '@/entities/contract'
   import { useContractEditorContext } from '@/features/contract-dialog'
-  import { saleStatusController } from '@/shared/lib/enums/contract'
   import { FButton, FConfirmDialog, FFullScreenDialog, useConfirm } from '@/shared/ui'
   import ContractGeneral from './ContractGeneral.vue'
   import ContractItems from './ContractItems.vue'

@@ -2,7 +2,7 @@
 export * from './location'
 
 // Schemas
-export * from './locationSchema'
+export * from './location.schema'
 
 // Composables
 export { useLocation } from './useLocation'

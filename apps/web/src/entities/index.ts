@@ -50,6 +50,3 @@ export type {
   LocationListing,
   LocationType,
 } from './location'
-
-// Tenant entity
-export * from './tenant'

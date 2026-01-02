@@ -7,7 +7,7 @@
 
 import type { ApiError } from '@facts/effect'
 import type { Contract, ContractListing, ContractPerson, Sale } from '../model/contract'
-import type { ContractPersonFormValues } from '../model/contractSchema'
+import type { ContractPersonFormValues } from '../model/contract.schema'
 import { Effect } from 'effect'
 import { nextId } from '@/shared/api'
 import { ContractPersonRole, NeedType, SaleStatus, SaleType } from '../model/contract'

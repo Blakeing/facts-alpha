@@ -6,7 +6,7 @@
  */
 
 import type { Location } from './location'
-import type { LocationFormValues } from './locationSchema'
+import type { LocationFormValues } from './location.schema'
 
 import { errorMessage, runEffectMutation } from '@facts/effect'
 

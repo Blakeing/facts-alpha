@@ -15,7 +15,7 @@
   import { computed } from 'vue'
   import { useRoute } from 'vue-router'
   import { ContractDialog, useContractDialogRoute } from '@/features/contract-dialog'
-  import { editRequirement, SecurityOptionKeys } from '@/shared/lib/security'
+  import { editRequirement, SecurityOptionKeys } from '@/shared/lib'
   import { useToast } from '@/shared/ui'
   import { ContractEditorProvider } from '@/widgets/contract-editor'
 

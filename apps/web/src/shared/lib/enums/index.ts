@@ -1,5 +1,4 @@
-// Contract enums
-export * from './contract'
+// Contract enum controllers moved to @/entities/contract/lib/controllers
 
 // Base classes and types
 export type { EnumChoice } from './EnumController'

@@ -170,7 +170,7 @@
   import { computed } from 'vue'
   import { FTextField } from '@/shared/ui'
   import { PhoneType } from '../model/name'
-  import { getFormattedName } from '../model/nameHelpers'
+  import { getFormattedName } from '../model/name.helpers'
   import NamePartAddresses from './NamePartAddresses.vue'
   import NamePartDates from './NamePartDates.vue'
   import NamePartDeceased from './NamePartDeceased.vue'

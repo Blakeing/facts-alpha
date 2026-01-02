@@ -90,7 +90,7 @@ export function toApiError(error: unknown, resourceName?: string, id?: string): 
           // If parsing fails, use original data
         }
       }
-      
+
       const fields = extractValidationFields(parsedData)
       return new ValidationError({ fields })
     }
@@ -155,7 +155,7 @@ function extractValidationFields(data: unknown): Record<string, string[]> {
       return {}
     }
   }
-  
+
   if (typeof parsedData === 'object' && parsedData !== null) {
     const obj = parsedData as Record<string, unknown>
 
@@ -174,7 +174,7 @@ function extractValidationFields(data: unknown): Record<string, string[]> {
 
       return fields
     }
-    
+
     // Also check if the entire response is the errors object (some APIs do this)
     // Skip if it looks like a generic RFC error response (has type, title, status)
     if (!obj.type && !obj.title && Object.keys(obj).length > 0) {

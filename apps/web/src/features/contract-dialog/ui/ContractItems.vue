@@ -145,7 +145,7 @@
   import { ItemType, type SaleItem, SaleStatus } from '@/entities/contract'
   import { useContractEditorContext } from '@/features/contract-dialog'
   import { formatCurrency } from '@/shared/lib'
-  import { itemTypeController } from '@/shared/lib/enums/contract'
+  import { itemTypeController } from '@/entities/contract'
   import {
     FButton,
     FCard,

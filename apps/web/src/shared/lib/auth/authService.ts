@@ -11,7 +11,7 @@
  */
 
 import { Log, type User, UserManager, WebStorageStateStore } from 'oidc-client-ts'
-import { EndpointsProvider } from '@/shared/config/endpoints'
+import { EndpointsProvider } from '@/shared/config'
 
 const host = `${window.location.protocol}//${window.location.host}/`
 

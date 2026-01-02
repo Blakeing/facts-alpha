@@ -303,7 +303,8 @@
                 />
               </template>
               <v-list-item-title>
-                {{ formatDate(payment.date) }} - {{ paymentMethodController.getDescription(payment.method) }}
+                {{ formatDate(payment.date) }} -
+                {{ paymentMethodController.getDescription(payment.method) }}
               </v-list-item-title>
               <v-list-item-subtitle v-if="payment.reference">
                 Ref: {{ payment.reference }}
@@ -349,7 +350,9 @@
               md="3"
             >
               <div class="text-body-2 text-medium-emphasis">Need Type</div>
-              <div class="text-body-1">{{ needTypeController.getDescription(contract.needType) }}</div>
+              <div class="text-body-1">
+                {{ needTypeController.getDescription(contract.needType) }}
+              </div>
             </v-col>
             <v-col
               cols="12"
@@ -431,7 +434,7 @@
     needTypeController,
     paymentMethodController,
     saleStatusController,
-  } from '@/shared/lib/enums/contract'
+  } from '@/entities/contract'
   import {
     formatAddressSingleLine,
     getFullName,
@@ -441,7 +444,7 @@
     getPrimaryPhoneNumber,
   } from '@/entities/name'
   import { formatCurrency, formatDate, formatPhone } from '@/shared/lib'
-  import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
+  import { readRequirement, SecurityOptionKeys } from '@/shared/lib'
   import { FButton, FCard, FLoader } from '@/shared/ui'
 
   // Route meta for permission-based access control

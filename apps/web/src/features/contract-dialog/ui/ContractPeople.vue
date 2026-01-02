@@ -228,7 +228,7 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import { type ContractPerson, ContractPersonRole, SaleStatus } from '@/entities/contract'
-  import { contractPersonRoleController } from '@/entities/contract/model/ContractPersonRoleController'
+  import { contractPersonRoleController } from '@/entities/contract'
   import { createEmptyName, getFormattedName, type Name } from '@/entities/name'
   import { NameEditorDialog, NamePanel } from '@/entities/name/ui'
   import { useContractEditorContext } from '@/features/contract-dialog'

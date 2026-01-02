@@ -33,8 +33,7 @@
  */
 
 import { computed, type ComputedRef } from 'vue'
-import { PermissionLevel, type SecurityOptionKey } from '@/shared/lib/security'
-import { useUserContextStore } from '@/stores'
+import { PermissionLevel, type SecurityOptionKey, useUserContextStore } from '@/shared/lib'
 
 export interface PermissionsOptions {
   /**

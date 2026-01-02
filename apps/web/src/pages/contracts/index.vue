@@ -134,7 +134,7 @@
     useContracts,
   } from '@/entities/contract'
   import { formatDate } from '@/shared/lib'
-  import { readRequirement, SecurityOptionKeys } from '@/shared/lib/security'
+  import { readRequirement, SecurityOptionKeys } from '@/shared/lib'
   import { FButton, type FColumn, FListCard } from '@/shared/ui'
 
   // Route meta for permission-based access control

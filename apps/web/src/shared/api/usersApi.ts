@@ -5,7 +5,7 @@
  * Aligned with legacy Facts app endpoints
  */
 
-import type { UserEffectivePermissions } from '@/shared/lib/security'
+import type { UserEffectivePermissions } from '@/shared/lib'
 import { getHttpClient } from './http/client'
 import { apiUrls } from './urls'
 

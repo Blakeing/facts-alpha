@@ -24,4 +24,3 @@ export function useContractEditorContext(): ContractEditorContext {
 
   return context
 }
-

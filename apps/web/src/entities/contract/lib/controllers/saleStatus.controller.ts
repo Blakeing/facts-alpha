@@ -1,0 +1,18 @@
+import { SaleStatus } from '@/entities/contract/model/contract'
+import { EnumController } from '@/shared/lib/enums/EnumController'
+import { enumRegistry } from '@/shared/lib/enums/EnumRegistry'
+
+class SaleStatusController extends EnumController<SaleStatus> {
+  choices = [
+    { id: SaleStatus.DRAFT, name: 'Draft' },
+    { id: SaleStatus.EXECUTED, name: 'Executed' },
+    { id: SaleStatus.FINALIZED, name: 'Finalized' },
+    { id: SaleStatus.VOID, name: 'Void' },
+  ]
+}
+
+export const saleStatusController = new SaleStatusController()
+
+// Auto-register on module load
+enumRegistry.register('saleStatus', saleStatusController)
+

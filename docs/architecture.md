@@ -16,9 +16,9 @@ The application follows [Feature-Sliced Design](https://feature-sliced.design/) 
 ### Segments within each slice
 
 - `ui/` - Vue components
-- `model/` - Business logic, stores, types
+- `model/` - Business logic, state machines, types, domain composables
 - `api/` - API calls (if needed)
-- `lib/` - Utility functions
+- `lib/` - Utility functions, feature-specific composables
 - `config/` - Constants, configuration
 
 ## Project Structure
@@ -29,11 +29,38 @@ facts-alpha/
 │   └── web/                    # Main Vue application
 │       └── src/
 │           ├── app/            # FSD: App layer (providers, global config)
+│           │   └── providers/  # Vue Query, Pinia, Router, Vuetify setup
 │           ├── pages/          # FSD: Pages layer (file-based routing)
 │           ├── widgets/        # FSD: Widgets layer (composite UI blocks)
+│           │   ├── app-shell/  # App shell with navigation
+│           │   └── contract-editor/  # Contract editor widget
 │           ├── features/       # FSD: Features layer (user interactions)
+│           │   ├── contract-dialog/  # Contract editing feature
+│           │   │   ├── ui/     # Feature components
+│           │   │   ├── model/  # XState machines, context
+│           │   │   └── lib/    # Feature-specific utilities
+│           │   └── location-dialog/  # Location editing feature
 │           ├── entities/       # FSD: Entities layer (business entities)
-│           └── shared/         # FSD: Shared layer (utilities, API)
+│           │   ├── contract/   # Contract entity
+│           │   │   ├── api/    # Contract API calls
+│           │   │   ├── model/  # Domain logic, composables, types
+│           │   │   └── ui/     # Entity UI components
+│           │   ├── location/   # Location entity
+│           │   ├── name/       # Name entity
+│           │   └── tenant/     # Tenant entity
+│           ├── shared/         # FSD: Shared layer (utilities, API)
+│           │   ├── api/        # HTTP client, API utilities
+│           │   ├── config/     # App constants, endpoints
+│           │   ├── lib/        # Shared utilities
+│           │   │   ├── auth/   # Authentication service
+│           │   │   ├── composables/  # Shared composables
+│           │   │   ├── enums/  # Enum controllers and registries
+│           │   │   ├── entity/ # Entity utilities
+│           │   │   ├── security/  # Permission system
+│           │   │   ├── stores/ # Pinia stores (global state)
+│           │   │   └── utilities/  # Helper functions
+│           │   └── ui/         # Shared UI components (toast, etc.)
+│           └── layouts/        # Layout components (wrappers)
 ├── packages/
 │   ├── ui/                     # @facts/ui - Design system components
 │   │   └── src/
@@ -127,9 +154,11 @@ export function useCaseForm(caseId?: string) {
 ## State Management
 
 - **TanStack Query** for server state (data fetching, caching, mutations)
-- **Domain Composables**: `useCases()`, `useCase()`, `useCaseForm()`
-- **Pinia** for client-only global state (auth, user preferences)
-- Composables live in `entities/*/model/`
+- **Domain Composables**: `useCases()`, `useCase()`, `useCaseForm()` - live in `entities/*/model/`
+- **Pinia** for client-only global state (auth, user preferences, catalog)
+  - Stores located in `shared/lib/stores/`
+  - Exported through `@/shared/lib/stores` or `@/shared/lib`
+  - Examples: `useUserContextStore`, `useCatalogStore`
 
 ## Public API Pattern
 
@@ -143,3 +172,41 @@ export { default as CaseStatusBadge } from './ui/CaseStatusBadge.vue'
 ```
 
 Consumers import only from the slice root, never from internal paths.
+
+## Directory Structure Details
+
+### Shared Layer (`shared/`)
+
+The shared layer contains reusable code that is not tied to business logic:
+
+- **`shared/api/`** - HTTP client, base API classes, API utilities
+- **`shared/config/`** - Application constants, endpoint configurations
+- **`shared/lib/`** - Shared utilities organized by domain:
+  - `auth/` - Authentication service
+  - `composables/` - Shared composables (usePermissions, useFormSectionProvider)
+  - `enums/` - Enum controllers and registries
+  - `entity/` - Entity-related utilities
+  - `security/` - Permission system, security keys
+  - `stores/` - Pinia stores for global state (user context, catalog)
+  - `utilities/` - General helper functions
+- **`shared/ui/`** - Shared UI components (toast provider, etc.)
+
+### Features Layer (`features/`)
+
+Features contain user interaction logic and are organized with:
+
+- **`ui/`** - Feature-specific components
+- **`model/`** - State machines (XState), context, feature state
+- **`lib/`** - Feature-specific utilities and composables (not `composables/`)
+
+### Entities Layer (`entities/`)
+
+Entities represent business domain objects:
+
+- **`api/`** - Entity-specific API calls
+- **`model/`** - Domain logic, types, schemas, composables (`useContract`, `useContracts`)
+- **`ui/`** - Entity-specific UI components (badges, etc.)
+
+### Layouts (`layouts/`)
+
+Simple layout wrapper components that compose widgets. These are not part of the core FSD layers but provide routing-level structure.

@@ -62,7 +62,7 @@
     useDirtyForm,
     useFormModel,
   } from '@/shared/ui'
-  import { nameSchema } from '../model/nameSchema'
+  import { nameSchema } from '../model/name.schema'
   import { createEmptyName } from '../model/useNameModel'
   import NamePanel from './NamePanel.vue'
 

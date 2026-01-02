@@ -17,7 +17,7 @@ export {
   getPrimaryPhoneNumber,
   isOrganization,
   isPerson,
-} from './model/nameHelpers'
+} from './model/name.helpers'
 
 export {
   type NameAddressFormValues,
@@ -28,7 +28,7 @@ export {
   type NamePhoneFormValues,
   namePhoneSchema,
   nameSchema,
-} from './model/nameSchema'
+} from './model/name.schema'
 
 export {
   createEmptyAddress,

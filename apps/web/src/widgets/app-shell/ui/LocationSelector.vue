@@ -52,7 +52,7 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { getLocationTypeColor, LocationType } from '@/entities/location'
-  import { useUserContextStore } from '@/stores'
+  import { useUserContextStore } from '@/shared/lib'
 
   const userContext = useUserContextStore()
 

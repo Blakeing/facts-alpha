@@ -7,7 +7,7 @@ class LocationTypeController extends EnumController<LocationType> {
     { id: LocationType.FUNERAL, name: 'Funeral' },
     { id: LocationType.CEMETERY, name: 'Cemetery' },
     { id: LocationType.CORPORATE, name: 'Corporate' },
-  ] as const
+  ]
 }
 
 export const locationTypeController = new LocationTypeController()

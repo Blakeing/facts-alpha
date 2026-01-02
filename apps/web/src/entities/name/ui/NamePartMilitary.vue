@@ -51,7 +51,7 @@
     get: () => props.model.branchOfService,
     set: (value: BranchOfService) => {
       props.model.branchOfService = value
-    }
+    },
   })
 
   const branchOfServiceOptions = [

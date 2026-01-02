@@ -12,7 +12,7 @@
  */
 
 import type { Location, LocationListing } from '../model/location'
-import type { LocationFormValues } from '../model/locationSchema'
+import type { LocationFormValues } from '../model/location.schema'
 import { apiUrls, BaseApi, createHttpDataSource } from '@/shared/api'
 
 // =============================================================================

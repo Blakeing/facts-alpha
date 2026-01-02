@@ -13,8 +13,7 @@
 import { setupLayouts } from 'virtual:generated-layouts'
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes } from 'vue-router/auto-routes'
-import { authService } from '@/shared/lib/auth'
-import { useUserContextStore } from '@/stores'
+import { authService, useUserContextStore } from '@/shared/lib'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

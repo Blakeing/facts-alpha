@@ -6,8 +6,8 @@
 
 import { createApp } from 'vue'
 import { registerPlugins } from '@/app/index'
-import { EndpointsProvider } from '@/shared/config/endpoints'
-import { AuthService } from '@/shared/lib/auth'
+import { EndpointsProvider } from '@/shared/config'
+import { AuthService } from '@/shared/lib'
 import App from './App.vue'
 
 import 'unfonts.css'

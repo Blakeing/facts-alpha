@@ -8,7 +8,7 @@ class LocationLicenseTypeController extends EnumController<LocationLicenseType> 
     { id: LocationLicenseType.TRUST, name: 'Trust' },
     { id: LocationLicenseType.INSURANCE, name: 'Insurance' },
     { id: LocationLicenseType.COUPON_BOOK_ID, name: 'Coupon Book ID' },
-  ] as const
+  ]
 }
 
 export const locationLicenseTypeController = new LocationLicenseTypeController()

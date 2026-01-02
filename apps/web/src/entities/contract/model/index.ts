@@ -11,6 +11,7 @@ export type {
   ContractPayment,
   ContractPerson,
   ContractSessionSaveModel,
+  PeopleHandler,
   Sale,
   SaleItem,
   SaleItemDiscount,
@@ -58,11 +59,20 @@ export {
 // Enum Controllers
 // =============================================================================
 
-export { contractPersonRoleController } from './ContractPersonRoleController'
+export {
+  applyPatch,
+  createDraftFromServer,
+  createNewContractDraft,
+  draftToContract,
+  getValueByPath,
+  resetDraft,
+} from './contract.draft'
 
 // =============================================================================
 // Schemas
 // =============================================================================
+
+export type { ContractDraft } from './contract.draft'
 
 export {
   addressSchema,
@@ -84,7 +94,11 @@ export {
   saleItemSchema,
   saleItemTrustFundSchema,
   saleSchema,
-} from './contractSchema'
+} from './contract.schema'
+
+// =============================================================================
+// Draft Model & Validation
+// =============================================================================
 
 export type {
   AddressFormValues,
@@ -98,29 +112,14 @@ export type {
   SaleItemFormValues,
   SaleItemSalesTaxFormValues,
   SaleItemTrustFundFormValues,
-} from './contractSchema'
-
-// =============================================================================
-// Draft Model & Validation
-// =============================================================================
-
-export {
-  applyPatch,
-  createDraftFromServer,
-  createNewContractDraft,
-  draftToContract,
-  getValueByPath,
-  resetDraft,
-} from './contract.draft'
-
-export type { ContractDraft } from './contract.draft'
+} from './contract.schema'
 
 export {
   type ContractSection,
-  ValidationMode,
   validateAllSections,
   validateDraftPreConditions,
   validateSection,
+  ValidationMode,
   zodErrorsToPathMap,
 } from './contract.validation'
 

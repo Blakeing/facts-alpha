@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { computed, ref } from 'vue'
 
-import { useUserContextStore } from '@/stores'
+import { useUserContextStore } from '@/shared/lib'
 import { ContractApi } from '../api'
 
 export const CONTRACTS_QUERY_KEY = ['contracts'] as const

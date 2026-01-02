@@ -1,0 +1,17 @@
+import { LateFeeType } from '@/entities/contract/model/contract'
+import { EnumController } from '@/shared/lib/enums/EnumController'
+import { enumRegistry } from '@/shared/lib/enums/EnumRegistry'
+
+class LateFeeTypeController extends EnumController<number> {
+  choices = [
+    { id: LateFeeType.NONE, name: 'None' },
+    { id: LateFeeType.FIXED_AMOUNT, name: 'Fixed Amount' },
+    { id: LateFeeType.PERCENTAGE_OF_PAYMENT, name: 'Percentage of Payment' },
+  ]
+}
+
+export const lateFeeTypeController = new LateFeeTypeController()
+
+// Auto-register on module load
+enumRegistry.register('lateFeeType', lateFeeTypeController)
+

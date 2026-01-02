@@ -321,7 +321,7 @@
 <script lang="ts" setup>
   import type { LocationFormValues } from '@/entities/location'
   import { locationLicenseTypeOptions, locationTypeOptions } from '@/entities/location'
-  import { getDefaultLicenseFormValues } from '@/entities/location/model/locationSchema'
+  import { getDefaultLicenseFormValues } from '@/entities/location'
   import { FButton, FCard, FSelect, FSwitch, FTextField } from '@/shared/ui'
 
   const model = defineModel<LocationFormValues>({ required: true })

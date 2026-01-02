@@ -4,8 +4,10 @@
  * Re-exports utilities from @facts/utils package and app composables
  */
 
+export * from './auth'
 export * from './composables'
 export * from './entity'
 export * from './enums'
 export * from './security'
+export * from './stores'
 export * from '@facts/utils'

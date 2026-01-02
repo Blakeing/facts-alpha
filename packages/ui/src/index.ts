@@ -13,7 +13,13 @@ export * from './tokens'
 // Composables
 // =============================================================================
 export { useTokens } from './composables'
-export { useFormModel, useFormSave, useDirtyForm, useConfirm, useSessionValidator } from './composables'
+export {
+  useFormModel,
+  useFormSave,
+  useDirtyForm,
+  useConfirm,
+  useSessionValidator,
+} from './composables'
 export { provideFormContext, useFormContext, FORM_CONTEXT_KEY } from './composables'
 export { useListController, useEntityForm, useSubEntityMutations } from './composables'
 export type {
@@ -55,6 +61,9 @@ export type { FTextareaProps } from './components/FTextarea.vue'
 // Form Controls - Selection
 export { default as FSelect } from './components/FSelect.vue'
 export type { FSelectProps, SelectOption } from './components/FSelect.vue'
+
+export { default as FEnumSelect } from './components/FEnumSelect.vue'
+export type { EnumController } from './components/FEnumSelect.vue'
 
 export { default as FCheckbox } from './components/FCheckbox.vue'
 export type { FCheckboxProps } from './components/FCheckbox.vue'
