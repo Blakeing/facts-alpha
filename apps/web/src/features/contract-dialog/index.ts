@@ -23,3 +23,4 @@ export { useContractEditorContext } from './model/useContractEditorContext'
 
 // Components
 export { default as ContractDialog } from './ui/ContractDialog.vue'
+export { default as PersonEditor } from './ui/PersonEditor.vue'

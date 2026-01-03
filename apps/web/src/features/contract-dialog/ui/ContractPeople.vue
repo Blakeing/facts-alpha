@@ -112,7 +112,7 @@
 
       <!-- Person content -->
       <v-col
-        :cols="people.length > 0 ? 12 : 12"
+        cols="12"
         :md="people.length > 0 ? 9 : 12"
       >
         <v-alert
@@ -142,21 +142,6 @@
       </v-col>
     </v-row>
 
-    <!-- Name Editor Dialog -->
-    <NameEditorDialog
-      v-model="editDialog.visible"
-      :hide-company="false"
-      :hide-deceased-info="false"
-      :hide-s-s-n="false"
-      :is-name-required="true"
-      :model="editDialog.model"
-      :name-part-editable="true"
-      :people-list="peopleNames"
-      :show-opt-out-marketing="false"
-      :title="editDialog.title"
-      @save="saveName"
-    />
-
     <!-- Remove Person Confirmation Dialog -->
     <FConfirmDialog
       v-model="removeConfirm.isOpen.value"
@@ -168,20 +153,31 @@
 </template>
 
 <script lang="ts" setup>
-  import { runEffect } from '@facts/effect'
   import { computed, ref, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import { type ContractPerson, ContractPersonRole, SaleStatus } from '@/entities/contract'
   import { contractPersonRoleController } from '@/entities/contract'
-  import { createEmptyName, getFormattedName, type Name } from '@/entities/name'
-  import { NameEditorDialog } from '@/entities/name/ui'
+  import { getFormattedName } from '@/entities/name'
   import { useContractEditorContext } from '@/features/contract-dialog'
-  import { nextIds } from '@/shared/api'
   import { FButton, FConfirmDialog, useConfirm } from '@/shared/ui'
   import ContractPersonSummary from './ContractPersonSummary.vue'
+
+  interface Props {
+    /** Person ID to select after save */
+    selectedPersonId?: string | null
+  }
+
+  const props = withDefaults(defineProps<Props>(), {
+    selectedPersonId: null,
+  })
 
   // Inject editor context
   const editor = useContractEditorContext()
   const draft = computed(() => editor.draft.value)
+
+  // Router for navigation
+  const router = useRouter()
+  const route = useRoute()
 
   // People from draft (unsorted - original order)
   const peopleUnsorted = computed(() => draft.value?.people ?? [])
@@ -206,11 +202,6 @@
     })
   })
 
-  // People names for validation
-  const peopleNames = computed(() => {
-    return people.value.filter((p) => p.name).map((p) => p.name!)
-  })
-
   // Read-only if executed or voided
   const isReadOnly = computed(() => {
     const status = draft.value?.meta.status
@@ -221,12 +212,32 @@
   const activeTab = ref(0)
   const showAddMenu = ref(false)
 
-  // Track person ID we're waiting to appear (for setting active tab after add)
-  const pendingPersonId = ref<string | null>(null)
+  // Open person editor via query params
+  function openPersonEditor(personId: string, role?: ContractPersonRole) {
+    const query: Record<string, string> = { person: personId }
+    if (role !== undefined) {
+      query.role = role.toString()
+    }
+    router.push({ query: { ...route.query, ...query } })
+  }
 
   // Remove person confirmation dialog
   const removeConfirm = useConfirm()
   const personToRemove = ref<ContractPerson | null>(null)
+
+  // Watch selectedPersonId prop to select person after save
+  watch(
+    () => props.selectedPersonId,
+    (personId) => {
+      if (personId) {
+        // Person is already in the draft, so find and select it
+        const personIndex = people.value.findIndex((p) => p.id === personId)
+        if (personIndex !== -1) {
+          activeTab.value = personIndex
+        }
+      }
+    },
+  )
 
   // Watch people list and adjust active tab
   watch(people, (newList) => {
@@ -234,15 +245,6 @@
       activeTab.value = 0
     } else if (activeTab.value >= newList.length) {
       activeTab.value = 0
-    }
-
-    // If we're waiting for a person to appear, find them and set active tab
-    if (pendingPersonId.value) {
-      const personIndex = newList.findIndex((p) => p.id === pendingPersonId.value)
-      if (personIndex !== -1) {
-        activeTab.value = personIndex
-        pendingPersonId.value = null // Clear the pending ID
-      }
     }
   })
 
@@ -298,59 +300,26 @@
     return true
   }
 
-  // Factory for creating new person - fetches real IDs from server (like legacy)
-  async function createEmptyPerson(role: ContractPersonRole): Promise<ContractPerson> {
-    // Get 2 IDs: one for person, one for name (matches legacy pattern)
-    const ids = await runEffect(nextIds(2))
-    const personId = ids[0] || ''
-    const nameId = ids[1] || ''
-
-    const emptyName = createEmptyName()
-    return {
-      id: personId,
-      contractId: draft.value?.id ?? '',
-      nameId: nameId,
-      roles: role,
-      addedAfterContractExecution: false,
-      conversion: null,
-      conversionId: null,
-      conversionSource: null,
-      name: {
-        ...emptyName,
-        id: nameId,
-      },
-      dateCreated: new Date().toISOString(),
-      dateLastModified: new Date().toISOString(),
-    }
-  }
-
-  // Open dialog to add a new person (person only added when they save)
-  async function openAddPersonDialog(role: ContractPersonRole, title: string) {
-    showAddMenu.value = false
-    const newPerson = await createEmptyPerson(role)
-    editDialog.value = {
-      visible: true,
-      model: newPerson.name,
-      title,
-      personId: newPerson.id,
-      newPerson,
-    }
-  }
-
+  // Open add new person dialog
   function handleAddPrimaryBuyer() {
-    openAddPersonDialog(ContractPersonRole.PRIMARY_BUYER, 'Add Primary Buyer')
+    showAddMenu.value = false
+    openPersonEditor('new', ContractPersonRole.PRIMARY_BUYER)
   }
   function handleAddPrimaryBeneficiary() {
-    openAddPersonDialog(ContractPersonRole.PRIMARY_BENEFICIARY, 'Add Primary Beneficiary')
+    showAddMenu.value = false
+    openPersonEditor('new', ContractPersonRole.PRIMARY_BENEFICIARY)
   }
   function handleAddCoBuyer() {
-    openAddPersonDialog(ContractPersonRole.CO_BUYER, 'Add Co-Buyer')
+    showAddMenu.value = false
+    openPersonEditor('new', ContractPersonRole.CO_BUYER)
   }
   function handleAddBeneficiary() {
-    openAddPersonDialog(ContractPersonRole.ADDITIONAL_BENEFICIARY, 'Add Additional Beneficiary')
+    showAddMenu.value = false
+    openPersonEditor('new', ContractPersonRole.ADDITIONAL_BENEFICIARY)
   }
   function handleAddPerson() {
-    openAddPersonDialog(ContractPersonRole.PERSON, 'Add Person')
+    showAddMenu.value = false
+    openPersonEditor('new', ContractPersonRole.PERSON)
   }
 
   async function removePerson(person: ContractPerson) {
@@ -373,68 +342,7 @@
     }
   }
 
-  // Edit dialog state
-  const editDialog = ref({
-    visible: false,
-    model: null as Name | null,
-    title: '',
-    personId: '',
-    newPerson: null as ContractPerson | null, // Store new person until they save
-  })
-
   function editPerson(person: ContractPerson) {
-    editDialog.value = {
-      visible: true,
-      model: person.name ? { ...person.name } : createEmptyName(),
-      title: `Edit ${getDisplayName(person) || 'Person'}`,
-      personId: person.id,
-      newPerson: null, // Not a new person, editing existing
-    }
-  }
-
-  function saveName(updatedName: Name) {
-    // If this is a new person, add them to the list
-    if (editDialog.value.newPerson) {
-      const newPerson: ContractPerson = {
-        ...editDialog.value.newPerson,
-        name: { ...updatedName, dateLastModified: new Date().toISOString() },
-        dateLastModified: new Date().toISOString(),
-      }
-      const personId = newPerson.id
-      // Add to unsorted array - sorting will happen in computed
-      const updatedPeople = [...peopleUnsorted.value, newPerson]
-
-      // Set pending person ID - the watch will detect when they appear and set active tab
-      pendingPersonId.value = personId
-
-      editor.setField('people', updatedPeople)
-
-      editDialog.value.newPerson = null
-      editDialog.value.visible = false
-      return
-    }
-
-    // Otherwise, update existing person
-    // Find in unsorted array to preserve original order
-    const personIndex = peopleUnsorted.value.findIndex((p) => p.id === editDialog.value.personId)
-    if (personIndex === -1) return
-
-    const person = peopleUnsorted.value[personIndex]
-    if (!person) return
-
-    // Update person with new name
-    const updatedPerson: ContractPerson = {
-      ...person,
-      name: { ...updatedName, dateLastModified: new Date().toISOString() },
-      dateLastModified: new Date().toISOString(),
-    }
-
-    // Update the person in the array (preserve original order)
-    const updatedPeople = [...peopleUnsorted.value]
-    updatedPeople[personIndex] = updatedPerson
-    editor.setField('people', updatedPeople)
-
-    // Close dialog
-    editDialog.value.visible = false
+    openPersonEditor(person.id)
   }
 </script>

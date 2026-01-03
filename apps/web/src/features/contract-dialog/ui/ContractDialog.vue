@@ -137,18 +137,28 @@
 
           <v-window-item value="people">
             <div class="content-panel">
-              <ContractPeople />
+              <ContractPeople :selected-person-id="selectedPersonId" />
             </div>
           </v-window-item>
         </v-window>
       </main>
     </div>
+    <!-- Person Editor Overlay -->
+    <PersonEditor
+      v-if="editPersonId"
+      :contract-id="draft?.id ?? ''"
+      :person-id="editPersonId"
+      :role="editPersonRole"
+      @close="handlePersonEditorClose"
+      @saved="handlePersonEditorSaved"
+    />
   </FFullScreenDialog>
 </template>
 
 <script lang="ts" setup>
   import { useVModel } from '@vueuse/core'
-  import { computed, watch } from 'vue'
+  import { computed, ref, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import { getSaleStatusColor, SaleStatus, saleStatusController } from '@/entities/contract'
   import { useContractEditorContext } from '@/features/contract-dialog'
   import { FButton, FConfirmDialog, FFullScreenDialog, useConfirm } from '@/shared/ui'
@@ -156,6 +166,7 @@
   import ContractItems from './ContractItems.vue'
   import ContractPayments from './ContractPayments.vue'
   import ContractPeople from './ContractPeople.vue'
+  import PersonEditor from './PersonEditor.vue'
 
   interface Props {
     modelValue?: boolean
@@ -176,12 +187,36 @@
     'after-leave': []
   }>()
 
+  // Route for query params
+  const route = useRoute()
+  const router = useRouter()
+
   // Inject editor context
   const editor = useContractEditorContext()
 
   // Dialog state
   const dialogModel = useVModel(props, 'modelValue', emit)
   const confirmDialog = useConfirm()
+
+  // Track selected person ID to pass to ContractPeople
+  const selectedPersonId = ref<string | null>(null)
+
+  // Person editor state from query params
+  const editPersonId = computed(() => {
+    const query = route.query as { person?: string }
+    return query.person ?? null
+  })
+
+  const editPersonRole = computed(() => {
+    const query = route.query as { role?: string }
+    if (query.role) {
+      const roleNum = Number.parseInt(query.role, 10)
+      if (!Number.isNaN(roleNum)) {
+        return roleNum
+      }
+    }
+    return undefined
+  })
 
   // Draft shorthand
   const draft = computed(() => editor.draft.value)
@@ -258,6 +293,24 @@
 
     dialogModel.value = false
     emit('closed')
+  }
+
+  // Person editor handlers
+  function clearPersonEditorQuery() {
+    const { person: _person, role: _role, ...restQuery } = route.query
+    router.replace({ query: restQuery })
+  }
+
+  function handlePersonEditorClose() {
+    // Animation complete, clean up query params
+    clearPersonEditorQuery()
+    selectedPersonId.value = null
+  }
+
+  function handlePersonEditorSaved(personId: string) {
+    // Select person immediately (synchronous since data is already in draft)
+    selectedPersonId.value = personId
+    // PersonEditor will close itself with animation
   }
 </script>
 
