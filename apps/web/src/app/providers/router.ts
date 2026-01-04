@@ -13,7 +13,7 @@
 import { setupLayouts } from 'virtual:generated-layouts'
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes } from 'vue-router/auto-routes'
-import { authService, useUserContextStore } from '@/shared/lib'
+import { authService, useBootstrapperStore, useUserContextStore } from '@/shared/lib'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -72,6 +72,7 @@ let loginInProgress = false
  */
 router.beforeEach(async (to, _from) => {
   const userContext = useUserContextStore()
+  const bootstrapper = useBootstrapperStore()
 
   // Skip auth check for anonymous routes
   if (to.meta.allowAnonymous) {
@@ -79,17 +80,19 @@ router.beforeEach(async (to, _from) => {
   }
 
   // Check authentication status
+  bootstrapper.setCheckingAuth(true)
   let isAuthenticated = false
   try {
     isAuthenticated = await authService.isAuthenticated()
   } catch (error) {
-    console.warn('[Router Guard] Error checking authentication:', error)
+    console.warn('[Router] Error checking authentication:', error)
+  } finally {
+    bootstrapper.setCheckingAuth(false)
   }
 
   if (!isAuthenticated) {
     // Prevent multiple login redirects
     if (loginInProgress) {
-      console.log('[Router Guard] Login already in progress, waiting...')
       return false
     }
 
@@ -99,9 +102,8 @@ router.beforeEach(async (to, _from) => {
     try {
       await authService.login(to.fullPath)
     } catch (error) {
-      console.error('[Router Guard] Failed to redirect to login:', error)
+      console.error('[Router] Failed to redirect to login:', error)
       loginInProgress = false
-      // Show error to user instead of infinite loop
       alert(
         'Unable to connect to authentication server. Please check your network connection and try again.',
       )
@@ -114,17 +116,20 @@ router.beforeEach(async (to, _from) => {
 
   // Initialize user context if not already done
   if (!userContext.currentUser) {
+    bootstrapper.setInitializingUserContext(true)
     try {
       await userContext.initFromAuth()
     } catch (error) {
-      console.error('[Router Guard] Failed to initialize user context:', error)
-      // If initialization fails, try login again
+      console.error('[Router] Failed to initialize user context:', error)
       try {
         await authService.login(to.fullPath)
       } catch {
         alert('Failed to load user data. Please try logging in again.')
       }
+      bootstrapper.setInitializingUserContext(false)
       return false
+    } finally {
+      bootstrapper.setInitializingUserContext(false)
     }
   }
 
@@ -132,17 +137,15 @@ router.beforeEach(async (to, _from) => {
   const hasPermission = validateRoutePermissions(userContext, to.meta)
 
   if (!hasPermission) {
-    console.warn(
-      `[Router Guard] Permission denied for route "${to.path}"`,
-      '\nRequired:',
-      to.meta.permissions || to.meta.permissionsAny,
-      '\nUser admin:',
-      userContext.isAdmin,
-    )
-
-    // Block access and redirect to home
+    console.warn(`[Router] Permission denied for route "${to.path}"`)
     alert('You do not have permission to access this resource.')
     return { path: '/' }
+  }
+
+  // During initial load, set loadingRouteData immediately to prevent flash
+  // (Suspense @pending event fires slightly later, causing a gap)
+  if (bootstrapper.isInitialLoad) {
+    bootstrapper.setLoadingRouteData(true)
   }
 
   return true

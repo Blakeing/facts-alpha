@@ -2,9 +2,11 @@
  * app/providers/nprogress.ts
  *
  * NProgress configuration for navigation feedback
+ * Suppressed during initial bootstrap (when AppBootstrapper is showing)
  */
 
 import NProgress from 'nprogress'
+import { useBootstrapperStore } from '@/shared/lib'
 import router from './router'
 
 import 'nprogress/nprogress.css'
@@ -19,14 +21,20 @@ NProgress.configure({
 
 /**
  * Setup NProgress with Vue Router
- * Shows progress bar during route navigation
+ * Shows progress bar during route navigation (but not during initial bootstrap)
  */
 export function setupNProgress() {
   router.beforeEach(() => {
-    NProgress.start()
+    const bootstrapper = useBootstrapperStore()
+    // Only show NProgress if bootstrapper is not active
+    // (during initial load, AppBootstrapper overlay takes precedence)
+    if (!bootstrapper.isBootstrapping) {
+      NProgress.start()
+    }
   })
 
   router.afterEach(() => {
+    // Always complete NProgress if it was started
     NProgress.done()
   })
 

@@ -4,20 +4,20 @@
 
 ### Form Composables
 
-| Composable          | Purpose                                                        |
-| ------------------- | -------------------------------------------------------------- |
-| `useFormModel`      | Live model state management with Zod validation                |
-| `useDirtyForm`      | Snapshot-based dirty tracking for unsaved changes detection    |
-| `useConfirm`        | Promise-based confirmation dialogs (pairs with FConfirmDialog) |
-| `useFormSave`       | Standardized validate-then-save pattern with error handling    |
+| Composable     | Purpose                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `useFormModel` | Live model state management with Zod validation                |
+| `useDirtyForm` | Snapshot-based dirty tracking for unsaved changes detection    |
+| `useConfirm`   | Promise-based confirmation dialogs (pairs with FConfirmDialog) |
+| `useFormSave`  | Standardized validate-then-save pattern with error handling    |
 
 ### Pattern Decision Guide
 
-| What you're editing | Pattern | Example |
-|---------------------|---------|---------|
-| Simple field (text, select, date) | Form context (`field="path"`) | ContractGeneral |
-| Standalone dialog | `useFormModel` | NameEditorDialog |
-| Person/Item in array | Dialog-only editing | ContractPeople |
+| What you're editing               | Pattern                       | Example          |
+| --------------------------------- | ----------------------------- | ---------------- |
+| Simple field (text, select, date) | Form context (`field="path"`) | ContractGeneral  |
+| Standalone dialog                 | `useFormModel`                | NameEditorDialog |
+| Person/Item in array              | Dialog-only editing           | ContractPeople   |
 
 ### Dialog-Only Pattern for Arrays
 
@@ -100,6 +100,7 @@ const person: ContractPerson = {
 ```
 
 **Benefits:**
+
 - No temp ID cleanup logic needed
 - IDs are valid immediately for client-side tracking
 - Matches legacy app exactly
@@ -145,8 +146,19 @@ For complex editing workflows (contracts, orders), use the **full-screen dialog 
 ```
 
 **Benefits:**
+
 - Context preservation: User stays on list mentally
 - Instant open/close: No navigation delay
 - Modal workflow: Forces completion or cancellation
 - Complex forms: Tabs, sub-dialogs, validation
 
+## App Initialization & Loading States
+
+> **📖 Detailed Documentation:** See [App Initialization & Loading States](../ref/architecture/app-initialization.md) for comprehensive documentation.
+
+Quick reference:
+
+- **Route components:** Use `await useSuspenseReady(isLoading, () => !!(data.value || error.value))`
+- **Nested components:** Use `<FLoader :model-value="isLoading" />` (automatically suppresses during bootstrap)
+- **Multiple queries:** Use `await useSuspenseReadyAll(loading1, loading2)`
+- **Key rule:** Always include error in ready condition to prevent Suspense from hanging

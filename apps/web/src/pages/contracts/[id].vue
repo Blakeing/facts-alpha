@@ -443,8 +443,14 @@
     getPrimaryEmailAddress,
     getPrimaryPhoneNumber,
   } from '@/entities/name'
-  import { formatCurrency, formatDate, formatPhone } from '@/shared/lib'
-  import { readRequirement, SecurityOptionKeys } from '@/shared/lib'
+  import {
+    formatCurrency,
+    formatDate,
+    formatPhone,
+    readRequirement,
+    SecurityOptionKeys,
+    useSuspenseReady,
+  } from '@/shared/lib'
   import { FButton, FCard, FLoader } from '@/shared/ui'
 
   // Route meta for permission-based access control
@@ -464,7 +470,11 @@
   })
 
   // Fetch contract data using Effect-based composable
-  const { contract, isLoading } = useContract(contractId)
+  const { contract, isLoading, error } = useContract(contractId)
+
+  // Wait for contract data before Suspense resolves
+  // This shows the app bootstrapper until data is loaded
+  await useSuspenseReady(isLoading, () => !!(contract.value || error.value))
 
   // Get people from contract
   const primaryBuyer = computed(() => {

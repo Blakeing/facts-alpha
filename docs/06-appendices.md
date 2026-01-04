@@ -10,6 +10,15 @@ Reference documentation index. All reference docs are organized by topic in the 
 
 ### Architecture
 
+- **[ref/architecture/app-initialization.md](./ref/architecture/app-initialization.md)** - App bootstrapper system, Suspense integration, and loading state management
+
+  **Key Topics:**
+  - Bootstrapper phases and lifecycle
+  - Suspense integration for route components
+  - App context pattern for UI components
+  - Route transitions and component loading states
+  - Why Suspense is essential for the system
+
 - **[ref/architecture/legacy-patterns.md](./ref/architecture/legacy-patterns.md)** - Detailed patterns from the legacy Facts app that we've adopted
 
   **Key Patterns:**

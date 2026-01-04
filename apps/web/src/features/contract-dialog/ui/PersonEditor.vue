@@ -9,6 +9,7 @@
   <FFullScreenDialog
     v-model="isOpen"
     :busy="busy"
+    :capture-focus="false"
     :error="error"
     :title="dialogTitle"
     @after-leave="handleAfterLeave"

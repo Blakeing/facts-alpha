@@ -22,6 +22,12 @@ export {
 } from './composables'
 export { provideFormContext, useFormContext, FORM_CONTEXT_KEY } from './composables'
 export { useListController, useEntityForm, useSubEntityMutations } from './composables'
+export {
+  APP_CONTEXT_KEY,
+  createAppContext,
+  provideAppContext,
+  useAppContext,
+} from './composables'
 export type {
   UseFormModelReturn,
   FormSaveOptions,
@@ -41,6 +47,7 @@ export type {
   SubEntityApi,
   UseSubEntityMutationsOptions,
   UseSubEntityMutationsReturn,
+  AppContext,
 } from './composables'
 
 // =============================================================================

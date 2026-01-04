@@ -3,8 +3,9 @@
     v-model="model"
     fullscreen
     persistent
-    transition="dialog-bottom-transition"
+    :transition="effectiveTransition"
     v-bind="$attrs"
+    @keydown.escape="handleEscape"
     @after-leave="handleAfterLeave"
   >
     <v-card
@@ -68,6 +69,7 @@
    * - Toolbar with close button, title, and action slots
    * - Built-in loading overlay and error snackbar
    * - Keyboard support (Escape to close when not busy)
+   * - Auto-skips transition on first route after bootstrap (if app context is provided)
    *
    * @example
    * ```vue
@@ -84,8 +86,9 @@
    * </FFullScreenDialog>
    * ```
    */
-  import { ref, watch, onMounted, onUnmounted } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { useVModel } from '@vueuse/core'
+  import { useAppContext } from '../composables'
   import FLoader from './FLoader.vue'
 
   export interface FFullScreenDialogProps {
@@ -99,6 +102,8 @@
     error?: string | null
     /** Toolbar color */
     color?: string
+    /** Dialog transition name. Set to 'none' to disable animation */
+    transition?: string
   }
 
   const props = withDefaults(defineProps<FFullScreenDialogProps>(), {
@@ -106,6 +111,18 @@
     busy: false,
     error: null,
     color: 'primary',
+    transition: 'dialog-bottom-transition',
+  })
+
+  // Inject app context if provided
+  // Capture isFirstRoute at setup time (non-reactive) so it doesn't change mid-render
+  const appContext = useAppContext()
+  const skipTransition = appContext?.isFirstRoute ?? false
+
+  // Effective transition: disable if this component mounted during first route render
+  // Computed is needed because props.transition could change, but skipTransition is constant
+  const effectiveTransition = computed(() => {
+    return skipTransition ? 'none' : props.transition
   })
 
   const emit = defineEmits<{
@@ -139,20 +156,14 @@
     emit('after-leave')
   }
 
-  // Keyboard support
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && model.value && !props.busy) {
+  // Handle Escape key - use Vuetify's built-in event
+  function handleEscape(e: KeyboardEvent) {
+    if (!props.busy) {
+      e.preventDefault()
+      e.stopPropagation()
       handleClose()
     }
   }
-
-  onMounted(() => {
-    window.addEventListener('keydown', handleKeydown)
-  })
-
-  onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeydown)
-  })
 </script>
 
 <style scoped>

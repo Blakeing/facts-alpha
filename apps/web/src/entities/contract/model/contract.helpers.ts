@@ -46,13 +46,7 @@ function hasRole(person: ContractPerson, role: ContractPersonRole): boolean {
  * BFF: PrimaryBuyer = 1 (flags enum)
  */
 export function getPrimaryBuyer(people: ContractPerson[]): ContractPerson | undefined {
-  console.log(
-    '[getPrimaryBuyer] People:',
-    people?.map((p) => ({ name: p.name.first, roles: p.roles, rolesType: typeof p.roles })),
-  )
-  const found = people.find((p) => hasRole(p, ContractPersonRole.PRIMARY_BUYER))
-  console.log('[getPrimaryBuyer] Found:', found?.name.first)
-  return found
+  return people.find((p) => hasRole(p, ContractPersonRole.PRIMARY_BUYER))
 }
 
 /**

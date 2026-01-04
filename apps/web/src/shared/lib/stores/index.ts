@@ -5,6 +5,8 @@
  * They provide global client-side state (auth, user context, catalog).
  */
 
+export { useBootstrapperStore } from './bootstrapper'
+
 export { useCatalogStore } from './catalog'
 export type { CatalogItem, TaxRate } from './catalog'
 

@@ -51,7 +51,7 @@ declare module 'vue-router/auto-routes' {
       views: never
     }
     'src/pages/contracts/[id].vue': {
-      routes: '/contracts/[id]' | '/contracts/[id]/edit/[[tab]]' | '/contracts/[id]/edit' | '/contracts/[id]/edit/people'
+      routes: '/contracts/[id]' | '/contracts/[id]/edit/[[tab]]' | '/contracts/[id]/edit'
       views: 'default'
     }
     'src/pages/contracts/[id]/edit/[[tab]].vue': {

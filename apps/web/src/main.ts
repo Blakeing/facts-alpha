@@ -7,7 +7,7 @@
 import { createApp } from 'vue'
 import { registerPlugins } from '@/app/index'
 import { EndpointsProvider } from '@/shared/config'
-import { AuthService } from '@/shared/lib'
+import { AuthService, useBootstrapperStore } from '@/shared/lib'
 import App from './App.vue'
 
 import 'unfonts.css'
@@ -20,22 +20,38 @@ import 'unfonts.css'
  * 4. Mount Vue application
  */
 async function bootstrap() {
+  // Create app first so we can access Pinia store
+  const app = createApp(App)
+  registerPlugins(app)
+  app.mount('#app')
+
+  // Get bootstrapper store to track loading state
+  const bootstrapper = useBootstrapperStore()
+
   try {
     // Step 1: Load endpoints from ep.json
-    await EndpointsProvider.getEndpoints()
+    bootstrapper.setLoadingEndpoints(true)
+    try {
+      await EndpointsProvider.getEndpoints()
+    } finally {
+      bootstrapper.setLoadingEndpoints(false)
+    }
 
     // Step 2: Initialize auth service with endpoint URLs
-    await AuthService.initialize()
+    bootstrapper.setInitializingAuth(true)
+    try {
+      await AuthService.initialize()
+    } finally {
+      bootstrapper.setInitializingAuth(false)
+    }
 
-    // Step 3: Check if we're on the callback page (handled by callback.html)
-    // If on main app, the router guard will handle auth checks
-
-    // Step 4: Create and mount Vue application
-    const app = createApp(App)
-    registerPlugins(app)
-    app.mount('#app')
+    // Router guard will handle auth checks and navigation
   } catch (error) {
     console.error('[Bootstrap] Failed to start application:', error)
+
+    // Reset bootstrapper state
+    const bootstrapper = useBootstrapperStore()
+    bootstrapper.reset()
 
     // Show error to user
     document.body.innerHTML = `

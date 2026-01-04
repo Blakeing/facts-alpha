@@ -2,9 +2,10 @@
 contract editor context * Wraps the contract dialog and provides workflow state to children */
 
 <script setup lang="ts">
-  import { computed, provide } from 'vue'
+  import { provide } from 'vue'
   import { useContractEditor } from '@/features/contract-dialog'
   import { CONTRACT_EDITOR_KEY, type ContractEditorContextType } from '@/features/contract-dialog'
+  import { FLoader } from '@/shared/ui'
 
   interface Props {
     contractId: string
@@ -48,22 +49,15 @@ contract editor context * Wraps the contract dialog and provides workflow state 
 </script>
 
 <template>
-  <div class="contract-editor-provider">
-    <!-- Loading State -->
-    <div
-      v-if="editor.isLoading.value"
-      class="d-flex align-center justify-center pa-8"
-    >
-      <v-progress-circular
-        color="primary"
-        indeterminate
-        size="64"
-      />
-    </div>
+  <div
+    class="contract-editor-provider"
+    style="position: relative"
+  >
+    <FLoader :model-value="editor.isLoading.value" />
 
     <!-- Error State -->
     <div
-      v-else-if="editor.lastError.value"
+      v-if="editor.lastError.value && !editor.isLoading.value"
       class="d-flex flex-column align-center justify-center pa-8"
     >
       <v-icon
@@ -79,7 +73,7 @@ contract editor context * Wraps the contract dialog and provides workflow state 
     </div>
 
     <!-- Loaded: Render children with context -->
-    <slot v-else />
+    <slot v-if="!editor.isLoading.value && !editor.lastError.value" />
   </div>
 </template>
 
