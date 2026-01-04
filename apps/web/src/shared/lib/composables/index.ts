@@ -10,5 +10,5 @@ export { type FormSectionEmits, useFormSectionProvider } from './useFormSectionP
 // Permissions (ready for auth integration)
 export { type Permissions, type PermissionsOptions, usePermissions } from './usePermissions'
 
-// Suspense helpers for async route components
-export { useSuspenseReady, useSuspenseReadyAll } from './useSuspense'
+// Suspense helpers for async route components (re-exported from @facts/ui)
+export { useSuspenseReady, useSuspenseReadyAll } from '@facts/ui'

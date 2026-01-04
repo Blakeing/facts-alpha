@@ -36,6 +36,11 @@
     return params.id ?? ''
   })
 
+  // Note: No Suspense needed here because:
+  // 1. ContractEditorProvider uses FLoader for its loading state
+  // 2. FLoader automatically suppresses during bootstrap
+  // 3. This avoids creating duplicate XState machines
+
   const { isOpen, currentTab, handleTabChange, handleClosed, handleAfterLeave } =
     useContractDialogRoute({
       basePath: () => `/contracts/${contractId.value}/edit`,

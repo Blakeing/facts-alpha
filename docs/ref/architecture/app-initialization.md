@@ -226,96 +226,156 @@ await useSuspenseReady(isLoading, () => !!(data.value || error.value))
 
 Suspense provides the **orchestration layer** that makes the bootstrapper synchronization possible.
 
-### Using Suspense in Route Components
+### Loading Pattern
 
-Route components should use `useSuspenseReady` to wait for data before rendering:
+**Simple Rule:** Route loads data? Call `await useSuspenseReady(isLoading)` in setup, wrap content in `<FRoutePage>`. Route delegates to child component? Skip both.
+
+**Route Structure Example:**
+```
+pages/contracts/
+  index.vue          → /contracts (list) - ✅ Uses pattern
+  [id].vue           → /contracts/:id (detail) - ✅ Uses pattern
+  [id]/edit/
+    [[tab]].vue      → /contracts/:id/edit/:tab? (edit) - ❌ Skips (dialog handles it)
+```
+
+**✅ Use Pattern (Data in Template):**
 
 ```vue
+<!-- pages/contracts/[id].vue - Renders contract data directly -->
+<template>
+  <FRoutePage :error="error" @retry="reload">
+    <div v-if="contract">
+      <h1>{{ contract.contractNumber }}</h1>
+      <!-- Data rendered directly in template -->
+    </div>
+    <div v-else>
+      <p>Contract not found</p>
+    </div>
+  </FRoutePage>
+</template>
+
 <script lang="ts" setup>
   import { useSuspenseReady } from '@/shared/lib'
+  import { FRoutePage } from '@/shared/ui'
   import { useContract } from '@/entities/contract'
 
-  const route = useRoute()
-  const contractId = computed(() => route.params.id as string)
+  const { contract, isLoading, error, reload } = useContract(contractId)
 
-  // Fetch data
-  const { contract, isLoading, error } = useContract(contractId)
-
-  // Wait for data before Suspense resolves
-  // This keeps the bootstrapper visible until data is ready
-  await useSuspenseReady(isLoading, () => !!(contract.value || error.value))
-
-  // Component only renders after data is loaded or error occurs
+  // Parent awaits with ref - Suspense waits for this to resolve
+  await useSuspenseReady(isLoading)
 </script>
 ```
 
-**Key Rules:**
+**Why the parent must await (not a child component):**
 
-1. **Always include error in ready condition** - Use `() => !!(data.value || error.value)` to prevent Suspense from hanging on errors
-2. **Only use in route components** - These are for top-level pages, not nested components
-3. **Component must be async** - The `await` makes the component async, which is required for Suspense
+Suspended components can't receive prop updates - their watchers don't run until the Promise resolves. This is a fundamental Vue Suspense limitation:
+
+1. Parent passes `isLoading` ref to child as prop (Vue unwraps to boolean)
+2. Child awaits, becomes suspended
+3. Parent's `isLoading` changes to `false`
+4. Child is suspended, so its watchers don't fire
+5. Deadlock - child waits for prop change, but can't receive it while suspended
+
+**Solution:** The route component calls `await useSuspenseReady(isLoading)` directly with the ref. Refs work across async boundaries because they're objects, not values.
+
+**❌ Skip Pattern (Child Component Handles Loading):**
+
+```vue
+<!-- pages/contracts/[id]/edit/[[tab]].vue - Delegates to dialog -->
+<template>
+  <ContractEditorProvider :contract-id="contractId">
+    <ContractDialog v-model="isOpen" />
+  </ContractEditorProvider>
+</template>
+
+<script lang="ts" setup>
+  // No Suspense needed - ContractEditorProvider has FLoader
+  // Dialog animation masks loading transition
+  const contractId = computed(() => route.params.id)
+</script>
+```
+
+**Key Points:**
+
+1. **Route component awaits** - Call `await useSuspenseReady(isLoading)` in route's setup
+2. **FRoutePage is simple** - Just error display, not async
+3. **Routes are independent** - File-based routing means each route handles its own data loading
 
 ### Multiple Queries
 
-For components that depend on multiple queries:
+For routes that depend on multiple queries, use `useSuspenseReadyAll`:
 
 ```vue
+<template>
+  <FRoutePage :error="error1 || error2" @retry="reloadAll">
+    <!-- Content -->
+  </FRoutePage>
+</template>
+
 <script lang="ts" setup>
   import { useSuspenseReadyAll } from '@/shared/lib'
 
-  const { data1, isLoading: loading1 } = useQuery1()
-  const { data2, isLoading: loading2 } = useQuery2()
+  const { data1, isLoading: loading1, error: error1, reload: reload1 } = useQuery1()
+  const { data2, isLoading: loading2, error: error2, reload: reload2 } = useQuery2()
 
   // Wait for ALL queries to complete
   await useSuspenseReadyAll(loading1, loading2)
+
+  function reloadAll() {
+    reload1()
+    reload2()
+  }
 </script>
 ```
 
-**Don't** await multiple `useSuspenseReady` calls sequentially - use `useSuspenseReadyAll` instead.
+### Decision Guide: useSuspenseReady vs Skip
 
-### Why Not Suspense for Nested Components?
+**Use `await useSuspenseReady()` when:**
+- Route component renders data directly in template
+- You'd see a flash of loading after bootstrapper dismisses
+- Example: List pages, detail pages
 
-Suspense is designed for **top-level route components** that need to block the entire page render. Nested components should use `FLoader` instead:
+**Skip Suspense when:**
+- Route delegates to child component with FLoader
+- Child component has transition/animation that masks loading
+- Example: Dialog-based edit routes
 
-**Suspense (Route Components):**
+**Why the difference?**
 
-- Blocks entire page render
-- Shows app bootstrapper overlay
-- Used for initial page load data
-- Component must be async
+**With Suspense (detail route):**
+```
+Bootstrapper → [await useSuspenseReady] → Data ready → Bootstrapper dismisses → Content renders
+```
+No flash because data is ready when bootstrapper dismisses.
 
-**FLoader (Nested Components):**
+**Without Suspense (edit route):**
+```
+Bootstrapper → Component renders → Dialog animates up → FLoader inside dialog
+```
+Dialog animation masks the loading transition, so no flash.
 
-- Shows loading overlay within component bounds
-- Doesn't block parent rendering
-- Used for component-level data loading
-- Component stays synchronous
-
-**Example - Nested Component with FLoader:**
+**Nested Components Always Use FLoader:**
 
 ```vue
 <!-- widgets/contract-editor/ui/ContractEditorProvider.vue -->
 <template>
   <div style="position: relative">
     <FLoader :model-value="isLoading" />
-
-    <!-- Content renders immediately, loader covers it -->
     <slot v-if="!isLoading" />
   </div>
 </template>
 
 <script lang="ts" setup>
-  // No async/await needed - component renders immediately
+  // No async/await - component renders immediately
   const { data, isLoading } = useMyQuery()
 </script>
 ```
 
-**Why this pattern?**
-
-1. **Progressive rendering** - Parent can render while child loads
-2. **Better UX** - User sees page structure immediately, not blank screen
-3. **Simpler code** - No need to make nested components async
-4. **Automatic suppression** - `FLoader` suppresses itself during bootstrap
+**Key Points:**
+- `FLoader` automatically suppresses during bootstrap (no double spinners)
+- Suspense is only for route components that need to block render
+- If unsure, test: reload directly on the route. If you see a flash, add Suspense.
 
 ## App Context Pattern
 
@@ -391,50 +451,53 @@ For component-level loading (after bootstrap), use `FLoader`:
 
 ## Best Practices
 
+### Quick Decision Tree
+
+```
+Does your route component render data directly in template?
+├─ YES → Use FRoutePage (prevents flash)
+└─ NO (delegates to child with FLoader) → Skip FRoutePage
+```
+
 ### ✅ Do
 
-- ✅ Use `await useSuspenseReady()` in route components
-- ✅ Always include error in ready condition: `() => !!(data.value || error.value)`
-- ✅ Use `FLoader` for nested component loading
-- ✅ Let `FLoader` automatically suppress during bootstrap
-- ✅ Use `useSuspenseReadyAll` for multiple queries
+- ✅ Use `<FRoutePage>` when route renders data directly in template
+- ✅ Pass `:loading` and `:error` props from your query composable
+- ✅ Use `FLoader` for nested component loading (widgets, features, entities)
+- ✅ Test by reloading directly on route - if you see a flash, add FRoutePage
+- ✅ Combine multiple loading states with computed for multiple queries
 
 ### ❌ Don't
 
-- ❌ Use Suspense in nested components (use `FLoader` instead)
+- ❌ Use FRoutePage in nested components (use `FLoader` instead)
+- ❌ Use FRoutePage if child component handles loading (like dialogs)
+- ❌ Manually write `await useSuspenseReady()` - use FRoutePage instead
 - ❌ Manually suppress `FLoader` during bootstrap (it's automatic)
-- ❌ Await multiple `useSuspenseReady` calls sequentially (use `useSuspenseReadyAll`)
-- ❌ Forget to include error in ready condition
 - ❌ Make nested components async just for loading states
 
 ### Complete Example
 
 ```vue
 <template>
-  <div>
-    <h1>{{ contract?.contractNumber }}</h1>
-    <!-- Content renders only after data loads -->
-  </div>
+  <FRoutePage :error="error" :loading="isLoading">
+    <div>
+      <h1>{{ contract.contractNumber }}</h1>
+      <!-- Content renders only after data loads -->
+    </div>
+  </FRoutePage>
 </template>
 
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { useRoute } from 'vue-router'
-  import { useSuspenseReady } from '@/shared/lib'
+  import { FRoutePage } from '@/shared/ui'
   import { useContract } from '@/entities/contract'
 
   const route = useRoute()
   const contractId = computed(() => route.params.id as string)
 
+  // FRoutePage handles Suspense, loading, and errors automatically
   const { contract, isLoading, error } = useContract(contractId)
-
-  // Wait for data - bootstrapper shows until this resolves
-  await useSuspenseReady(isLoading, () => !!(contract.value || error.value))
-
-  // Handle error state
-  if (error.value) {
-    // Show error UI
-  }
 </script>
 ```
 

@@ -189,6 +189,7 @@ export function useContracts() {
     isError: query.isError,
     error: query.error,
     errorMessage: errorMsg,
+    isFetched: query.isFetched,
     reload: query.refetch,
   }
 }

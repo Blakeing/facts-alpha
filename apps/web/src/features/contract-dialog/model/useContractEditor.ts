@@ -19,7 +19,7 @@ export function useContractEditor(contractId: string, locationId?: string) {
   const userContext = useUserContextStore()
 
   // Setup Vue Query and XState machine
-  const { snapshot, send, isPending, isNewContract, draft } = useContractEditorQuery(
+  const { snapshot, send, isPending, isFetched, isNewContract, draft } = useContractEditorQuery(
     contractId,
     locationId,
   )
@@ -201,6 +201,8 @@ export function useContractEditor(contractId: string, locationId?: string) {
     isSaving,
     isLoading: isLoadingState,
     isNewContract: computed(() => isNewContract),
+    isPending, // Exposed isPending from Vue Query
+    isFetched, // Exposed isFetched from Vue Query (for Suspense)
 
     // Actions
     setTab,

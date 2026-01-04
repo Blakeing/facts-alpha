@@ -1,124 +1,129 @@
 <template>
-  <FListCard
-    :busy="isBusy"
-    :columns="columns"
-    edit-enabled
-    empty-icon="mdi-file-document-outline"
-    empty-subtitle="Create your first contract to get started."
-    empty-title="No contracts found"
-    :items="filteredContracts"
-    :items-per-page="10"
-    :loading="isLoading"
-    pagination
-    :searchable="false"
-    subtitle="Manage funeral and cemetery contracts"
-    title="Contracts"
-    @edit="handleView"
+  <FRoutePage
+    :error="error"
+    @retry="reload"
   >
-    <template #commands>
-      <FButton
-        intent="primary"
-        prepend-icon="mdi-plus"
-        @click="handleAdd"
-      >
-        New Contract
-      </FButton>
-    </template>
-
-    <!-- Filters -->
-    <template #filters>
-      <div class="mb-4">
-        <!-- Search field (custom - not using FListCard's built-in search to avoid double filtering) -->
-        <v-text-field
-          v-model="search"
-          class="mb-3"
-          clearable
-          density="compact"
-          hide-details
-          label="Search"
-          prepend-inner-icon="mdi-magnify"
-          style="max-width: 400px"
-          variant="outlined"
-        />
-
-        <!-- NeedType Filter Chips -->
-        <div class="d-flex ga-2 mb-3">
-          <v-chip
-            v-for="needType in needTypeFilters"
-            :key="needType.label"
-            :color="needTypeFilter === needType.value ? 'primary' : undefined"
-            variant="tonal"
-            @click="needTypeFilter = needTypeFilter === needType.value ? null : needType.value"
-          >
-            {{ needType.label }}
-          </v-chip>
-        </div>
-
-        <!-- Status Filter Chips -->
-        <div class="d-flex ga-2">
-          <v-chip
-            v-for="status in statusFilters"
-            :key="status.value"
-            :color="statusFilter === status.value ? status.color : undefined"
-            variant="tonal"
-            @click="statusFilter = statusFilter === status.value ? null : status.value"
-          >
-            {{ status.label }}
-            <template
-              v-if="status.count > 0"
-              #append
-            >
-              <span class="ml-1"> ({{ status.count }}) </span>
-            </template>
-          </v-chip>
-        </div>
-      </div>
-    </template>
-
-    <!-- Custom cell renderers via slots -->
-    <template #item.status="{ item }">
-      <ContractStatusBadge :status="(item as ContractListing).status" />
-    </template>
-
-    <!-- Purchaser with co-buyers (aligned with legacy) -->
-    <template #item.primaryBuyerName="{ item }">
-      <div>
-        {{ (item as ContractListing).primaryBuyerName || (item as ContractListing).purchaser }}
-        <div
-          v-if="
-            (item as ContractListing).cobuyers && (item as ContractListing).cobuyers!.length > 0
-          "
-          class="text-caption text-medium-emphasis"
+    <FListCard
+      :busy="isBusy"
+      :columns="columns"
+      edit-enabled
+      empty-icon="mdi-file-document-outline"
+      empty-subtitle="Create your first contract to get started."
+      empty-title="No contracts found"
+      :items="filteredContracts"
+      :items-per-page="10"
+      :loading="isLoading"
+      pagination
+      :searchable="false"
+      subtitle="Manage funeral and cemetery contracts"
+      title="Contracts"
+      @edit="handleView"
+    >
+      <template #commands>
+        <FButton
+          intent="primary"
+          prepend-icon="mdi-plus"
+          @click="handleAdd"
         >
-          <div
-            v-for="cobuyer in (item as ContractListing).cobuyers"
-            :key="cobuyer"
-          >
-            {{ cobuyer }}
+          New Contract
+        </FButton>
+      </template>
+
+      <!-- Filters -->
+      <template #filters>
+        <div class="mb-4">
+          <!-- Search field (custom - not using FListCard's built-in search to avoid double filtering) -->
+          <v-text-field
+            v-model="search"
+            class="mb-3"
+            clearable
+            density="compact"
+            hide-details
+            label="Search"
+            prepend-inner-icon="mdi-magnify"
+            style="max-width: 400px"
+            variant="outlined"
+          />
+
+          <!-- NeedType Filter Chips -->
+          <div class="d-flex ga-2 mb-3">
+            <v-chip
+              v-for="needType in needTypeFilters"
+              :key="needType.label"
+              :color="needTypeFilter === needType.value ? 'primary' : undefined"
+              variant="tonal"
+              @click="needTypeFilter = needTypeFilter === needType.value ? null : needType.value"
+            >
+              {{ needType.label }}
+            </v-chip>
+          </div>
+
+          <!-- Status Filter Chips -->
+          <div class="d-flex ga-2">
+            <v-chip
+              v-for="status in statusFilters"
+              :key="status.value"
+              :color="statusFilter === status.value ? status.color : undefined"
+              variant="tonal"
+              @click="statusFilter = statusFilter === status.value ? null : status.value"
+            >
+              {{ status.label }}
+              <template
+                v-if="status.count > 0"
+                #append
+              >
+                <span class="ml-1"> ({{ status.count }}) </span>
+              </template>
+            </v-chip>
           </div>
         </div>
-      </div>
-    </template>
+      </template>
 
-    <!-- Beneficiary (support both field names) -->
-    <template #item.primaryBeneficiaryName="{ item }">
-      {{
-        (item as ContractListing).primaryBeneficiaryName ||
-        (item as ContractListing).beneficiary ||
-        ''
-      }}
-    </template>
+      <!-- Custom cell renderers via slots -->
+      <template #item.status="{ item }">
+        <ContractStatusBadge :status="(item as ContractListing).status" />
+      </template>
 
-    <template #empty>
-      <FButton
-        intent="primary"
-        prepend-icon="mdi-plus"
-        @click="handleAdd"
-      >
-        Create First Contract
-      </FButton>
-    </template>
-  </FListCard>
+      <!-- Purchaser with co-buyers (aligned with legacy) -->
+      <template #item.primaryBuyerName="{ item }">
+        <div>
+          {{ (item as ContractListing).primaryBuyerName || (item as ContractListing).purchaser }}
+          <div
+            v-if="
+              (item as ContractListing).cobuyers && (item as ContractListing).cobuyers!.length > 0
+            "
+            class="text-caption text-medium-emphasis"
+          >
+            <div
+              v-for="cobuyer in (item as ContractListing).cobuyers"
+              :key="cobuyer"
+            >
+              {{ cobuyer }}
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Beneficiary (support both field names) -->
+      <template #item.primaryBeneficiaryName="{ item }">
+        {{
+          (item as ContractListing).primaryBeneficiaryName ||
+          (item as ContractListing).beneficiary ||
+          ''
+        }}
+      </template>
+
+      <template #empty>
+        <FButton
+          intent="primary"
+          prepend-icon="mdi-plus"
+          @click="handleAdd"
+        >
+          Create First Contract
+        </FButton>
+      </template>
+    </FListCard>
+  </FRoutePage>
 </template>
 
 <script lang="ts" setup>
@@ -133,9 +138,8 @@
     NeedType,
     useContracts,
   } from '@/entities/contract'
-  import { formatDate } from '@/shared/lib'
-  import { readRequirement, SecurityOptionKeys } from '@/shared/lib'
-  import { FButton, type FColumn, FListCard } from '@/shared/ui'
+  import { formatDate, readRequirement, SecurityOptionKeys, useSuspenseReady } from '@/shared/lib'
+  import { FButton, type FColumn, FListCard, FRoutePage } from '@/shared/ui'
 
   // Route meta for permission-based access control
   definePage({
@@ -149,8 +153,20 @@
   const queryClient = useQueryClient()
 
   // Contract list data
-  const { search, statusFilter, needTypeFilter, filteredContracts, contractsByStatus, isLoading } =
-    useContracts()
+  const {
+    search,
+    statusFilter,
+    needTypeFilter,
+    filteredContracts,
+    contractsByStatus,
+    isLoading,
+    error,
+    reload,
+  } = useContracts()
+
+  // Parent awaits with ref - works because refs are reactive across async boundary
+  // FRoutePage can't do this because suspended components don't receive prop updates
+  await useSuspenseReady(isLoading)
 
   // Busy state for prefetching
   const isBusy = ref(false)

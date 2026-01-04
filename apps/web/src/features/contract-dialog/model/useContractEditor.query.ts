@@ -35,6 +35,7 @@ export function useContractEditorQuery(contractId: string, locationId?: string) 
   const {
     data: serverContract,
     isPending,
+    isFetched,
     error: queryError,
   } = useQuery({
     queryKey: ['contract', contractId] as const,
@@ -136,6 +137,7 @@ export function useContractEditorQuery(contractId: string, locationId?: string) 
     send,
     serverContract,
     isPending,
+    isFetched,
     queryError,
     effectiveLocationId,
     isNewContract,
